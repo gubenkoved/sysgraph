@@ -49,10 +49,14 @@ setup(
     install_requires=[
         "psutil",
         "coloredlogs",
+        "fastapi>=0.95",
+        "uvicorn[standard]>=0.20",
     ],
     extras_require={
         "dev": [
             "pytest",
+            "pytest-asyncio",
+            "httpx",
             "black",
             "isort",
         ]

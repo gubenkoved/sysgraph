@@ -1,6 +1,20 @@
-# TODO: add identity of the object as method
-class BaseObject:
-    pass
+import abc
+
+
+class BaseObject(abc.ABC):
+    @abc.abstractmethod
+    def identity(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def object_type(self):
+        raise NotImplementedError
+
+    def as_json(self) -> dict:
+        data = self.__dict__.copy()
+        data["_identity"] = self.identity()
+        data["_type"] = self.object_type()
+        return data
 
 
 class Process(BaseObject):
@@ -11,6 +25,12 @@ class Process(BaseObject):
 
     def __repr__(self) -> str:
         return f"Process(pid={self.pid}, user={self.user}, command={self.command})"
+
+    def identity(self):
+        return self.pid
+
+    def object_type(self):
+        return "process"
 
 
 class UnixDomainSocketProcRef:
@@ -32,6 +52,12 @@ class UnixDomainSocket(BaseObject):
         self.processes: list[UnixDomainSocketProcRef] = []
         self.state: str | None = None
         self.type: str | None = None
+
+    def identity(self):
+        return (self.local_inode, self.peer_inode)
+
+    def object_type(self):
+        return "unix_domain_socket"
 
     def __repr__(self):
         return (
