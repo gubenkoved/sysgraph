@@ -1,0 +1,13 @@
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.(git|hg)         # VCS directories
+ | \.venv            # virtualenvs
+ | build             # build output
+ | dist              # dist output
+ | __pycache__       # cache
+)
+'''
