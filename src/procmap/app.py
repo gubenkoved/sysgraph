@@ -1,13 +1,13 @@
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from procmap.discovery import discover_processes, discover_unix_sockets
-from procmap.model import Process, UnixDomainSocket, UnixDomainSocketProcRef
+from procmap.model import UnixDomainSocket
 
 app = FastAPI(title="procmap API", version="0.1.0")
 
@@ -55,7 +55,10 @@ def health():
 def list_processes():
     processes = discover_processes()
 
-    return [ProcessSchema(pid=p.pid, user=p.user, command=p.command) for p in processes]
+    return [
+        ProcessSchema(pid=p.pid, user=p.user, command=p.command)
+        for p in processes
+    ]
 
 
 @app.get("/api/discovery/uds", response_model=List[UnixDomainSocketSchema])
@@ -68,7 +71,10 @@ def list_sockets():
             peer_path=s.peer_path,
             state=s.state,
             type=s.type,
-            processes=[UnixDomainSocketProcRefSchema(pid=r.pid, name=r.name, fd=r.fd) for r in s.processes],
+            processes=[
+                UnixDomainSocketProcRefSchema(pid=r.pid, name=r.name, fd=r.fd)
+                for r in s.processes
+            ],
         )
 
     uds_sockets = discover_unix_sockets()

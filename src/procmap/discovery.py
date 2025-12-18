@@ -15,15 +15,18 @@ def discover_processes() -> list[Process]:
     for proc in psutil.process_iter(["pid", "username", "cmdline"]):
         p = Process(pid=proc.info["pid"])
         p.user = proc.info["username"]
-        p.command = " ".join(proc.info["cmdline"]) if proc.info["cmdline"] else None
+        p.command = (
+            " ".join(proc.info["cmdline"]) if proc.info["cmdline"] else None
+        )
         processes.append(p)
 
     return processes
 
 
 def discover_unix_sockets() -> list[UnixDomainSocket]:
-
-    result = subprocess.run(["ss", "-xp"], capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        ["ss", "-xp"], capture_output=True, text=True, check=False
+    )
 
     sockets = []
 
@@ -32,7 +35,9 @@ def discover_unix_sockets() -> list[UnixDomainSocket]:
     def parse_proccess(s: str) -> list[UnixDomainSocketProcRef]:
         processes = []
 
-        for match in re.finditer(r'\("(?P<name>[^"]+)",pid=(?P<pid>[0-9]+),fd=(?P<fd>[0-9]+)\)', s):
+        for match in re.finditer(
+            r'\("(?P<name>[^"]+)",pid=(?P<pid>[0-9]+),fd=(?P<fd>[0-9]+)\)', s
+        ):
             ref = UnixDomainSocketProcRef(pid=int(match.group("pid")))
             ref.name = match.group("name")
             ref.fd = int(match.group("fd"))

@@ -1,13 +1,6 @@
-[tool.black]
-line-length = 120
-target-version = ["py312"]
-include = '\.pyi?$'
-exclude = '''
-/(
-  \.(git|hg)         # VCS directories
- | \.venv            # virtualenvs
- | build             # build output
- | dist              # dist output
- | __pycache__       # cache
-)
-'''
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+# Tune ruff rules as needed. Ruff supports many checks and can also format (`ruff format`).
+# See https://beta.ruff.rs/docs/configuration/ for config options.
+exclude = [".venv", "build", "dist", "__pycache__"]

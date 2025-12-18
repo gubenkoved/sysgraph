@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: stable
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+  - repo: https://github.com/pre-commit/mirrors-autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
+        args: ["--remove-unused-variables", "--remove-all-unused-imports", "-r", "."]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace

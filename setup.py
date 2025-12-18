@@ -57,8 +57,8 @@ setup(
             "pytest",
             "pytest-asyncio",
             "httpx",
-            "black",
-            "isort",
+            "ruff",
+            "autoflake",
         ]
     },
     classifiers=[
