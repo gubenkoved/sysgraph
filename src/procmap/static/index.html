@@ -1,8 +1,221 @@
 <!DOCTYPE html>
- <html>
-    <body>
-        <!-- TODO: use force graph + custom filters to visualize process interconnections -->
-        <h1>procmap</h1>
-        <p>Process mapping and visualization tool</p>
-    </body>
- </html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>procmap</title>
+    <style>
+      html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+      #controls { position: absolute; top: 8px; left: 8px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+      #graph { width: 100%; height: 100%; }
+      #details { position: absolute; right: 8px; top: 8px; z-index: 10; width: 320px; max-height: 60vh; overflow:auto; background: rgba(255,255,255,0.95); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+      .muted { color: #666; font-size: 0.9em }
+      button { padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; cursor: pointer }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <strong>procmap</strong>
+      <div class="muted">Processes UDS visualization</div>
+      <div style="margin-top:6px">
+        <button id="refreshBtn">Refresh</button>
+        <label style="margin-left:8px"><input type="checkbox" id="showIsolated" /> Show isolated processes</label>
+      </div>
+    </div>
+
+    <div id="details" hidden>
+      <div id="detailsContent"></div>
+    </div>
+
+    <div id="graph"></div>
+
+    <!-- d3 included for convenience; force-graph works with these builds -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://unpkg.com/force-graph/dist/force-graph.min.js"></script>
+
+    <script>
+      // Utilities
+      const q = sel => document.querySelector(sel);
+      const formatCmd = cmd => cmd ? String(cmd) : '';
+
+      // Helper for stable node id from API identity/type (server returns `identity` and `type`)
+      const nodeKey = obj => `${obj.type}:${obj.identity}`;
+
+      async function loadData() {
+        const [procs, connections] = await Promise.all([
+          fetch('/api/discovery/processes').then(r => r.json()),
+          fetch('/api/discovery/uds/connected').then(r => r.json()),
+        ]);
+
+        // Map processes by id (stable key: type:identity)
+        const nodesById = new Map();
+        const pidToId = new Map();
+
+        procs.forEach(p => {
+          const id = nodeKey(p);
+          pidToId.set(p.pid, id);
+          nodesById.set(id, { id, pid: p.pid, identity: p.identity, type: p.type, user: p.user, command: p.command, executable: p.executable, val: 1 });
+        });
+
+        const links = [];
+        const seen = new Set(); // dedupe directed links
+
+        // connections contain paired sockets: socket1, socket2
+        connections.forEach(conn => {
+          const s1 = conn.socket1 || {};
+          const s2 = conn.socket2 || {};
+
+          const pids1 = (s1.processes || []).map(r => r.pid).filter(Boolean);
+          const pids2 = (s2.processes || []).map(r => r.pid).filter(Boolean);
+
+          // ensure referenced processes appear even if not present in /processes
+          pids1.concat(pids2).forEach(pid => {
+            if (!pidToId.has(pid)) {
+              const id = `process:${pid}`; // fallback stable id
+              pidToId.set(pid, id);
+              if (!nodesById.has(id)) nodesById.set(id, { id, pid, identity: `pid:${pid}`, type: 'process', user: undefined, command: undefined, val: 0.5 });
+            }
+          });
+
+          // create NxM links between every process on socket1 and every process on socket2
+          for (let a = 0; a < pids1.length; a++) {
+            for (let b = 0; b < pids2.length; b++) {
+              const src = pidToId.get(pids1[a]);
+              const tgt = pidToId.get(pids2[b]);
+              if (!src || !tgt) continue;
+
+              const key1 = `${src}::${tgt}`;
+              const key2 = `${tgt}::${src}`;
+
+              // add both directions so particles can travel both ways (no explicit arrows)
+              if (!seen.has(key1)) {
+                links.push({ source: src, target: tgt, socket: conn.identity, state: s1.state, connection: conn.identity });
+                seen.add(key1);
+              }
+
+              if (!seen.has(key2)) {
+                links.push({ source: tgt, target: src, socket: conn.identity, state: s2.state, connection: conn.identity });
+                seen.add(key2);
+              }
+            }
+          }
+        });
+
+        const nodes = Array.from(nodesById.values());
+        return { nodes, links };
+      }
+
+      // Create ForceGraph instance
+      const Graph = ForceGraph()
+        (document.getElementById('graph'))
+          .nodeId('id')
+          .graphData({ nodes: [], links: [] })
+          .nodeLabel(n => `${n.identity + ' (' + n.type + ')'}${n.command ? '\n<br>Cmd: ' + n.command : ''}`)
+          .nodeAutoColorBy('user')
+          .linkLabel(l => `${l.socket || ''}`)
+          .linkDirectionalParticles(0)
+          .nodeRelSize(6)
+          // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
+          .nodeCanvasObject((node, ctx, globalScale) => {
+            const baseSize = Math.max(4, (node.val || 1) * 3);
+            const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
+
+            ctx.beginPath();
+            ctx.fillStyle = node.color || '#999';
+            ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
+            ctx.fill();
+
+            // label (use executable + PID when available, otherwise identity)
+            const label = node.executable ? `${node.executable} (${node.pid})` : (node.pid ? `${node.pid}` : (node.identity ? `${node.identity}` : `${node.id}`));
+            const fontSize = Math.max(9, 12 / globalScale);
+            ctx.font = `${fontSize}px Sans-Serif`;
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.fillText(label, node.x + r + 4, node.y + fontSize / 2.8);
+          })
+          // pointer area for interactions (keeps it reasonably large for hit testing)
+          .nodePointerAreaPaint((node, color, ctx) => {
+            const r = Math.max(8, (node.val || 1) * 3);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
+            ctx.fill();
+          })
+          .onNodeClick(node => showDetails(node))
+          .onBackgroundClick(() => hideDetails())
+          // tune d3 forces to reduce overlaps
+          .d3Force('charge', d3.forceManyBody().strength(-450))
+          .d3Force('link', d3.forceLink().distance(140).strength(0.8))
+          .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4));
+
+      // keep center updated on resize
+      window.addEventListener('resize', () => {
+        Graph.d3Force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+      });
+
+      function showDetails(node) {
+        const details = q('#details');
+        const el = q('#detailsContent');
+        el.innerHTML = `<h3>${node.executable ? escapeHtml(node.executable) + ' (PID ' + node.pid + ')' : 'PID ' + node.pid}</h3>` +
+          `<div><strong>User</strong>: ${node.user || '<em>unknown</em>'}</div>` +
+          `<div><strong>Cmd</strong>: <code>${escapeHtml(node.command || '')}</code></div>` +
+          `<div style="margin-top:8px"><em>Click background to close</em></div>`;
+        details.hidden = false;
+      }
+
+      function hideDetails() {
+        q('#details').hidden = true;
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      }
+
+      async function refresh() {
+        const data = await loadData();
+        // optionally filter out isolated nodes
+        const showIsolated = q('#showIsolated').checked;
+        if (!showIsolated) {
+          const connected = new Set();
+          data.links.forEach(l => { connected.add(l.source); connected.add(l.target); });
+          data.nodes = data.nodes.filter(n => connected.has(n.id));
+        }
+
+        // compute size by degree
+        const deg = new Map();
+
+        data.nodes.forEach(n => deg.set(n.id, 0));
+        data.links.forEach(l => { deg.set(l.source, (deg.get(l.source) || 0) + 1); deg.set(l.target, (deg.get(l.target) || 0) + 1); });
+        data.nodes.forEach(n => n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0))));
+
+        // Preserve positions for existing nodes so the graph updates smoothly instead of jumping
+        const current = Graph.graphData();
+        const existingById = new Map(((current && current.nodes) || []).map(n => [n.id, n]));
+
+        data.nodes.forEach(n => {
+          const ex = existingById.get(n.id);
+          if (ex) {
+            // copy simulation state to preserve position and velocities
+            if (ex.x !== undefined && ex.y !== undefined) { n.x = ex.x; n.y = ex.y; }
+            if (ex.vx !== undefined && ex.vy !== undefined) { n.vx = ex.vx; n.vy = ex.vy; }
+            if (ex.fx !== undefined) { n.fx = ex.fx; }
+            if (ex.fy !== undefined) { n.fy = ex.fy; }
+          }
+        });
+
+        Graph.graphData(data);
+
+        // reheat simulation to let forces resolve overlaps
+        // Graph.d3AlphaTarget(0.25);
+        // Graph.d3ReheatSimulation();
+        // cool down after a short period
+        // setTimeout(() => { Graph.d3AlphaTarget(0); }, 2500);
+      }
+
+      document.getElementById('refreshBtn').addEventListener('click', refresh);
+      document.getElementById('showIsolated').addEventListener('change', refresh);
+
+      // initial load
+      refresh();
+    </script>
+  </body>
+</html>

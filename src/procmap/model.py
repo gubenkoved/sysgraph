@@ -3,17 +3,17 @@ import abc
 
 class BaseObject(abc.ABC):
     @abc.abstractmethod
-    def identity(self):
+    def identity(self) -> str:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def object_type(self):
+    def object_type(self) -> str:
         raise NotImplementedError
 
     def as_json(self) -> dict:
         data = self.__dict__.copy()
-        data["_identity"] = self.identity()
-        data["_type"] = self.object_type()
+        data["identity"] = self.identity()
+        data["type"] = self.object_type()
         return data
 
 
@@ -22,12 +22,13 @@ class Process(BaseObject):
         self.pid = pid
         self.user: str | None = None
         self.command: str | None = None
+        self.executable: str | None = None  # name of the executable (e.g. 'python')
 
     def __repr__(self) -> str:
-        return f"Process(pid={self.pid}, user={self.user}, command={self.command})"
+        return f"Process(pid={self.pid}, user={self.user}, executable={self.executable}, command={self.command})"
 
     def identity(self):
-        return self.pid
+        return str(self.pid)
 
     def object_type(self):
         return "process"
@@ -51,10 +52,10 @@ class UnixDomainSocket(BaseObject):
         self.peer_path: str | None = None
         self.processes: list[UnixDomainSocketProcRef] = []
         self.state: str | None = None
-        self.type: str | None = None
+        self.uds_type: str | None = None
 
     def identity(self):
-        return (self.local_inode, self.peer_inode)
+        return f"{self.local_inode} <-> {self.peer_inode}"
 
     def object_type(self):
         return "unix_domain_socket"
@@ -62,10 +63,26 @@ class UnixDomainSocket(BaseObject):
     def __repr__(self):
         return (
             f"UnixDomainSocket(local={self.local_inode}, peer={self.peer_inode}, "
-            f"state={self.state}, type={self.type}, "
+            f"state={self.state}, uds_type={self.uds_type}, "
             f"local_path={self.local_path}, peer_path={self.peer_path}, "
             f"processes={self.processes})"
         )
+
+class UnixDomainSocketConnection(BaseObject):
+    def __init__(self, socket1: UnixDomainSocket, socket2: UnixDomainSocket):
+        self.socket1 = socket1
+        self.socket2 = socket2
+
+    def identity(self):
+        inodes = set()
+        inodes.add(self.socket1.local_inode)
+        inodes.add(self.socket1.peer_inode)
+        inodes.add(self.socket2.local_inode)
+        inodes.add(self.socket2.peer_inode)
+        return ",".join(str(i) for i in sorted(inodes))
+
+    def object_type(self):
+        return "unix_domain_socket_connection"
 
 
 class TcpConnection(BaseObject):
