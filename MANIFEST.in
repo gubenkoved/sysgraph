@@ -1,0 +1,2 @@
+# Include all files under package static directories
+recursive-include src/procmap/static *

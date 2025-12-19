@@ -45,6 +45,8 @@ setup(
     packages=packages,
     package_dir={"": "src"},
     include_package_data=True,
+    package_data={"procmap": ["static/*", "static/**/*"]},
+    zip_safe=False,
     python_requires=">=3.12",
     install_requires=[
         "psutil",
@@ -52,15 +54,6 @@ setup(
         "fastapi>=0.95",
         "uvicorn[standard]>=0.20",
     ],
-    extras_require={
-        "dev": [
-            "pytest",
-            "pytest-asyncio",
-            "httpx",
-            "ruff",
-            "autoflake",
-        ]
-    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
