@@ -59,8 +59,8 @@
 
           <div style="display:flex;align-items:center;margin-bottom:2px">
             <label style="width:110px">velocityDecay</label>
-            <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.4" step="0.01" style="flex:1" />
-            <span id="velDecayVal" style="width:48px;text-align:right;margin-left:8px">0.40</span>
+            <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.8" step="0.01" style="flex:1" />
+            <span id="velDecayVal" style="width:48px;text-align:right;margin-left:8px">0.80</span>
           </div>
         </div>
       </div>
@@ -348,6 +348,51 @@
         return s.replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       }
 
+      function updateGraphData(data){
+        console.log('updating graph data:', data.nodes.length, 'nodes,', data.links.length, 'links');
+
+        // merge new data with existing nodes for smoother updates.
+        const current = Graph.graphData() || { nodes: [], links: [] };
+
+        // index existing nodes & links
+        const existingNodesById = new Map((current.nodes || []).map(n => [n.id, n]));
+        const existingLinksByKey = new Map();
+        (current.links || []).forEach(l => {
+          const key = `${l.source.id}::${l.target.id}`;
+          existingLinksByKey.set(key, l);
+        });
+
+        // build merged node list reusing objects when possible
+        const mergedNodes = [];
+        const mergedLinks = [];
+
+        data.nodes.forEach(n => {
+          const ex = existingNodesById.get(n.id);
+          if (ex) {
+            Object.assign(ex, n);
+            mergedNodes.push(ex);
+          } else {
+            console.log('new node', n);
+            mergedNodes.push(n);
+          }
+        });
+
+        data.links.forEach(l => {
+          const key = `${l.source}::${l.target}`;
+          const ex = existingLinksByKey.get(key);
+          if (ex) {
+            // FIXME: in existing data source/targets are objects!
+            // Object.assign(ex, l);
+            mergedLinks.push(ex);
+          } else {
+            console.log('new link', l);
+            mergedLinks.push(l);
+          }
+        });
+
+        Graph.graphData({ nodes: mergedNodes, links: mergedLinks });
+      }
+
       async function refresh() {
         const data = await loadData();
         // optionally filter out isolated nodes
@@ -365,28 +410,7 @@
         data.links.forEach(l => { deg.set(l.source, (deg.get(l.source) || 0) + 1); deg.set(l.target, (deg.get(l.target) || 0) + 1); });
         data.nodes.forEach(n => n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0))));
 
-        // Preserve positions for existing nodes so the graph updates smoothly instead of jumping
-        const current = Graph.graphData();
-        const existingById = new Map(((current && current.nodes) || []).map(n => [n.id, n]));
-
-        data.nodes.forEach(n => {
-          const ex = existingById.get(n.id);
-          if (ex) {
-            // copy simulation state to preserve position and velocities
-            if (ex.x !== undefined && ex.y !== undefined) { n.x = ex.x; n.y = ex.y; }
-            if (ex.vx !== undefined && ex.vy !== undefined) { n.vx = ex.vx; n.vy = ex.vy; }
-            if (ex.fx !== undefined) { n.fx = ex.fx; }
-            if (ex.fy !== undefined) { n.fy = ex.fy; }
-          }
-        });
-
-        Graph.graphData(data);
-
-        // reheat simulation to let forces resolve overlaps
-        // Graph.d3AlphaTarget(0.25);
-        // Graph.d3ReheatSimulation();
-        // cool down after a short period
-        // setTimeout(() => { Graph.d3AlphaTarget(0); }, 2500);
+        updateGraphData(data);
       }
 
       document.getElementById('refreshBtn').addEventListener('click', refresh);
