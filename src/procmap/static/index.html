@@ -19,7 +19,50 @@
       <div class="muted">Processes UDS visualization</div>
       <div style="margin-top:6px">
         <button id="refreshBtn">Refresh</button>
+        <button id="unlockBtn" style="margin-left:8px">Unlock nodes</button>
         <label style="margin-left:8px"><input type="checkbox" id="showIsolated" /> Show isolated processes</label>
+        <div class="muted" style="margin-top:6px">Tip: Drag nodes to position (locked nodes outlined in <span style="color:#c62828">red</span>); <strong>Shift+click</strong> to release a fixed node.</div>
+
+        <!-- Simulation sliders -->
+        <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">
+          <div style="font-weight:700;margin-bottom:6px">Simulation</div>
+
+          <div style="display:flex;align-items:center;margin-bottom:6px">
+            <label style="width:110px">charge</label>
+            <input id="chargeRange" type="range" min="-800" max="-50" value="-450" step="10" style="flex:1" />
+            <span id="chargeVal" style="width:48px;text-align:right;margin-left:8px">-450</span>
+          </div>
+
+          <div style="display:flex;align-items:center;margin-bottom:6px">
+            <label style="width:110px">link dist</label>
+            <input id="linkDistRange" type="range" min="40" max="300" value="140" step="5" style="flex:1" />
+            <span id="linkDistVal" style="width:48px;text-align:right;margin-left:8px">140</span>
+          </div>
+
+          <div style="display:flex;align-items:center;margin-bottom:6px">
+            <label style="width:110px">link strength</label>
+            <input id="linkStrengthRange" type="range" min="0" max="1" value="0.8" step="0.01" style="flex:1" />
+            <span id="linkStrVal" style="width:48px;text-align:right;margin-left:8px">0.80</span>
+          </div>
+
+          <div style="display:flex;align-items:center;margin-bottom:6px">
+            <label style="width:110px">collision ×</label>
+            <input id="collisionMulRange" type="range" min="0.5" max="2" value="1" step="0.05" style="flex:1" />
+            <span id="collMulVal" style="width:48px;text-align:right;margin-left:8px">1.00</span>
+          </div>
+
+          <div style="display:flex;align-items:center;margin-bottom:6px">
+            <label style="width:110px">alpha target</label>
+            <input id="alphaTargetRange" type="range" min="0" max="0.5" value="0" step="0.01" style="flex:1" />
+            <span id="alphaTVal" style="width:48px;text-align:right;margin-left:8px">0.00</span>
+          </div>
+
+          <div style="display:flex;align-items:center;margin-bottom:2px">
+            <label style="width:110px">velocityDecay</label>
+            <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.4" step="0.01" style="flex:1" />
+            <span id="velDecayVal" style="width:48px;text-align:right;margin-left:8px">0.40</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -120,10 +163,25 @@
             const baseSize = Math.max(4, (node.val || 1) * 3);
             const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
 
+            // draw filled circle
             ctx.beginPath();
             ctx.fillStyle = node.color || '#999';
             ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
             ctx.fill();
+
+            // draw red outline for locked (pinned) nodes
+            const locked = (node.fx !== undefined || node.fy !== undefined);
+            if (locked) {
+              // stroke width should scale inversely with zoom so it remains visible
+              const strokeWidth = Math.max(1.2, 2 / globalScale);
+              ctx.save();
+              ctx.lineWidth = strokeWidth;
+              ctx.strokeStyle = 'rgba(220,40,40,0.95)';
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, r + strokeWidth / 2, 0, 2 * Math.PI, false);
+              ctx.stroke();
+              ctx.restore();
+            }
 
             // label (use executable + PID when available, otherwise identity)
             const label = node.executable ? `${node.executable} (${node.pid})` : (node.pid ? `${node.pid}` : (node.identity ? `${node.identity}` : `${node.id}`));
@@ -140,7 +198,25 @@
             ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
             ctx.fill();
           })
-          .onNodeClick(node => showDetails(node))
+          .onNodeClick((node, event) => {
+            // Shift/Alt+click to release fixed position, otherwise show details
+            if (event && (event.shiftKey || event.altKey)) {
+              node.fx = undefined;
+              node.fy = undefined;
+            } else {
+              showDetails(node);
+            }
+          })
+          .onNodeDrag(node => {
+            // keep node pinned while dragging
+            node.fx = node.x;
+            node.fy = node.y;
+          })
+          .onNodeDragEnd(node => {
+            // fix node in place after drag
+            node.fx = node.x;
+            node.fy = node.y;
+          })
           .onBackgroundClick(() => hideDetails())
           // tune d3 forces to reduce overlaps
           .d3Force('charge', d3.forceManyBody().strength(-450))
@@ -151,6 +227,108 @@
       window.addEventListener('resize', () => {
         Graph.d3Force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
       });
+
+      // Overlay that shows live d3 simulation parameters (bottom-right)
+      (function addSimOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'simOverlay';
+        Object.assign(overlay.style, {
+          position: 'fixed',
+          right: '10px',
+          bottom: '10px',
+          background: 'rgba(34,34,34,0.92)',
+          color: '#e8e8e8',
+          padding: '8px 10px',
+          borderRadius: '6px',
+          fontFamily: 'Menlo, Monaco, monospace',
+          fontSize: '12px',
+          lineHeight: '1.25',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          minWidth: '160px',
+          opacity: '0.95'
+        });
+
+        document.body.appendChild(overlay);
+
+        function fmtNum(v, digits = 3) {
+          return (typeof v === 'number' && isFinite(v)) ? Number(v).toFixed(digits) : String(v);
+        }
+
+        function safeCall(fn, sampleArg) {
+          try {
+            const res = fn();
+            if (typeof res === 'function') {
+              // If a function, try to call it with a sample to get representative value
+              try { return fn(sampleArg !== undefined ? sampleArg : { val: 1 }); } catch(e) { return 'fn'; }
+            }
+            return res;
+          } catch (e) {
+            return '-';
+          }
+        }
+
+        function updateOverlay() {
+          const data = Graph.graphData() || {};
+          const nodes = (data.nodes || []).length;
+          const links = (data.links || []).length;
+
+          const alpha = (Graph.d3Alpha ? Graph.d3Alpha() : '-');
+          const alphaTarget = (Graph.d3AlphaTarget ? Graph.d3AlphaTarget() : '-');
+          const velocityDecay = (Graph.d3VelocityDecay ? Graph.d3VelocityDecay() : (Graph.d3Force ? (Graph.d3Force().velocityDecay ? Graph.d3Force().velocityDecay() : '-') : '-'));
+
+          // force specifics
+          const charge = Graph.d3Force('charge');
+          let chargeStr = '-';
+          if (charge) {
+            try { chargeStr = safeCall(() => charge.strength()); } catch (e) { chargeStr = '-'; }
+          }
+
+          const link = Graph.d3Force('link');
+          let linkDist = '-';
+          let linkStrength = '-';
+          if (link) {
+            try { const d = link.distance(); linkDist = typeof d === 'function' ? 'fn' : d; } catch (e) { linkDist = '-'; }
+            try { const s = link.strength(); linkStrength = typeof s === 'function' ? 'fn' : s; } catch (e) { linkStrength = '-'; }
+          }
+
+          const collision = Graph.d3Force('collision');
+          let collR = '-';
+          if (collision) {
+            try {
+              const r = collision.radius();
+              collR = typeof r === 'function' ? (function(){ try { return r({ val: 1 }); } catch(e){ return 'fn'; } })() : r;
+            } catch (e) { collR = '-'; }
+          }
+
+          overlay.innerHTML = `
+            <div style="font-weight:700;margin-bottom:6px;color:#fff">Sim</div>
+            <div>nodes: <strong>${nodes}</strong></div>
+            <div>links: <strong>${links}</strong></div>
+            <div style="margin-top:6px">alpha: <strong>${fmtNum(alpha, 4)}</strong></div>
+            <div>alphaTarget: <strong>${fmtNum(alphaTarget, 4)}</strong></div>
+            <div>velocityDecay: <strong>${fmtNum(velocityDecay, 4)}</strong></div>
+            <div style="margin-top:6px">charge.strength: <strong>${chargeStr}</strong></div>
+            <div>link.distance: <strong>${fmtNum(linkDist, 2)}</strong> · link.strength: <strong>${fmtNum(linkStrength, 2)}</strong></div>
+            <div>collision.radius(1): <strong>${fmtNum(collR, 2)}</strong></div>
+          `;
+        }
+
+        // refresh periodically for visibility; ties into ui updates
+        updateOverlay();
+        const intId = setInterval(updateOverlay, 500);
+
+        // update once on graph refresh as well
+        const originalRefresh = window.refresh;
+        window.refresh = function() {
+          const r = originalRefresh.apply(this, arguments);
+          updateOverlay();
+          return r;
+        };
+
+        // expose for debugging if needed
+        window._procmap_sim_overlay = { el: overlay, stop: () => clearInterval(intId) };
+      })();
 
       function showDetails(node) {
         const details = q('#details');
@@ -213,6 +391,85 @@
 
       document.getElementById('refreshBtn').addEventListener('click', refresh);
       document.getElementById('showIsolated').addEventListener('change', refresh);
+      document.getElementById('unlockBtn').addEventListener('click', () => {
+        const data = Graph.graphData();
+        if (!data || !data.nodes) return;
+        data.nodes.forEach(n => { n.fx = undefined; n.fy = undefined; });
+        Graph.graphData(data);
+      });
+
+      // Simulation sliders handlers
+      (function wireSimSliders() {
+        const elems = {
+          charge: q('#chargeRange'),
+          chargeVal: q('#chargeVal'),
+          linkDist: q('#linkDistRange'),
+          linkDistVal: q('#linkDistVal'),
+          linkStr: q('#linkStrengthRange'),
+          linkStrVal: q('#linkStrVal'),
+          collMul: q('#collisionMulRange'),
+          collMulVal: q('#collMulVal'),
+          alphaT: q('#alphaTargetRange'),
+          alphaTVal: q('#alphaTVal'),
+          velDecay: q('#velDecayRange'),
+          velDecayVal: q('#velDecayVal')
+        };
+
+        function fmt(v, digits=2){ return (typeof v === 'number') ? Number(v).toFixed(digits) : String(v); }
+
+        function applySimParams() {
+          const charge = Number(elems.charge.value);
+          const linkDist = Number(elems.linkDist.value);
+          const linkStr = Number(elems.linkStr.value);
+          const collMul = Number(elems.collMul.value);
+          const alphaTarget = Number(elems.alphaT.value);
+          const velDecay = Number(elems.velDecay.value);
+
+          // update forces if present
+          const chargeForce = Graph.d3Force('charge');
+          if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(charge);
+
+          const linkForce = Graph.d3Force('link');
+          if (linkForce) {
+            if (typeof linkForce.distance === 'function') linkForce.distance(linkDist);
+            if (typeof linkForce.strength === 'function') linkForce.strength(linkStr);
+          }
+
+          const collisionForce = Graph.d3Force('collision');
+          if (collisionForce && typeof collisionForce.radius === 'function') {
+            collisionForce.radius(d => (18 + (d.val || 1) * 6) * collMul);
+          }
+
+          // velocityDecay and alpha target
+          if (typeof Graph.d3VelocityDecay === 'function') Graph.d3VelocityDecay(velDecay);
+          if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(alphaTarget);
+
+          // tiny reheat so changes take effect visibly
+          if (typeof Graph.d3Alpha === 'function') {
+            Graph.d3Alpha(0.25);
+            setTimeout(() => { if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(0); }, 600);
+          }
+
+          // update visual readouts
+          elems.chargeVal.textContent = String(charge);
+          elems.linkDistVal.textContent = String(linkDist);
+          elems.linkStrVal.textContent = fmt(linkStr,2);
+          elems.collMulVal.textContent = fmt(collMul,2);
+          elems.alphaTVal.textContent = fmt(alphaTarget,2);
+          elems.velDecayVal.textContent = fmt(velDecay,2);
+        }
+
+        // attach handlers
+        Object.keys(elems).forEach(k => {
+          if (!elems[k]) return;
+          if (elems[k].tagName === 'INPUT' && elems[k].type === 'range') {
+            elems[k].addEventListener('input', applySimParams);
+          }
+        });
+
+        // apply defaults once
+        setTimeout(applySimParams, 0);
+      })();
 
       // initial load
       refresh();
