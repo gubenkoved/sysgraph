@@ -57,7 +57,8 @@ class UnixDomainSocketConnection:
 
 
 class PipeConnection:
-    def __init__(self, write_pid: int, read_pid: int):
+    def __init__(self, node: int, write_pid: int, read_pid: int):
+        self.node = node
         self.write_pid = write_pid
         self.read_pid: int = read_pid
         self.write_open_file: ProcessOpenFile | None = None

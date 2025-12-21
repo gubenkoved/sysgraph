@@ -18,7 +18,7 @@ def main():
     for con in uds_connections:
         LOGGER.info(con)
 
-    open_files = discovery.get_process_open_files()
+    open_files = discovery.get_processes_open_files()
     for pid, files in open_files.items():
         LOGGER.info(f"PID {pid} has {len(files)} open files")
         for f in files:

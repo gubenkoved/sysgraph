@@ -3,6 +3,7 @@ import re
 import subprocess
 
 import psutil
+from collections import defaultdict
 
 from procmap.model import (
     Process,
@@ -10,6 +11,7 @@ from procmap.model import (
     UnixDomainSocketProcRef,
     UnixDomainSocketConnection,
     ProcessOpenFile,
+    PipeConnection,
 )
 from procmap.graph import Graph, Node
 
@@ -127,19 +129,86 @@ def discover_connected_uds(
     return connections
 
 
-def get_process_open_files() -> dict[int, list[ProcessOpenFile]]:
+def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
     result = subprocess.run(
         ["lsof", "-nP"], capture_output=True, text=True, check=False
     )
 
-    _ = jc.parse("lsof", result.stdout)
+    parsed = jc.parse("lsof", result.stdout)
 
-    return {}
+    result_map: dict[int, list[ProcessOpenFile]] = defaultdict(list)
+
+    fd_re = re.compile('^(?P<fd>[0-9]+)(?P<mode>r|w|u)?$')
+
+    for record in parsed:
+        try:
+            pid = int(record['pid'])
+            fd_match = fd_re.match(record['fd'])
+
+            if fd_match is None:
+                continue
+
+            fd = int(fd_match.group('fd'))
+            mode = fd_match.group('mode')
+
+            node = record['node']
+            type = record['type']
+            name = record['name']
+
+            obj = ProcessOpenFile(
+                fd,
+                type,
+                node,
+                name
+            )
+            obj.mode = mode
+
+            result_map[pid].append(obj)
+        except Exception as err:
+            LOGGER.warning('error processing lsof record: %s, skip', err)
 
 
-# TODO: should we use all processes or should be process list be passed in?
-# def discover_pipe_connections() -> list[PipeConnection]:
-#     pass
+    return result_map
+
+
+def discover_pipe_connections(
+        open_files_map: dict[int, list[ProcessOpenFile]],
+    ) -> list[PipeConnection]:
+
+
+    node_to_processes: dict[int, list[tuple[int, ProcessOpenFile]]] = defaultdict(list)
+
+    for pid, files in open_files_map.items():
+        for f in files:
+            if f.file_type != 'FIFO':
+                continue
+            node_to_processes[f.inode].append((pid, f))
+
+    pipe_connections: list[PipeConnection] = []
+
+    for pipe_node, processes in node_to_processes.items():
+        if len(processes) != 2:
+            LOGGER.warning('ignore strange pipe with %d processes', len(processes))
+            continue
+        write_side = None
+        read_side = None
+        for pid, proc_file in processes:
+            if proc_file.mode == 'w':
+                write_side = pid, proc_file
+            elif proc_file.mode == 'r':
+                read_side = pid, proc_file
+        if read_side is None or write_side is None:
+            LOGGER.warning('unable to detect read/write sides, skip')
+            continue
+        pipe_connections.append(
+            PipeConnection(
+                node=pipe_node,
+                write_pid=write_side[0],
+                read_pid=read_side[0],
+            )
+        )
+
+    return pipe_connections
 
 
 def build_graph() -> Graph:
@@ -167,5 +236,21 @@ def build_graph() -> Graph:
                     target_id=pid_to_node[pid2].id,
                     rel_type="unix_domain_socket",
                 )
+
+    open_files_map = get_processes_open_files()
+    pipe_connections = discover_pipe_connections(open_files_map)
+
+    for pipe_con in pipe_connections:
+        if pipe_con.write_pid not in pid_to_node:
+            continue
+        if pipe_con.read_pid not in pid_to_node:
+            continue
+
+        edge = graph.add_edge(
+            source_id=pid_to_node[pipe_con.write_pid].id,
+            target_id=pid_to_node[pipe_con.read_pid].id,
+            rel_type='pipe'
+        )
+        edge.properties['node'] = pipe_con.node
 
     return graph

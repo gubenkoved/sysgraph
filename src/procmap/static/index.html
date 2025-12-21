@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Graph Viewer</title>
+    <title>procmap | Processes graph</title>
     <style>
       html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
       #controls { position: absolute; top: 8px; left: 8px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
@@ -80,6 +80,23 @@
       // Utilities
       const q = sel => document.querySelector(sel);
 
+      const NODE_TYPE_COLORS = {
+          'process': '#2171ad',
+        };
+
+      const EDGE_TYPE_COLORS = {
+        'unix_domain_socket': '#1f78b4',
+        'pipe': '#db2727'
+      };
+
+      function nodeColorFor(type) {
+          return NODE_TYPE_COLORS[type] || '#999';
+        }
+
+      function edgeColorFor(type) {
+        return EDGE_TYPE_COLORS[type] || '#999';
+      }
+
       async function loadData() {
         // Fetch generic graph from server
         const res = await fetch('/api/graph');
@@ -103,8 +120,20 @@
             const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
             return label + (n.type ? `\n(${n.type})` : '');
           })
-          .nodeAutoColorBy('type')
-          .linkLabel(l => l.type || '')
+          //.nodeColor(n => nodeColorFor(n.type))
+          .linkColor(l => {
+            const base = edgeColorFor(l.type);
+            const col = d3.color(base);
+            if (col) { col.opacity = 0.3; return col.toString(); }
+            return 'rgba(153,153,153,0.3)';
+          })
+          .linkLabel(l => l.type)
+          .linkDirectionalParticleColor(l => {
+            const base = edgeColorFor(l.type);
+            const col = d3.color(base);
+            if (col) { col.opacity = 0.3; return col.toString(); }
+            return 'rgba(153,153,153,0.3)';
+          })
           .linkDirectionalParticles(0)
           .nodeRelSize(6)
           // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
@@ -114,7 +143,7 @@
 
             // draw filled circle
             ctx.beginPath();
-            ctx.fillStyle = node.color || '#999';
+            ctx.fillStyle = nodeColorFor(node.type);
             ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
             ctx.fill();
 
