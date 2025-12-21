@@ -1,13 +1,15 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+import logging
 
-from procmap.discovery import discover_processes, discover_unix_sockets, discover_connected_uds
-from procmap.model import UnixDomainSocket
+from procmap.discovery import build_graph
+
+LOGGER = logging.getLogger(__name__)
 
 app = FastAPI(title="procmap API", version="0.1.0")
 
@@ -23,38 +25,22 @@ def index():
     return FileResponse(index_path)
 
 
-class BaseObjectSchema(BaseModel):
-    identity: str
+class GraphNodeSchema(BaseModel):
+    id: str
     type: str
+    properties: dict[str, Any]
 
 
-# Pydantic schemas for JSON serialization/deserialization
-class ProcessSchema(BaseObjectSchema):
-    pid: int
-    user: Optional[str] = None
-    command: Optional[str] = None
-    executable: Optional[str] = None
+class GraphEdgeSchema(BaseModel):
+    source_id: str
+    target_id: str
+    type: str
+    properties: dict[str, Any]
 
 
-class UnixDomainSocketProcRefSchema(BaseModel):
-    pid: int
-    name: Optional[str] = None
-    fd: Optional[int] = None
-
-
-class UnixDomainSocketSchema(BaseObjectSchema):
-    local_inode: int
-    peer_inode: int
-    local_path: Optional[str] = None
-    peer_path: Optional[str] = None
-    processes: List[UnixDomainSocketProcRefSchema] = []
-    state: Optional[str] = None
-    uds_type: Optional[str] = None
-
-
-class UnixDomainSocketConnectionSchema(BaseObjectSchema):
-    socket1: UnixDomainSocketSchema
-    socket2: UnixDomainSocketSchema
+class GraphSchema(BaseModel):
+    nodes: list[GraphNodeSchema]
+    edges: list[GraphEdgeSchema]
 
 
 @app.get("/api/health")
@@ -62,61 +48,30 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/api/discovery/processes", response_model=List[ProcessSchema])
-def list_processes():
-    processes = discover_processes()
+@app.get("/api/graph", response_model=GraphSchema)
+def get_graph() -> GraphSchema:
+    graph = build_graph()
+    graph_dict = graph.as_dict()
 
-    return [
-        ProcessSchema(
-            identity=p.identity(),
-            type=p.object_type(),
-            pid=p.pid,
-            user=p.user,
-            command=p.command,
-            executable=p.executable,
-        )
-        for p in processes
-    ]
+    LOGGER.info(graph_dict)
 
-
-def unix_socket_to_schema(s: UnixDomainSocket) -> UnixDomainSocketSchema:
-    return UnixDomainSocketSchema(
-        identity=s.identity(),
-        type=s.object_type(),
-        local_inode=s.local_inode,
-        peer_inode=s.peer_inode,
-        local_path=s.local_path,
-        peer_path=s.peer_path,
-        state=s.state,
-        uds_type=s.uds_type,
-        processes=[
-            UnixDomainSocketProcRefSchema(pid=r.pid, name=r.name, fd=r.fd)
-            for r in s.processes
+    return GraphSchema(
+        nodes=[
+            GraphNodeSchema(
+                id=node["id"], type=node["type"], properties=node["properties"]
+            )
+            for node in graph_dict["nodes"]
+        ],
+        edges=[
+            GraphEdgeSchema(
+                source_id=edge["source_id"],
+                target_id=edge["target_id"],
+                type=edge["type"],
+                properties=edge["properties"],
+            )
+            for edge in graph_dict["edges"]
         ],
     )
-
-
-@app.get("/api/discovery/uds", response_model=List[UnixDomainSocketSchema])
-def list_sockets():
-    uds_sockets = discover_unix_sockets()
-
-    return [unix_socket_to_schema(s) for s in uds_sockets]
-
-
-@app.get("/api/discovery/uds/connected", response_model=List[UnixDomainSocketConnectionSchema])
-def list_connected_sockets():
-    sockets = discover_unix_sockets()
-    connections = discover_connected_uds(sockets)
-
-    return [
-        UnixDomainSocketConnectionSchema(
-            identity=c.identity(),
-            type=c.object_type(),
-            socket1=unix_socket_to_schema(c.socket1),
-            socket2=unix_socket_to_schema(c.socket2),
-        )
-        for c in connections
-    ]
 
 
 # Run the app with: python -m procmap.api or `uvicorn procmap.api:app --reload`

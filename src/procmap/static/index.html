@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>procmap</title>
+    <title>Graph Viewer</title>
     <style>
       html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
       #controls { position: absolute; top: 8px; left: 8px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
@@ -15,13 +15,13 @@
   </head>
   <body>
     <div id="controls">
-      <strong>procmap</strong>
-      <div class="muted">Processes UDS visualization</div>
+      <strong>Graph Viewer</strong>
+      <div class="muted">Generic graph visualization (renders nodes and edges from <code>/api/graph</code>)</div>
       <div style="margin-top:6px">
         <button id="refreshBtn">Refresh</button>
         <button id="unlockBtn" style="margin-left:8px">Unlock nodes</button>
-        <label style="margin-left:8px"><input type="checkbox" id="showIsolated" /> Show isolated processes</label>
-        <div class="muted" style="margin-top:6px">Tip: Drag nodes to position (locked nodes outlined in <span style="color:#c62828">red</span>); <strong>Shift+click</strong> to release a fixed node.</div>
+        <label style="margin-left:8px"><input type="checkbox" checked id="showIsolated" /> Show isolated nodes</label>
+        <div class="muted" style="margin-top:6px">Tip: Drag nodes to position (locked nodes outlined in <b>black</b>); <strong>Shift+click</strong> to release a fixed node.</div>
 
         <!-- Simulation sliders -->
         <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">
@@ -59,7 +59,7 @@
 
           <div style="display:flex;align-items:center;margin-bottom:2px">
             <label style="width:110px">velocityDecay</label>
-            <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.8" step="0.01" style="flex:1" />
+            <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.99" step="0.01" style="flex:1" />
             <span id="velDecayVal" style="width:48px;text-align:right;margin-left:8px">0.80</span>
           </div>
         </div>
@@ -79,72 +79,17 @@
     <script>
       // Utilities
       const q = sel => document.querySelector(sel);
-      const formatCmd = cmd => cmd ? String(cmd) : '';
-
-      // Helper for stable node id from API identity/type (server returns `identity` and `type`)
-      const nodeKey = obj => `${obj.type}:${obj.identity}`;
 
       async function loadData() {
-        const [procs, connections] = await Promise.all([
-          fetch('/api/discovery/processes').then(r => r.json()),
-          fetch('/api/discovery/uds/connected').then(r => r.json()),
-        ]);
+        // Fetch generic graph from server
+        const res = await fetch('/api/graph');
+        if (!res.ok) throw new Error('Failed to fetch /api/graph: ' + res.status);
+        const graph = await res.json();
 
-        // Map processes by id (stable key: type:identity)
-        const nodesById = new Map();
-        const pidToId = new Map();
+        // Server format: { nodes: [{id, type, properties}], edges: [{source_id, target_id, type, properties}] }
+        const nodes = (graph.nodes || []).map(n => ({ id: n.id, type: n.type, properties: n.properties || {}, val: 1 }));
+        const links = (graph.edges || []).map(e => ({ source: e.source_id, target: e.target_id, type: e.type, properties: e.properties || {} }));
 
-        procs.forEach(p => {
-          const id = nodeKey(p);
-          pidToId.set(p.pid, id);
-          nodesById.set(id, { id, pid: p.pid, identity: p.identity, type: p.type, user: p.user, command: p.command, executable: p.executable, val: 1 });
-        });
-
-        const links = [];
-        const seen = new Set(); // dedupe directed links
-
-        // connections contain paired sockets: socket1, socket2
-        connections.forEach(conn => {
-          const s1 = conn.socket1 || {};
-          const s2 = conn.socket2 || {};
-
-          const pids1 = (s1.processes || []).map(r => r.pid).filter(Boolean);
-          const pids2 = (s2.processes || []).map(r => r.pid).filter(Boolean);
-
-          // ensure referenced processes appear even if not present in /processes
-          pids1.concat(pids2).forEach(pid => {
-            if (!pidToId.has(pid)) {
-              const id = `process:${pid}`; // fallback stable id
-              pidToId.set(pid, id);
-              if (!nodesById.has(id)) nodesById.set(id, { id, pid, identity: `pid:${pid}`, type: 'process', user: undefined, command: undefined, val: 0.5 });
-            }
-          });
-
-          // create NxM links between every process on socket1 and every process on socket2
-          for (let a = 0; a < pids1.length; a++) {
-            for (let b = 0; b < pids2.length; b++) {
-              const src = pidToId.get(pids1[a]);
-              const tgt = pidToId.get(pids2[b]);
-              if (!src || !tgt) continue;
-
-              const key1 = `${src}::${tgt}`;
-              const key2 = `${tgt}::${src}`;
-
-              // add both directions so particles can travel both ways (no explicit arrows)
-              if (!seen.has(key1)) {
-                links.push({ source: src, target: tgt, socket: conn.identity, state: s1.state, connection: conn.identity });
-                seen.add(key1);
-              }
-
-              if (!seen.has(key2)) {
-                links.push({ source: tgt, target: src, socket: conn.identity, state: s2.state, connection: conn.identity });
-                seen.add(key2);
-              }
-            }
-          }
-        });
-
-        const nodes = Array.from(nodesById.values());
         return { nodes, links };
       }
 
@@ -153,9 +98,13 @@
         (document.getElementById('graph'))
           .nodeId('id')
           .graphData({ nodes: [], links: [] })
-          .nodeLabel(n => `${n.identity + ' (' + n.type + ')'}${n.command ? '\n<br>Cmd: ' + n.command : ''}`)
-          .nodeAutoColorBy('user')
-          .linkLabel(l => `${l.socket || ''}`)
+          .nodeLabel(n => {
+            const name = n.properties && (n.properties.name || n.properties.label);
+            const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
+            return label + (n.type ? `\n(${n.type})` : '');
+          })
+          .nodeAutoColorBy('type')
+          .linkLabel(l => l.type || '')
           .linkDirectionalParticles(0)
           .nodeRelSize(6)
           // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
@@ -176,15 +125,16 @@
               const strokeWidth = Math.max(1.2, 2 / globalScale);
               ctx.save();
               ctx.lineWidth = strokeWidth;
-              ctx.strokeStyle = 'rgba(220,40,40,0.95)';
+              ctx.strokeStyle = 'rgba(0,0,0,0.95)';
               ctx.beginPath();
               ctx.arc(node.x, node.y, r + strokeWidth / 2, 0, 2 * Math.PI, false);
               ctx.stroke();
               ctx.restore();
             }
 
-            // label (use executable + PID when available, otherwise identity)
-            const label = node.executable ? `${node.executable} (${node.pid})` : (node.pid ? `${node.pid}` : (node.identity ? `${node.identity}` : `${node.id}`));
+            // generic label (use properties.name/label if available, otherwise type + id)
+            const name = node.properties && (node.properties.name || node.properties.label);
+            const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
             const fontSize = Math.max(9, 12 / globalScale);
             ctx.font = `${fontSize}px Sans-Serif`;
             ctx.fillStyle = 'rgba(0,0,0,0.75)';
@@ -333,10 +283,14 @@
       function showDetails(node) {
         const details = q('#details');
         const el = q('#detailsContent');
-        el.innerHTML = `<h3>${node.executable ? escapeHtml(node.executable) + ' (PID ' + node.pid + ')' : 'PID ' + node.pid}</h3>` +
-          `<div><strong>User</strong>: ${node.user || '<em>unknown</em>'}</div>` +
-          `<div><strong>Cmd</strong>: <code>${escapeHtml(node.command || '')}</code></div>` +
-          `<div style="margin-top:8px"><em>Click background to close</em></div>`;
+        const header = `<h3>${escapeHtml(String(node.type || 'node'))} — ${escapeHtml(String(node.id))}</h3>`;
+        const props = node.properties || {};
+        let propsHtml = '<div style="margin-top:8px"><strong>Properties</strong><ul>';
+        const keys = Object.keys(props);
+        if (keys.length === 0) propsHtml += '<li><em>none</em></li>';
+        keys.forEach(k => { propsHtml += `<li><strong>${escapeHtml(k)}</strong>: <code>${escapeHtml(JSON.stringify(props[k]))}</code></li>`; });
+        propsHtml += '</ul></div>';
+        el.innerHTML = header + propsHtml + `<div style="margin-top:8px"><em>Click background to close</em></div>`;
         details.hidden = false;
       }
 
@@ -358,7 +312,9 @@
         const existingNodesById = new Map((current.nodes || []).map(n => [n.id, n]));
         const existingLinksByKey = new Map();
         (current.links || []).forEach(l => {
-          const key = `${l.source.id}::${l.target.id}`;
+          const src = (typeof l.source === 'object') ? l.source.id : l.source;
+          const tgt = (typeof l.target === 'object') ? l.target.id : l.target;
+          const key = `${src}::${tgt}`;
           existingLinksByKey.set(key, l);
         });
 

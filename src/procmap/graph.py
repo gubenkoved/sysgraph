@@ -1,0 +1,72 @@
+from typing import Any
+
+
+NodeId = str
+
+
+class Node:
+    def __init__(self, id: NodeId, type: str):
+        self.id: NodeId = id
+        self.type: str = type
+        self.properties: dict[str, Any] = {}
+
+    def as_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "type": self.type,
+            "properties": self.properties,
+        }
+
+
+class Relationship:
+    def __init__(self, source_id: NodeId, target_id: NodeId, type: str):
+        self.source_id: NodeId = source_id
+        self.target_id: NodeId = target_id
+        self.type = type
+        self.properties: dict[str, Any] = {}
+
+    def as_dict(self) -> dict:
+        return {
+            "source_id": self.source_id,
+            "target_id": self.target_id,
+            "type": self.type,
+            "properties": self.properties,
+        }
+
+
+class Graph:
+    def __init__(self):
+        self.nodes: dict[NodeId, Node] = {}
+        self.edges: dict[NodeId, dict[NodeId, Relationship]] = {}
+
+    def add_node(self, node_id: NodeId, node_type: str) -> Node:
+        node = Node(node_id, node_type)
+        self.nodes[node_id] = node
+        return node
+
+    def add_edge(
+        self,
+        source_id: NodeId,
+        target_id: NodeId,
+        rel_type: str,
+    ) -> Relationship:
+        if source_id not in self.edges:
+            self.edges[source_id] = {}
+
+        by_source_map = self.edges[source_id]
+
+        rel = Relationship(source_id, target_id, rel_type)
+        by_source_map[target_id] = rel
+        return rel
+
+    def as_dict(self) -> dict:
+        edges = []
+
+        for source_id in self.edges:
+            for edge in self.edges[source_id].values():
+                edges.append(edge.as_dict())
+
+        return {
+            "nodes": [node.as_dict() for node in self.nodes.values()],
+            "edges": edges,
+        }
