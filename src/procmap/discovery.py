@@ -211,6 +211,8 @@ def discover_pipe_connections(
     return pipe_connections
 
 
+# TODO: add parent child relationships between processes
+# TODO: add TCP connections (support local process, external process)
 def build_graph() -> Graph:
     graph = Graph()
 
