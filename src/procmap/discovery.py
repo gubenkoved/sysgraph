@@ -12,6 +12,8 @@ from procmap.model import (
     UnixDomainSocketConnection,
     ProcessOpenFile,
     PipeConnection,
+    SocketAddress,
+    TcpConnection,
 )
 from procmap.graph import Graph, Node
 
@@ -208,6 +210,74 @@ def discover_pipe_connections(
     return pipe_connections
 
 
+def discover_tcp_connections(
+    open_files_map: dict[int, list[ProcessOpenFile]],
+) -> list[TcpConnection]:
+    tcp_connections: list[TcpConnection] = []
+
+    # 127.0.0.1:37188->127.0.0.1:58047 (ESTABLISHED)
+    connected_re = re.compile(
+        r"^(?P<local_ip>[^:]+):(?P<local_port>[0-9]+)->(?P<remote_ip>[^:]+):(?P<remote_port>[0-9]+) \((?P<state>[A-Z]+)\)$"
+    )
+    listen_re = re.compile(
+        r"^(?P<local_ip>[^:]+):(?P<local_port>[0-9]+) \((?P<state>[A-Z]+)\)$"
+    )
+
+    socket_to_pid = {}
+
+    for pid, files in open_files_map.items():
+        for file in files:
+            if file.file_type != "IPv4":
+                continue
+            # if file.inode != 'TCP':
+            #     continue
+
+            listen_match = listen_re.match(file.name)
+
+            if listen_match:
+                local_socket = SocketAddress(
+                    listen_match.group("local_ip"),
+                    int(listen_match.group("local_port")),
+                )
+                socket_to_pid[local_socket] = pid
+                continue
+
+            connected_match = connected_re.match(file.name)
+
+            if not connected_match:
+                LOGGER.warning(
+                    "unable to parse TCP connection file description: %s", file
+                )
+                continue
+
+            local_socket = SocketAddress(
+                connected_match.group("local_ip"),
+                int(connected_match.group("local_port")),
+            )
+
+            socket_to_pid[local_socket] = pid
+
+            tcp_con = TcpConnection(
+                pid,
+                local_address=local_socket,
+                remote_address=SocketAddress(
+                    connected_match.group("remote_ip"),
+                    int(connected_match.group("remote_port")),
+                ),
+                state=connected_match.group("state"),
+            )
+            tcp_connections.append(tcp_con)
+
+    # fill remote pid if there is corresponding local socket found
+    for con in tcp_connections:
+        if con.remote_address not in socket_to_pid:
+            continue
+        remote_pid = socket_to_pid[con.remote_address]
+        con.remote_pid = remote_pid
+
+    return tcp_connections
+
+
 # TODO: add TCP connections (support local process, external process)
 def build_graph() -> Graph:
     graph = Graph()
@@ -249,7 +319,9 @@ def build_graph() -> Graph:
                     rel_type="unix_domain_socket",
                 )
 
+    # capture open file descriptors
     open_files_map = get_processes_open_files()
+
     pipe_connections = discover_pipe_connections(open_files_map)
 
     for pipe_con in pipe_connections:
@@ -264,5 +336,41 @@ def build_graph() -> Graph:
             rel_type="pipe",
         )
         edge.properties["node"] = pipe_con.node
+
+    remote_socket_to_node = {}
+
+    # TODO: remodel sockets as nodes themselves to better show listening sockets
+    #  connections between processes will be trivial to show as well
+
+    tcp_connections = discover_tcp_connections(open_files_map)
+    for tcp_con in tcp_connections:
+        if tcp_con.pid not in pid_to_node:
+            continue
+
+        local_node = pid_to_node[tcp_con.pid]
+
+        if tcp_con.remote_pid:
+            if tcp_con.remote_pid not in pid_to_node:
+                continue
+            remote_node = pid_to_node[tcp_con.remote_pid]
+        else:
+            # remote pid unknown
+            if tcp_con.remote_address not in remote_socket_to_node:
+                remote_socket_node = graph.add_node(
+                    f"remote::{tcp_con.remote_address}", "remote_socket"
+                )
+                remote_socket_node.properties["label"] = (
+                    f"{tcp_con.remote_address.ip}:{tcp_con.remote_address.port}"
+                )
+                remote_socket_to_node[tcp_con.remote_address] = (
+                    remote_socket_node
+                )
+            remote_node = remote_socket_to_node[tcp_con.remote_address]
+
+        _ = graph.add_edge(
+            local_node.id,
+            remote_node.id,
+            "tcp_connection",
+        )
 
     return graph

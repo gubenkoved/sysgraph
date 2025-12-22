@@ -17,9 +17,16 @@ class ProcessOpenFile:
     def __init__(self, fd: int, file_type: str, inode: int, name: str):
         self.fd: int = fd
         self.file_type: str = file_type
+        # TODO: use node as in lsof, and allow it to be string (e.g. for TCP)
         self.inode: int = inode
         self.name: str = name
         self.mode: str | None = None
+
+    def __repr__(self) -> str:
+        return (
+            f"ProcessOpenFile(fd={self.fd}, type={self.file_type}, "
+            f"inode={self.inode}, name={self.name}, mode={self.mode})"
+        )
 
 
 class UnixDomainSocketProcRef:
@@ -77,10 +84,28 @@ class SocketAddress:
         self.ip = ip
         self.port = port
 
+    def __hash__(self):
+        return hash(self.ip) ^ hash(self.port)
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, SocketAddress):
+            raise NotImplementedError
+        return self.ip == value.ip and self.port == value.port
+
+    def __repr__(self):
+        return f"SocketAddress({self.ip}, {self.port})"
+
 
 class TcpConnection:
     def __init__(
-        self, local_address: SocketAddress, remote_address: SocketAddress
+        self,
+        pid: int,
+        local_address: SocketAddress,
+        remote_address: SocketAddress,
+        state: str | None = None,
     ) -> None:
-        self.local_address = local_address
-        self.remote_address = remote_address
+        self.pid: int = pid
+        self.local_address: SocketAddress = local_address
+        self.remote_address: SocketAddress = remote_address
+        self.state: str | None = state
+        self.remote_pid: int | None = None

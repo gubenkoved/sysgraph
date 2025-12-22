@@ -28,6 +28,11 @@ def main():
     # for pipe in pipe_connections:
     #     LOGGER.info(pipe)
 
+    tcp_conn = discovery.discover_tcp_connections(open_files)
+
+    for tcp_con in tcp_conn:
+        LOGGER.info(tcp_con)
+
     LOGGER.info("done")
 
 
