@@ -1,6 +1,7 @@
 class Process:
     def __init__(self, pid: int):
         self.pid = pid
+        self.parent_pid: int | None = None
         self.user: str | None = None
         self.command: str | None = None
         self.name: str | None = None
@@ -65,5 +66,21 @@ class PipeConnection:
         self.read_open_file: ProcessOpenFile | None = None
 
 
+class LocalInterface:
+    def __init__(self, name: str, address: str):
+        self.name = name
+        self.address = address
+
+
+class SocketAddress:
+    def __init__(self, ip: str, port: int):
+        self.ip = ip
+        self.port = port
+
+
 class TcpConnection:
-    pass
+    def __init__(
+        self, local_address: SocketAddress, remote_address: SocketAddress
+    ) -> None:
+        self.local_address = local_address
+        self.remote_address = remote_address

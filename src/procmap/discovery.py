@@ -26,6 +26,7 @@ def discover_processes() -> list[Process]:
     # include 'name' so we can expose the executable name (e.g. 'python', 'bash')
     for proc in psutil.process_iter(["pid", "username", "cmdline", "name"]):
         p = Process(pid=proc.info["pid"])
+        p.parent_pid = proc.ppid()
         p.user = proc.info["username"]
         p.command = (
             " ".join(proc.info["cmdline"]) if proc.info["cmdline"] else None
@@ -138,49 +139,43 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
 
     result_map: dict[int, list[ProcessOpenFile]] = defaultdict(list)
 
-    fd_re = re.compile('^(?P<fd>[0-9]+)(?P<mode>r|w|u)?$')
+    fd_re = re.compile("^(?P<fd>[0-9]+)(?P<mode>r|w|u)?$")
 
     for record in parsed:
         try:
-            pid = int(record['pid'])
-            fd_match = fd_re.match(record['fd'])
+            pid = int(record["pid"])
+            fd_match = fd_re.match(record["fd"])
 
             if fd_match is None:
                 continue
 
-            fd = int(fd_match.group('fd'))
-            mode = fd_match.group('mode')
+            fd = int(fd_match.group("fd"))
+            mode = fd_match.group("mode")
 
-            node = record['node']
-            type = record['type']
-            name = record['name']
+            node = record["node"]
+            type = record["type"]
+            name = record["name"]
 
-            obj = ProcessOpenFile(
-                fd,
-                type,
-                node,
-                name
-            )
+            obj = ProcessOpenFile(fd, type, node, name)
             obj.mode = mode
 
             result_map[pid].append(obj)
         except Exception as err:
-            LOGGER.warning('error processing lsof record: %s, skip', err)
-
+            LOGGER.warning("error processing lsof record: %s, skip", err)
 
     return result_map
 
 
 def discover_pipe_connections(
-        open_files_map: dict[int, list[ProcessOpenFile]],
-    ) -> list[PipeConnection]:
-
-
-    node_to_processes: dict[int, list[tuple[int, ProcessOpenFile]]] = defaultdict(list)
+    open_files_map: dict[int, list[ProcessOpenFile]],
+) -> list[PipeConnection]:
+    node_to_processes: dict[int, list[tuple[int, ProcessOpenFile]]] = (
+        defaultdict(list)
+    )
 
     for pid, files in open_files_map.items():
         for f in files:
-            if f.file_type != 'FIFO':
+            if f.file_type != "FIFO":
                 continue
             node_to_processes[f.inode].append((pid, f))
 
@@ -188,17 +183,19 @@ def discover_pipe_connections(
 
     for pipe_node, processes in node_to_processes.items():
         if len(processes) != 2:
-            LOGGER.warning('ignore strange pipe with %d processes', len(processes))
+            LOGGER.warning(
+                "ignore strange pipe with %d processes", len(processes)
+            )
             continue
         write_side = None
         read_side = None
         for pid, proc_file in processes:
-            if proc_file.mode == 'w':
+            if proc_file.mode == "w":
                 write_side = pid, proc_file
-            elif proc_file.mode == 'r':
+            elif proc_file.mode == "r":
                 read_side = pid, proc_file
         if read_side is None or write_side is None:
-            LOGGER.warning('unable to detect read/write sides, skip')
+            LOGGER.warning("unable to detect read/write sides, skip")
             continue
         pipe_connections.append(
             PipeConnection(
@@ -211,14 +208,14 @@ def discover_pipe_connections(
     return pipe_connections
 
 
-# TODO: add parent child relationships between processes
 # TODO: add TCP connections (support local process, external process)
 def build_graph() -> Graph:
     graph = Graph()
 
     pid_to_node: dict[int, Node] = {}
 
-    for proc in discover_processes():
+    processes = discover_processes()
+    for proc in processes:
         proc_node_id = f"process::{proc.pid}"
         node = graph.add_node(proc_node_id, "process")
         node.properties["pid"] = proc.pid
@@ -226,6 +223,19 @@ def build_graph() -> Graph:
         node.properties["user"] = proc.user
         node.properties["name"] = proc.name
         pid_to_node[proc.pid] = node
+
+    # add parent-child relationships
+    for proc in processes:
+        proc_node = pid_to_node[proc.pid]
+        parent_proc_node = None
+        if proc.parent_pid is not None:
+            parent_proc_node = pid_to_node.get(proc.parent_pid)
+        if parent_proc_node is not None:
+            edge = graph.add_edge(
+                source_id=parent_proc_node.id,
+                target_id=proc_node.id,
+                rel_type="child_process",
+            )
 
     uds = discover_unix_sockets()
     for con in discover_connected_uds(uds):
@@ -251,8 +261,8 @@ def build_graph() -> Graph:
         edge = graph.add_edge(
             source_id=pid_to_node[pipe_con.write_pid].id,
             target_id=pid_to_node[pipe_con.read_pid].id,
-            rel_type='pipe'
+            rel_type="pipe",
         )
-        edge.properties['node'] = pipe_con.node
+        edge.properties["node"] = pipe_con.node
 
     return graph
