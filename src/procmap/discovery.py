@@ -4,6 +4,7 @@ import subprocess
 
 import psutil
 from collections import defaultdict
+from socket import AddressFamily
 
 from procmap.model import (
     Process,
@@ -13,7 +14,7 @@ from procmap.model import (
     ProcessOpenFile,
     PipeConnection,
     SocketAddress,
-    TcpConnection,
+    NetConnection,
 )
 from procmap.graph import Graph, Node
 
@@ -210,72 +211,22 @@ def discover_pipe_connections(
     return pipe_connections
 
 
-def discover_tcp_connections(
-    open_files_map: dict[int, list[ProcessOpenFile]],
-) -> list[TcpConnection]:
-    tcp_connections: list[TcpConnection] = []
-
-    # 127.0.0.1:37188->127.0.0.1:58047 (ESTABLISHED)
-    connected_re = re.compile(
-        r"^(?P<local_ip>[^:]+):(?P<local_port>[0-9]+)->(?P<remote_ip>[^:]+):(?P<remote_port>[0-9]+) \((?P<state>[A-Z]+)\)$"
-    )
-    listen_re = re.compile(
-        r"^(?P<local_ip>[^:]+):(?P<local_port>[0-9]+) \((?P<state>[A-Z]+)\)$"
-    )
-
-    socket_to_pid = {}
-
-    for pid, files in open_files_map.items():
-        for file in files:
-            if file.file_type != "IPv4":
-                continue
-            # if file.inode != 'TCP':
-            #     continue
-
-            listen_match = listen_re.match(file.name)
-
-            if listen_match:
-                local_socket = SocketAddress(
-                    listen_match.group("local_ip"),
-                    int(listen_match.group("local_port")),
-                )
-                socket_to_pid[local_socket] = pid
-                continue
-
-            connected_match = connected_re.match(file.name)
-
-            if not connected_match:
-                LOGGER.warning(
-                    "unable to parse TCP connection file description: %s", file
-                )
-                continue
-
-            local_socket = SocketAddress(
-                connected_match.group("local_ip"),
-                int(connected_match.group("local_port")),
-            )
-
-            socket_to_pid[local_socket] = pid
-
-            tcp_con = TcpConnection(
-                pid,
-                local_address=local_socket,
-                remote_address=SocketAddress(
-                    connected_match.group("remote_ip"),
-                    int(connected_match.group("remote_port")),
-                ),
-                state=connected_match.group("state"),
-            )
-            tcp_connections.append(tcp_con)
-
-    # fill remote pid if there is corresponding local socket found
-    for con in tcp_connections:
-        if con.remote_address not in socket_to_pid:
+def get_net_connections(pid: int) -> list[NetConnection]:
+    proc = psutil.Process(pid)
+    connections: list[NetConnection] = []
+    for pcon in proc.net_connections(kind="all"):
+        if pcon.family not in (AddressFamily.AF_INET, AddressFamily.AF_INET6):
             continue
-        remote_pid = socket_to_pid[con.remote_address]
-        con.remote_pid = remote_pid
-
-    return tcp_connections
+        connections.append(
+            NetConnection(
+                pid=pid,
+                local_address=SocketAddress(pcon.laddr.ip, pcon.laddr.port),
+                remote_address=SocketAddress(pcon.raddr.ip, pcon.raddr.port) if pcon.raddr else None,
+                socket_type=pcon.type.name,
+                state=pcon.status,
+            )
+        )
+    return connections
 
 
 # TODO: add TCP connections (support local process, external process)
@@ -322,6 +273,7 @@ def build_graph() -> Graph:
     # capture open file descriptors
     open_files_map = get_processes_open_files()
 
+    # TODO: rewrite this thing -- it is too clumsy and too slow
     pipe_connections = discover_pipe_connections(open_files_map)
 
     for pipe_con in pipe_connections:
@@ -337,40 +289,62 @@ def build_graph() -> Graph:
         )
         edge.properties["node"] = pipe_con.node
 
-    remote_socket_to_node = {}
+    socket_to_process: dict[tuple[SocketAddress, str], int] = {}
+    socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
 
-    # TODO: remodel sockets as nodes themselves to better show listening sockets
-    #  connections between processes will be trivial to show as well
+    def ensure_socket(address, socket_type, state: str):
+        key = (address, socket_type)
+        if key in socket_to_node:
+            return socket_to_node[key]
+        socket_node_id = f'socket::{address}::{socket_type}'
+        socket_node = graph.add_node(socket_node_id, 'socket')
+        socket_node.properties['label'] = f'{address.ip}:{address.port} ({socket_type})'
+        socket_node.properties['state'] = state
+        socket_to_node[key] = socket_node
+        return socket_node
 
-    tcp_connections = discover_tcp_connections(open_files_map)
-    for tcp_con in tcp_connections:
-        if tcp_con.pid not in pid_to_node:
-            continue
+    connected_sockets = set()
 
-        local_node = pid_to_node[tcp_con.pid]
+    def ensure_sockets_connected(socket1: Node, socket2: Node):
+        key = tuple(sorted([socket1.id, socket2.id]))
+        if key in connected_sockets:
+            return
+        connected_sockets.add(key)
+        # TODO: how to indicate it is NOT directional?
+        graph.add_edge(socket1.id, socket2.id, 'socket_connection')
 
-        if tcp_con.remote_pid:
-            if tcp_con.remote_pid not in pid_to_node:
-                continue
-            remote_node = pid_to_node[tcp_con.remote_pid]
-        else:
-            # remote pid unknown
-            if tcp_con.remote_address not in remote_socket_to_node:
-                remote_socket_node = graph.add_node(
-                    f"remote::{tcp_con.remote_address}", "remote_socket"
+    for proc in processes:
+        try:
+            net_connections = get_net_connections(proc.pid)
+            proc_node = pid_to_node[proc.pid]
+
+            for net_con in net_connections:
+                socket_id = (net_con.local_address, net_con.socket_type)
+                socket_to_process[socket_id] = proc.pid
+
+                # add sockets to graph
+                local_socket = ensure_socket(
+                    net_con.local_address,
+                    net_con.socket_type,
+                    net_con.state,
                 )
-                remote_socket_node.properties["label"] = (
-                    f"{tcp_con.remote_address.ip}:{tcp_con.remote_address.port}"
-                )
-                remote_socket_to_node[tcp_con.remote_address] = (
-                    remote_socket_node
-                )
-            remote_node = remote_socket_to_node[tcp_con.remote_address]
 
-        _ = graph.add_edge(
-            local_node.id,
-            remote_node.id,
-            "tcp_connection",
-        )
+                # process connection
+                graph.add_edge(
+                    source_id=proc_node.id,
+                    target_id=local_socket.id,
+                    rel_type="socket",
+                )
+
+                if net_con.remote_address:
+                    remote_socket = ensure_socket(
+                        net_con.remote_address,
+                        net_con.socket_type,
+                        net_con.state
+                    )
+                    ensure_sockets_connected(local_socket, remote_socket)
+        except Exception as err:
+            LOGGER.warning('error processing connections for PID %d: %s', proc.pid, err)
+
 
     return graph

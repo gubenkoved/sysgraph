@@ -81,21 +81,23 @@
       const q = sel => document.querySelector(sel);
 
       const NODE_TYPE_COLORS = {
-          'process': '#2171ad',
-          'remote_socket': '#e35f44',
+          'process': '#2171ad',  // blue
+          'socket': '#e35f44',  // red
         };
 
       const EDGE_TYPE_COLORS = {
-        'unix_domain_socket': '#1f78b4',
-        'pipe': '#db2727',
-        'tcp_connection': '#e35f44',
+        'unix_domain_socket': '#1f78b4', // blue
+        'pipe': '#9e1dde',  // magenta
+        'socket_connection': '#e35f44',  // red
       };
 
-      function nodeColorFor(type) {
+      function nodeColorFor(node) {
+          const type = node.type;
           return NODE_TYPE_COLORS[type] || '#999';
         }
 
-      function edgeColorFor(type) {
+      function edgeColorFor(edge) {
+        const type = edge.type;
         return EDGE_TYPE_COLORS[type] || '#999';
       }
 
@@ -122,16 +124,15 @@
             const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
             return label + (n.type ? `\n(${n.type})` : '');
           })
-          //.nodeColor(n => nodeColorFor(n.type))
           .linkColor(l => {
-            const base = edgeColorFor(l.type);
+            const base = edgeColorFor(l);
             const col = d3.color(base);
             if (col) { col.opacity = 0.3; return col.toString(); }
             return 'rgba(153,153,153,0.3)';
           })
           .linkLabel(l => l.type)
           .linkDirectionalParticleColor(l => {
-            const base = edgeColorFor(l.type);
+            const base = edgeColorFor(l);
             const col = d3.color(base);
             if (col) { col.opacity = 0.3; return col.toString(); }
             return 'rgba(153,153,153,0.3)';
@@ -146,7 +147,7 @@
 
             // draw filled circle
             ctx.beginPath();
-            ctx.fillStyle = nodeColorFor(node.type);
+            ctx.fillStyle = nodeColorFor(node);
             ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
             ctx.fill();
 

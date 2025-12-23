@@ -96,16 +96,23 @@ class SocketAddress:
         return f"SocketAddress({self.ip}, {self.port})"
 
 
-class TcpConnection:
+# NOTE: models LISTEN sockets as well
+class NetConnection:
     def __init__(
         self,
         pid: int,
         local_address: SocketAddress,
-        remote_address: SocketAddress,
-        state: str | None = None,
+        remote_address: SocketAddress | None,
+        socket_type: str,
+        state: str,
     ) -> None:
         self.pid: int = pid
         self.local_address: SocketAddress = local_address
-        self.remote_address: SocketAddress = remote_address
-        self.state: str | None = state
-        self.remote_pid: int | None = None
+        self.remote_address: SocketAddress | None = remote_address
+        self.socket_type: str = socket_type
+        self.state: str = state
+
+    def connection_id(self) -> str:
+        if not self.remote_address:
+            return f"{self.socket_type}::{self.local_address.ip}:{self.local_address.port}"
+        return f"{self.socket_type}::{self.local_address.ip}:{self.local_address.port}::{self.remote_address.ip}:{self.remote_address.port}"
