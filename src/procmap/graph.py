@@ -5,10 +5,15 @@ NodeId = str
 
 
 class Node:
-    def __init__(self, id: NodeId, type: str):
+    def __init__(
+        self,
+        id: NodeId,
+        type: str,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
         self.id: NodeId = id
         self.type: str = type
-        self.properties: dict[str, Any] = {}
+        self.properties: dict[str, Any] = properties or {}
 
     def as_dict(self) -> dict:
         return {
@@ -19,11 +24,17 @@ class Node:
 
 
 class Relationship:
-    def __init__(self, source_id: NodeId, target_id: NodeId, type: str):
+    def __init__(
+        self,
+        source_id: NodeId,
+        target_id: NodeId,
+        type: str,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
         self.source_id: NodeId = source_id
         self.target_id: NodeId = target_id
         self.type = type
-        self.properties: dict[str, Any] = {}
+        self.properties: dict[str, Any] = properties or {}
 
     def as_dict(self) -> dict:
         return {
@@ -39,8 +50,13 @@ class Graph:
         self.nodes: dict[NodeId, Node] = {}
         self.edges: dict[NodeId, dict[NodeId, Relationship]] = {}
 
-    def add_node(self, node_id: NodeId, node_type: str) -> Node:
-        node = Node(node_id, node_type)
+    def add_node(
+        self,
+        node_id: NodeId,
+        node_type: str,
+        properties: dict[str, Any] | None = None,
+    ) -> Node:
+        node = Node(node_id, node_type, properties)
         self.nodes[node_id] = node
         return node
 
@@ -49,13 +65,14 @@ class Graph:
         source_id: NodeId,
         target_id: NodeId,
         rel_type: str,
+        properties: dict[str, Any] | None = None,
     ) -> Relationship:
         if source_id not in self.edges:
             self.edges[source_id] = {}
 
         by_source_map = self.edges[source_id]
 
-        rel = Relationship(source_id, target_id, rel_type)
+        rel = Relationship(source_id, target_id, rel_type, properties)
         by_source_map[target_id] = rel
         return rel
 

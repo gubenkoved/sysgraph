@@ -6,59 +6,70 @@
     <title>procmap | Processes graph</title>
     <style>
       html, body { height: 100%; margin: 0; font-family: 'Ubuntu', 'Segoe UI', 'Arial'; }
+      button { font-family: 'Ubuntu', 'Segoe UI', 'Arial'; }
       #controls { position: absolute; top: 8px; left: 8px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
       #graph { width: 100%; height: 100%; }
       #details { position: absolute; right: 8px; top: 8px; z-index: 10; width: 320px; max-height: 60vh; overflow:auto; background: rgba(255,255,255,0.95); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
-      .muted { color: #666; font-size: 0.9em }
+      .muted { color: #666; }
       button { padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; cursor: pointer }
+      .control-slider-container { display:flex; align-items:center; margin-bottom:2px }
+      .control-slider-label { width:48px; text-align:right; margin-left:8px;}
+      hr { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 6px 0; }
     </style>
   </head>
   <body>
     <div id="controls">
-      <div style="margin-top:6px">
+      <div style="margin-top:6px; font-size:12px;">
         <button id="refreshBtn">Refresh</button>
         <button id="unlockBtn" style="margin-left:8px">Unlock nodes</button>
         <label style="margin-left:8px"><input type="checkbox" checked id="showIsolated" /> Show isolated nodes</label>
-        <div class="muted" style="margin-top:6px">Tip: Drag nodes to position (locked nodes outlined in <b>black</b>); <strong>Shift+click</strong> to release a fixed node.</div>
+        <div class="muted" style="margin-top:6px">TIP: Drag nodes to position (locked nodes outlined in <b>black</b>); <strong>Shift+click</strong> to release a fixed node.</div>
 
+        <hr />
         <!-- Simulation sliders -->
-        <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">
-          <div style="font-weight:700;margin-bottom:6px">Simulation</div>
-
-          <div style="display:flex;align-items:center;margin-bottom:6px">
+        <div>
+          <div class="control-slider-container">
             <label style="width:110px">charge</label>
             <input id="chargeRange" type="range" min="-800" max="-50" value="-450" step="10" style="flex:1" />
-            <span id="chargeVal" style="width:48px;text-align:right;margin-left:8px">-450</span>
+            <span id="chargeVal" class="control-slider-label">-450</span>
           </div>
 
-          <div style="display:flex;align-items:center;margin-bottom:6px">
+          <div class="control-slider-container">
             <label style="width:110px">link dist</label>
             <input id="linkDistRange" type="range" min="40" max="300" value="140" step="5" style="flex:1" />
-            <span id="linkDistVal" style="width:48px;text-align:right;margin-left:8px">140</span>
+            <span id="linkDistVal" class="control-slider-label">140</span>
           </div>
 
-          <div style="display:flex;align-items:center;margin-bottom:6px">
+          <div class="control-slider-container">
             <label style="width:110px">link strength</label>
             <input id="linkStrengthRange" type="range" min="0" max="1" value="0.8" step="0.01" style="flex:1" />
-            <span id="linkStrVal" style="width:48px;text-align:right;margin-left:8px">0.80</span>
+            <span id="linkStrVal" class="control-slider-label">0.80</span>
           </div>
 
-          <div style="display:flex;align-items:center;margin-bottom:6px">
+          <div class="control-slider-container">
             <label style="width:110px">collision ×</label>
             <input id="collisionMulRange" type="range" min="0.5" max="2" value="1" step="0.05" style="flex:1" />
-            <span id="collMulVal" style="width:48px;text-align:right;margin-left:8px">1.00</span>
+            <span id="collMulVal" class="control-slider-label">1.00</span>
           </div>
 
-          <div style="display:flex;align-items:center;margin-bottom:6px">
+          <div class="control-slider-container">
             <label style="width:110px">alpha target</label>
             <input id="alphaTargetRange" type="range" min="0" max="0.5" value="0" step="0.01" style="flex:1" />
-            <span id="alphaTVal" style="width:48px;text-align:right;margin-left:8px">0.00</span>
+            <span id="alphaTVal" class="control-slider-label">0.00</span>
           </div>
 
-          <div style="display:flex;align-items:center;margin-bottom:2px">
+          <div class="control-slider-container">
             <label style="width:110px">velocityDecay</label>
             <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.99" step="0.01" style="flex:1" />
-            <span id="velDecayVal" style="width:48px;text-align:right;margin-left:8px">0.80</span>
+            <span id="velDecayVal" class="control-slider-label">0.80</span>
+          </div>
+
+          <hr />
+
+          <div class="control-slider-container">
+            <label style="width:110px">links opacity</label>
+            <input id="linkOpacityRange" type="range" min="0.01" max="0.99" value="0.50" step="0.01" style="flex:1" />
+            <span id="linkOpacityVal" style="width:48px;text-align:right;margin-left:8px">0.50</span>
           </div>
         </div>
       </div>
@@ -87,6 +98,11 @@
         'unix_domain_socket': '#1f78b4', // blue
         'pipe': '#9e1dde',  // magenta
         'socket_connection': '#e35f44',  // red
+      };
+
+      // global settings (mutable by UI)
+      settings = {
+        linkOpacity: 0.8,
       };
 
       function nodeColorFor(node) {
@@ -125,15 +141,15 @@
           .linkColor(l => {
             const base = edgeColorFor(l);
             const col = d3.color(base);
-            if (col) { col.opacity = 0.3; return col.toString(); }
-            return 'rgba(153,153,153,0.3)';
+            col.opacity = settings.linkOpacity;
+            return col.toString();
           })
           .linkLabel(l => l.type)
           .linkDirectionalParticleColor(l => {
             const base = edgeColorFor(l);
             const col = d3.color(base);
-            if (col) { col.opacity = 0.3; return col.toString(); }
-            return 'rgba(153,153,153,0.3)';
+            col.opacity = settings.linkOpacity;
+            return col.toString();
           })
           .linkDirectionalParticles(0)
           .linkDirectionalArrowLength(link => {
@@ -228,11 +244,12 @@
           position: 'fixed',
           right: '10px',
           bottom: '10px',
-          background: 'rgba(34,34,34,0.92)',
-          color: '#e8e8e8',
+          background: 'rgba(255,255,255,0.70)',
+          border: '1px solid rgba(0,0,0,0.10)',
+          color: 'rgba(0,0,0,0.80)',
           padding: '8px 10px',
-          borderRadius: '6px',
-          fontFamily: 'Menlo, Monaco, monospace',
+          borderRadius: '3px',
+          fontFamily: '"Ubuntu Mono", monospace',
           fontSize: '12px',
           lineHeight: '1.25',
           zIndex: 9999,
@@ -265,42 +282,8 @@
           const nodes = (data.nodes || []).length;
           const links = (data.links || []).length;
 
-          const alpha = (Graph.d3Alpha ? Graph.d3Alpha() : '-');
-          const alphaTarget = (Graph.d3AlphaTarget ? Graph.d3AlphaTarget() : '-');
-          const velocityDecay = (Graph.d3VelocityDecay ? Graph.d3VelocityDecay() : (Graph.d3Force ? (Graph.d3Force().velocityDecay ? Graph.d3Force().velocityDecay() : '-') : '-'));
-
-          // force specifics
-          const charge = Graph.d3Force('charge');
-          let chargeStr = '-';
-          if (charge) {
-            try { chargeStr = safeCall(() => charge.strength()); } catch (e) { chargeStr = '-'; }
-          }
-
-          const link = Graph.d3Force('link');
-          let linkDist = '-';
-          let linkStrength = '-';
-          if (link) {
-            try { const d = link.distance(); linkDist = typeof d === 'function' ? 'fn' : d; } catch (e) { linkDist = '-'; }
-            try { const s = link.strength(); linkStrength = typeof s === 'function' ? 'fn' : s; } catch (e) { linkStrength = '-'; }
-          }
-
-          const collision = Graph.d3Force('collision');
-          let collR = '-';
-          if (collision) {
-            try {
-              const r = collision.radius();
-              collR = typeof r === 'function' ? (function(){ try { return r({ val: 1 }); } catch(e){ return 'fn'; } })() : r;
-            } catch (e) { collR = '-'; }
-          }
-
           overlay.innerHTML = `
             <div>nodes: <strong>${nodes}</strong>, links: <strong>${links}</strong></div>
-            <div style="margin-top:6px">alpha: <strong>${fmtNum(alpha, 4)}</strong></div>
-            <div>alphaTarget: <strong>${fmtNum(alphaTarget, 4)}</strong></div>
-            <div>velocityDecay: <strong>${fmtNum(velocityDecay, 4)}</strong></div>
-            <div style="margin-top:6px">charge.strength: <strong>${chargeStr}</strong></div>
-            <div>link.distance: <strong>${fmtNum(linkDist, 2)}</strong> · link.strength: <strong>${fmtNum(linkStrength, 2)}</strong></div>
-            <div>collision.radius(1): <strong>${fmtNum(collR, 2)}</strong></div>
           `;
         }
 
@@ -323,14 +306,14 @@
       function showDetails(node) {
         const details = q('#details');
         const el = q('#detailsContent');
-        const header = `<h3>${escapeHtml(String(node.type || 'node'))} — ${escapeHtml(String(node.id))}</h3>`;
+        const header = `<strong>${node.id} (${node.type})</strong>`;
         const props = node.properties || {};
-        let propsHtml = '<div style="margin-top:8px"><strong>Properties</strong><ul>';
+        let propsHtml = '<div style="margin-top:2px"><strong>Properties</strong><ul>';
         const keys = Object.keys(props);
         if (keys.length === 0) propsHtml += '<li><em>none</em></li>';
         keys.forEach(k => { propsHtml += `<li><strong>${escapeHtml(k)}</strong>: <code>${escapeHtml(JSON.stringify(props[k]))}</code></li>`; });
         propsHtml += '</ul></div>';
-        el.innerHTML = header + propsHtml + `<div style="margin-top:8px"><em>Click background to close</em></div>`;
+        el.innerHTML = header + propsHtml;
         details.hidden = false;
       }
 
@@ -432,7 +415,9 @@
           alphaT: q('#alphaTargetRange'),
           alphaTVal: q('#alphaTVal'),
           velDecay: q('#velDecayRange'),
-          velDecayVal: q('#velDecayVal')
+          velDecayVal: q('#velDecayVal'),
+          linkOpacity: q('#linkOpacityRange'),
+          linkOpacityVal: q('#linkOpacityVal'),
         };
 
         function fmt(v, digits=2){ return (typeof v === 'number') ? Number(v).toFixed(digits) : String(v); }
@@ -470,6 +455,10 @@
             setTimeout(() => { if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(0); }, 600);
           }
 
+          // link opacity
+          const linkOpacity = Number(elems.linkOpacity.value);
+          settings.linkOpacity = linkOpacity;
+
           // update visual readouts
           elems.chargeVal.textContent = String(charge);
           elems.linkDistVal.textContent = String(linkDist);
@@ -477,6 +466,7 @@
           elems.collMulVal.textContent = fmt(collMul,2);
           elems.alphaTVal.textContent = fmt(alphaTarget,2);
           elems.velDecayVal.textContent = fmt(velDecay,2);
+          elems.linkOpacityVal.textContent = fmt(linkOpacity,2);
         }
 
         // attach handlers

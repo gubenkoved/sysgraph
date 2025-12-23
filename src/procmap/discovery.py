@@ -240,11 +240,12 @@ def build_graph() -> Graph:
     processes = discover_processes()
     for proc in processes:
         proc_node_id = f"process::{proc.pid}"
-        node = graph.add_node(proc_node_id, "process")
-        node.properties["pid"] = proc.pid
-        node.properties["command"] = proc.command
-        node.properties["user"] = proc.user
-        node.properties["name"] = proc.name
+        node = graph.add_node(proc_node_id, "process", properties={
+            "pid": proc.pid,
+            "command": proc.command,
+            "user": proc.user,
+            "name": proc.name,
+        })
         pid_to_node[proc.pid] = node
 
     # add parent-child relationships
@@ -254,7 +255,7 @@ def build_graph() -> Graph:
         if proc.parent_pid is not None:
             parent_proc_node = pid_to_node.get(proc.parent_pid)
         if parent_proc_node is not None:
-            edge = graph.add_edge(
+            _ = graph.add_edge(
                 source_id=parent_proc_node.id,
                 target_id=proc_node.id,
                 rel_type="child_process",
@@ -284,12 +285,14 @@ def build_graph() -> Graph:
         if pipe_con.read_pid not in pid_to_node:
             continue
 
-        edge = graph.add_edge(
+        _ = graph.add_edge(
             source_id=pid_to_node[pipe_con.write_pid].id,
             target_id=pid_to_node[pipe_con.read_pid].id,
             rel_type="pipe",
+            properties={
+                "node": pipe_con.node,
+            }
         )
-        edge.properties["node"] = pipe_con.node
 
     socket_to_process: dict[tuple[SocketAddress, str], int] = {}
     socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
@@ -324,9 +327,10 @@ def build_graph() -> Graph:
         if key in connected_sockets:
             return
         connected_sockets.add(key)
-        edge = graph.add_edge(socket1.id, socket2.id, "socket_connection")
-        edge.properties["directional"] = False
-        edge.properties["dashed"] = True
+        _ = graph.add_edge(socket1.id, socket2.id, "socket_connection",{
+            "directional": False,
+            "dashed": True,
+        })
 
     for proc in processes:
         try:
