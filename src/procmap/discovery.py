@@ -271,6 +271,9 @@ def build_graph() -> Graph:
                     source_id=pid_to_node[pid1].id,
                     target_id=pid_to_node[pid2].id,
                     rel_type="unix_domain_socket",
+                    properties={
+                        "directional": False,
+                    }
                 )
 
     # capture open file descriptors
