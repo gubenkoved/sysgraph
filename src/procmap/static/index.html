@@ -136,7 +136,18 @@
             return 'rgba(153,153,153,0.3)';
           })
           .linkDirectionalParticles(0)
-          .linkDirectionalArrowLength(6)
+          .linkDirectionalArrowLength(link => {
+            if (link.properties && link.properties.directional === false) {
+              return 0;
+            }
+            return 6;
+          })
+          .linkLineDash(link => {
+            if (link.properties && link.properties.dashed === true) {
+              return [4,4];
+            }
+            return null;
+          })
           .nodeRelSize(6)
           // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
           .nodeCanvasObject((node, ctx, globalScale) => {

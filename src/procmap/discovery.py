@@ -324,8 +324,9 @@ def build_graph() -> Graph:
         if key in connected_sockets:
             return
         connected_sockets.add(key)
-        # TODO: how to indicate it is NOT directional?
-        graph.add_edge(socket1.id, socket2.id, "socket_connection")
+        edge = graph.add_edge(socket1.id, socket2.id, "socket_connection")
+        edge.properties["directional"] = False
+        edge.properties["dashed"] = True
 
     for proc in processes:
         try:
