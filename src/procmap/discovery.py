@@ -221,7 +221,9 @@ def get_net_connections(pid: int) -> list[NetConnection]:
             NetConnection(
                 pid=pid,
                 local_address=SocketAddress(pcon.laddr.ip, pcon.laddr.port),
-                remote_address=SocketAddress(pcon.raddr.ip, pcon.raddr.port) if pcon.raddr else None,
+                remote_address=SocketAddress(pcon.raddr.ip, pcon.raddr.port)
+                if pcon.raddr
+                else None,
                 socket_type=pcon.type.name,
                 state=pcon.status,
             )
@@ -296,10 +298,22 @@ def build_graph() -> Graph:
         key = (address, socket_type)
         if key in socket_to_node:
             return socket_to_node[key]
-        socket_node_id = f'socket::{address}::{socket_type}'
-        socket_node = graph.add_node(socket_node_id, 'socket')
-        socket_node.properties['label'] = f'{address.ip}:{address.port} ({socket_type})'
-        socket_node.properties['state'] = state
+        socket_node_id = f"socket::{address}::{socket_type}"
+        socket_node = graph.add_node(socket_node_id, "socket")
+
+        simple_socket_type = {
+            "SOCK_DGRAM": "UDP",
+            "SOCK_STREAM": "TCP",
+        }
+
+        simple_type = simple_socket_type.get(socket_type, socket_type)
+
+        socket_node.properties["label"] = (
+            f"{address.ip}:{address.port} ({simple_type})"
+        )
+        socket_node.properties["state"] = state
+        socket_node.properties["socket_type"] = socket_type
+
         socket_to_node[key] = socket_node
         return socket_node
 
@@ -311,7 +325,7 @@ def build_graph() -> Graph:
             return
         connected_sockets.add(key)
         # TODO: how to indicate it is NOT directional?
-        graph.add_edge(socket1.id, socket2.id, 'socket_connection')
+        graph.add_edge(socket1.id, socket2.id, "socket_connection")
 
     for proc in processes:
         try:
@@ -340,11 +354,12 @@ def build_graph() -> Graph:
                     remote_socket = ensure_socket(
                         net_con.remote_address,
                         net_con.socket_type,
-                        net_con.state
+                        net_con.state,
                     )
                     ensure_sockets_connected(local_socket, remote_socket)
         except Exception as err:
-            LOGGER.warning('error processing connections for PID %d: %s', proc.pid, err)
-
+            LOGGER.warning(
+                "error processing connections for PID %d: %s", proc.pid, err
+            )
 
     return graph
