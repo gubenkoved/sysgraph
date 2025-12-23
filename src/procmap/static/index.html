@@ -100,8 +100,7 @@
         'socket_connection': '#e35f44',  // red
       };
 
-      // global settings (mutable by UI)
-      settings = {
+      globalState = {
         linkOpacity: 0.8,
       };
 
@@ -128,108 +127,189 @@
         return { nodes, links };
       }
 
+      function linkId(link) {
+        return `${link.source.id}::${link.target.id}`;
+      }
+
+      // returns visited nodes and edges up to maxDepth from startNode
+      function bfs(startNode, maxDepth) {
+        const visitedNodes = new Set();
+        const visitedEdges = new Set();
+
+        const queue = [{ node: startNode, depth: 0 }];
+        visitedNodes.add(startNode.id);
+
+        // map from node id to neighboring edges
+        const neighborsMap = new Map();
+        Graph.graphData().links.forEach(l => {
+          const srcId = l.source.id;
+          const tgtId = l.target.id;
+          if (!neighborsMap.has(srcId)) neighborsMap.set(srcId, []);
+          if (!neighborsMap.has(tgtId)) neighborsMap.set(tgtId, []);
+          neighborsMap.get(srcId).push(l);
+          neighborsMap.get(tgtId).push(l);
+        });
+
+        while (queue.length > 0) {
+          const { node, depth } = queue.shift();
+          if (depth >= maxDepth) continue;
+          const neighbors = neighborsMap.get(node.id) || [];
+          neighbors.forEach(edge => {
+            visitedEdges.add(linkId(edge));
+            const neighborNode = (edge.source.id === node.id) ? edge.target : edge.source;
+            if (!visitedNodes.has(neighborNode.id)) {
+              visitedNodes.add(neighborNode.id);
+              queue.push({ node: neighborNode, depth: depth + 1 });
+            }
+          });
+        }
+
+        return {
+          visitedNodeIds: visitedNodes,
+          visitedEdgeIds: visitedEdges,
+        }
+      }
+
+      function colorWithAlpha(color, alpha) {
+        const col = d3.color(color);
+        col.opacity = alpha;
+        return col.toString();
+      }
+
+      // configure graph
       // Create ForceGraph instance
-      const Graph = ForceGraph()
-        (document.getElementById('graph'))
-          .nodeId('id')
-          .graphData({ nodes: [], links: [] })
-          .nodeLabel(n => {
-            const name = n.properties && (n.properties.name || n.properties.label);
-            const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
-            return label + (n.type ? `\n(${n.type})` : '');
-          })
-          .linkColor(l => {
-            const base = edgeColorFor(l);
-            const col = d3.color(base);
-            col.opacity = settings.linkOpacity;
-            return col.toString();
-          })
-          .linkLabel(l => l.type)
-          .linkDirectionalParticleColor(l => {
-            const base = edgeColorFor(l);
-            const col = d3.color(base);
-            col.opacity = settings.linkOpacity;
-            return col.toString();
-          })
-          .linkDirectionalParticles(0)
-          .linkDirectionalArrowLength(link => {
-            if (link.properties && link.properties.directional === false) {
-              return 0;
-            }
-            return 6;
-          })
-          .linkLineDash(link => {
-            if (link.properties && link.properties.dashed === true) {
-              return [4,4];
-            }
-            return null;
-          })
-          .nodeRelSize(6)
-          // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
-          .nodeCanvasObject((node, ctx, globalScale) => {
-            const baseSize = Math.max(4, (node.val || 1) * 3);
-            const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
+      const Graph = ForceGraph()(document.getElementById('graph'))
+        .nodeId('id')
+        .graphData({ nodes: [], links: [] })
+        .nodeLabel(n => {
+          const name = n.properties && (n.properties.name || n.properties.label);
+          const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
+          return label + (n.type ? `\n(${n.type})` : '');
+        })
+        .linkColor(l => {
+          const shouldBeWashedOut = globalState.highlightLinkIds && !globalState.highlightLinkIds.has(linkId(l));
 
-            // draw filled circle
-            ctx.beginPath();
+          if (!shouldBeWashedOut) {
+            return colorWithAlpha(edgeColorFor(l), globalState.linkOpacity);
+          } else {
+            return colorWithAlpha(edgeColorFor(l), 0.1);
+          }
+        })
+        .linkLabel(l => l.type)
+        .linkDirectionalParticleColor(l => {
+          return colorWithAlpha(edgeColorFor(l), globalState.linkOpacity);
+        })
+        .linkDirectionalParticles(0)
+        .linkDirectionalArrowLength(link => {
+          if (link.properties && link.properties.directional === false) {
+            return 0;
+          }
+          return 6;
+        })
+        .linkLineDash(link => {
+          if (link.properties && link.properties.dashed === true) {
+            return [4,4];
+          }
+          return null;
+        })
+        .nodeRelSize(6)
+        // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
+        .nodeCanvasObject((node, ctx, globalScale) => {
+          const baseSize = Math.max(4, (node.val || 1) * 3);
+          const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
+
+          const shouldBeWashedOut = globalState.highlightNodesIds && !globalState.highlightNodesIds.has(node.id);
+
+          // draw filled circle
+          ctx.beginPath();
+
+          if (!shouldBeWashedOut) {
             ctx.fillStyle = nodeColorFor(node);
-            ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
-            ctx.fill();
+          } else {
+            ctx.fillStyle = colorWithAlpha(nodeColorFor(node), 0.1);
+          }
 
-            // draw red outline for locked (pinned) nodes
-            const locked = (node.fx !== undefined || node.fy !== undefined);
-            if (locked) {
-              // stroke width should scale inversely with zoom so it remains visible
-              const strokeWidth = Math.max(1.2, 2 / globalScale);
-              ctx.save();
-              ctx.lineWidth = strokeWidth;
+          ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
+          ctx.fill();
+
+          // draw red outline for locked (pinned) nodes
+          const locked = (node.fx !== undefined || node.fy !== undefined);
+          if (locked) {
+            // stroke width should scale inversely with zoom so it remains visible
+            const strokeWidth = Math.max(1.2, 2 / globalScale);
+            ctx.save();
+            ctx.lineWidth = strokeWidth;
+
+            if (!shouldBeWashedOut) {
               ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, r + strokeWidth / 2, 0, 2 * Math.PI, false);
-              ctx.stroke();
-              ctx.restore();
+            } else {
+              ctx.strokeStyle = 'rgba(0,0,0,0.2)';
             }
 
-            // generic label (use properties.name/label if available, otherwise type + id)
-            const name = node.properties && (node.properties.name || node.properties.label);
-            const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
-            const fontSize = Math.max(3, 12 / globalScale);
-            ctx.font = `${fontSize}px Ubuntu, sans-serif`;
-            ctx.fillStyle = 'rgba(0,0,0,0.75)';
-            ctx.fillText(label, node.x + r + 4, node.y + fontSize / 2.8);
-          })
-          // pointer area for interactions (keeps it reasonably large for hit testing)
-          .nodePointerAreaPaint((node, color, ctx) => {
-            const r = Math.max(8, (node.val || 1) * 3);
-            ctx.fillStyle = color;
             ctx.beginPath();
-            ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
-            ctx.fill();
-          })
-          .onNodeClick((node, event) => {
-            // Shift/Alt+click to release fixed position, otherwise show details
-            if (event && (event.shiftKey || event.altKey)) {
-              node.fx = undefined;
-              node.fy = undefined;
-            } else {
-              showDetails(node);
-            }
-          })
-          .onNodeDrag(node => {
-            // keep node pinned while dragging
-            node.fx = node.x;
-            node.fy = node.y;
-          })
-          .onNodeDragEnd(node => {
-            // fix node in place after drag
-            node.fx = node.x;
-            node.fy = node.y;
-          })
-          .onBackgroundClick(() => hideDetails())
-          // tune d3 forces to reduce overlaps
-          .d3Force('charge', d3.forceManyBody().strength(-450))
-          .d3Force('link', d3.forceLink().distance(140).strength(0.8))
-          .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4));
+            ctx.arc(node.x, node.y, r + strokeWidth / 2, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // generic label (use properties.name/label if available, otherwise type + id)
+          const name = node.properties && (node.properties.name || node.properties.label);
+          const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
+          const fontSize = Math.max(3, 12 / globalScale);
+          ctx.font = `${fontSize}px Ubuntu, sans-serif`;
+
+          if (shouldBeWashedOut) {
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+          } else {
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+          }
+
+          ctx.fillText(label, node.x + r + 4, node.y + fontSize / 2.8);
+        })
+        // pointer area for interactions (keeps it reasonably large for hit testing)
+        .nodePointerAreaPaint((node, color, ctx) => {
+          const r = Math.max(8, (node.val || 1) * 3);
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
+          ctx.fill();
+        })
+        .onNodeClick((node, event) => {
+          // Shift/Alt+click to release fixed position, otherwise show details
+          if (event && (event.shiftKey || event.altKey)) {
+            node.fx = undefined;
+            node.fy = undefined;
+          } else {
+            showDetails(node);
+          }
+        })
+        .onNodeDrag(node => {
+          // keep node pinned while dragging
+          node.fx = node.x;
+          node.fy = node.y;
+
+          globalState.mode = 'dragging';
+
+          visited = bfs(node, 1);
+
+          globalState.highlightNodesIds = visited.visitedNodeIds;
+          globalState.highlightLinkIds = visited.visitedEdgeIds;
+        })
+        .onNodeDragEnd(node => {
+          // fix node in place after drag
+          node.fx = node.x;
+          node.fy = node.y;
+
+          globalState.highlightNodesIds = null;
+          globalState.highlightLinkIds = null;
+
+          globalState.mode = null;
+        })
+        .onBackgroundClick(() => hideDetails())
+        // tune d3 forces to reduce overlaps
+        .d3Force('charge', d3.forceManyBody().strength(-450))
+        .d3Force('link', d3.forceLink().distance(140).strength(0.8))
+        .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4));
 
       // keep center updated on resize
       window.addEventListener('resize', () => {
@@ -457,7 +537,7 @@
 
           // link opacity
           const linkOpacity = Number(elems.linkOpacity.value);
-          settings.linkOpacity = linkOpacity;
+          globalState.linkOpacity = linkOpacity;
 
           // update visual readouts
           elems.chargeVal.textContent = String(charge);
