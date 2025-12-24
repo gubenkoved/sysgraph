@@ -216,7 +216,8 @@
         // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
         .nodeCanvasObject((node, ctx, globalScale) => {
           const baseSize = Math.max(4, (node.val || 1) * 3);
-          const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
+          //const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
+          const r = baseSize;
 
           const shouldBeWashedOut = globalState.highlightNodesIds && !globalState.highlightNodesIds.has(node.id);
 
@@ -236,7 +237,9 @@
           const locked = (node.fx !== undefined || node.fy !== undefined);
           if (locked) {
             // stroke width should scale inversely with zoom so it remains visible
-            const strokeWidth = Math.max(1.2, 2 / globalScale);
+            //const strokeWidth = Math.max(1.2, 2 / globalScale);
+            const strokeWidth = 2;
+
             ctx.save();
             ctx.lineWidth = strokeWidth;
 
@@ -255,7 +258,8 @@
           // generic label (use properties.name/label if available, otherwise type + id)
           const name = node.properties && (node.properties.name || node.properties.label);
           const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
-          const fontSize = Math.max(3, 12 / globalScale);
+          //const fontSize = Math.max(3, 12 / globalScale);
+          const fontSize = 12;
           ctx.font = `${fontSize}px Ubuntu, sans-serif`;
 
           if (shouldBeWashedOut) {
