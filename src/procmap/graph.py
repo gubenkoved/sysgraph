@@ -48,7 +48,7 @@ class Relationship:
 class Graph:
     def __init__(self):
         self.nodes: dict[NodeId, Node] = {}
-        self.edges: dict[NodeId, dict[NodeId, Relationship]] = {}
+        self.edges: dict[NodeId, dict[NodeId, list[Relationship]]] = {}
 
     def add_node(
         self,
@@ -72,16 +72,23 @@ class Graph:
 
         by_source_map = self.edges[source_id]
 
+        if target_id not in by_source_map:
+            by_source_map[target_id] = []
+
+        edge_list = by_source_map[target_id]
+
         rel = Relationship(source_id, target_id, rel_type, properties)
-        by_source_map[target_id] = rel
+        edge_list.append(rel)
+
         return rel
 
     def as_dict(self) -> dict:
         edges = []
 
         for source_id in self.edges:
-            for edge in self.edges[source_id].values():
-                edges.append(edge.as_dict())
+            for edge_list in self.edges[source_id].values():
+                for edge in edge_list:
+                    edges.append(edge.as_dict())
 
         return {
             "nodes": [node.as_dict() for node in self.nodes.values()],
