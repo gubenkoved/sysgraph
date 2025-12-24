@@ -36,7 +36,9 @@ def main():
             for conn in net_conns:
                 LOGGER.info(conn)
         except Exception as e:
-            LOGGER.warning(f"Could not get net connections for PID {proc.pid}: {e}")
+            LOGGER.warning(
+                f"Could not get net connections for PID {proc.pid}: {e}"
+            )
 
     LOGGER.info("done")
 

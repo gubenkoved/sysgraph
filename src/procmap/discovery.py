@@ -12,7 +12,6 @@ from procmap.model import (
     UnixDomainSocketProcRef,
     UnixDomainSocketConnection,
     ProcessOpenFile,
-    PipeConnection,
     SocketAddress,
     NetConnection,
 )
@@ -141,11 +140,16 @@ def discover_connected_uds(
 
 
 def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
-    result = subprocess.run([
-        "lsof",
-        "-nP",
-        "-Ki",  # suppress duplicates per each thread
-    ], capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        [
+            "lsof",
+            "-nP",
+            "-Ki",  # suppress duplicates per each thread
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
     parsed = jc.parse("lsof", result.stdout)
 
@@ -179,50 +183,6 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
     return result_map
 
 
-def discover_pipe_connections(
-    open_files_map: dict[int, list[ProcessOpenFile]],
-) -> list[PipeConnection]:
-    node_to_processes: dict[str, list[tuple[int, ProcessOpenFile]]] = (
-        defaultdict(list)
-    )
-
-    for pid, files in open_files_map.items():
-        for f in files:
-            if f.file_type != "FIFO":
-                continue
-            if not f.node:
-                continue
-            node_to_processes[f.node].append((pid, f))
-
-    pipe_connections: list[PipeConnection] = []
-
-    for pipe_node, processes in node_to_processes.items():
-        if len(processes) != 2:
-            LOGGER.warning(
-                "ignore strange pipe with %d processes", len(processes)
-            )
-            continue
-        write_side = None
-        read_side = None
-        for pid, proc_file in processes:
-            if proc_file.mode == "w":
-                write_side = pid, proc_file
-            elif proc_file.mode == "r":
-                read_side = pid, proc_file
-        if read_side is None or write_side is None:
-            LOGGER.warning("unable to detect read/write sides, skip")
-            continue
-        pipe_connections.append(
-            PipeConnection(
-                node=pipe_node,
-                write_pid=write_side[0],
-                read_pid=read_side[0],
-            )
-        )
-
-    return pipe_connections
-
-
 def get_net_connections(pid: int) -> list[NetConnection]:
     proc = psutil.Process(pid)
     connections: list[NetConnection] = []
@@ -252,15 +212,19 @@ def build_graph() -> Graph:
     processes = discover_processes()
     for proc in processes:
         proc_node_id = f"process::{proc.pid}"
-        node = graph.add_node(proc_node_id, "process", properties={
-            "pid": proc.pid,
-            "command": proc.command,
-            "user": proc.user,
-            "name": proc.name,
-            "cpu_user": proc.cpu_user,
-            "cpu_system": proc.cpu_system,
-            "environment": proc.environment,
-        })
+        node = graph.add_node(
+            proc_node_id,
+            "process",
+            properties={
+                "pid": proc.pid,
+                "command": proc.command,
+                "user": proc.user,
+                "name": proc.name,
+                "cpu_user": proc.cpu_user,
+                "cpu_system": proc.cpu_system,
+                "environment": proc.environment,
+            },
+        )
         pid_to_node[proc.pid] = node
 
     # add parent-child relationships
@@ -288,29 +252,47 @@ def build_graph() -> Graph:
                     rel_type="unix_domain_socket",
                     properties={
                         "directional": False,
-                    }
+                    },
                 )
 
     # capture open file descriptors
     open_files_map = get_processes_open_files()
 
-    # TODO: rewrite this thing -- it is too clumsy and too slow
-    pipe_connections = discover_pipe_connections(open_files_map)
+    pipe_node_to_node = {}
 
-    for pipe_con in pipe_connections:
-        if pipe_con.write_pid not in pid_to_node:
-            continue
-        if pipe_con.read_pid not in pid_to_node:
-            continue
+    def ensure_pipe_node(file_node):
+        if file_node not in pipe_node_to_node:
+            pipe_node_to_node[file_node] = graph.add_node(
+                f"pipe::{file_node}",
+                "pipe",
+                properties={
+                    "label": f"pipe:[{file_node}]",
+                },
+            )
+        return pipe_node_to_node[file_node]
 
-        _ = graph.add_edge(
-            source_id=pid_to_node[pipe_con.write_pid].id,
-            target_id=pid_to_node[pipe_con.read_pid].id,
-            rel_type="pipe",
-            properties={
-                "node": pipe_con.node,
-            }
-        )
+    for pid, files in open_files_map.items():
+        if pid not in pid_to_node:
+            continue
+        process_node = pid_to_node[pid]
+        for file in files:
+            # so far just show the pipes
+            if file.file_type != "FIFO":
+                continue
+            node = ensure_pipe_node(file.node)
+
+            if file.mode == "r":
+                _ = graph.add_edge(
+                    source_id=node.id,
+                    target_id=process_node.id,
+                    rel_type="pipe",
+                )
+            else:
+                _ = graph.add_edge(
+                    source_id=process_node.id,
+                    target_id=node.id,
+                    rel_type="pipe",
+                )
 
     socket_to_process: dict[tuple[SocketAddress, str], int] = {}
     socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
@@ -345,10 +327,15 @@ def build_graph() -> Graph:
         if key in connected_sockets:
             return
         connected_sockets.add(key)
-        _ = graph.add_edge(socket1.id, socket2.id, "socket_connection",{
-            "directional": False,
-            "dashed": True,
-        })
+        _ = graph.add_edge(
+            socket1.id,
+            socket2.id,
+            "socket_connection",
+            {
+                "directional": False,
+                "dashed": True,
+            },
+        )
 
     for proc in processes:
         try:
