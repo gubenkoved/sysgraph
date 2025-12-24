@@ -134,9 +134,11 @@ def discover_connected_uds(
 
 
 def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
-    result = subprocess.run(
-        ["lsof", "-nP"], capture_output=True, text=True, check=False
-    )
+    result = subprocess.run([
+        "lsof",
+        "-nP",
+        "-Ki",  # suppress duplicates per each thread
+    ], capture_output=True, text=True, check=False)
 
     parsed = jc.parse("lsof", result.stdout)
 

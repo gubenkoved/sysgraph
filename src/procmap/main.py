@@ -31,9 +31,12 @@ def main():
     #     LOGGER.info(pipe)
 
     for proc in processes:
-        net_conns = discovery.get_net_connections(proc.pid)
-        for conn in net_conns:
-            LOGGER.info(conn)
+        try:
+            net_conns = discovery.get_net_connections(proc.pid)
+            for conn in net_conns:
+                LOGGER.info(conn)
+        except Exception as e:
+            LOGGER.warning(f"Could not get net connections for PID {proc.pid}: {e}")
 
     LOGGER.info("done")
 
