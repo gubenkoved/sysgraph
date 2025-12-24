@@ -40,6 +40,8 @@ def discover_processes() -> list[Process]:
         p.cpu_user = cpu_times.user
         p.cpu_system = cpu_times.system
 
+        p.environment = proc.environ()
+
         processes.append(p)
 
     return processes
@@ -257,6 +259,7 @@ def build_graph() -> Graph:
             "name": proc.name,
             "cpu_user": proc.cpu_user,
             "cpu_system": proc.cpu_system,
+            "environment": proc.environment,
         })
         pid_to_node[proc.pid] = node
 

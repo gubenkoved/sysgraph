@@ -7,6 +7,7 @@ class Process:
         self.name: str | None = None
         self.cpu_user: float | None = None
         self.cpu_system: float | None = None
+        self.environment: dict[str, str] | None = None
 
     def __repr__(self) -> str:
         return f"Process(pid={self.pid}, user={self.user}, name={self.name})"
