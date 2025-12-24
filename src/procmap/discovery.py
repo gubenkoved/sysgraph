@@ -39,7 +39,10 @@ def discover_processes() -> list[Process]:
         p.cpu_user = cpu_times.user
         p.cpu_system = cpu_times.system
 
-        p.environment = proc.environ()
+        try:
+            p.environment = proc.environ()
+        except (psutil.AccessDenied, psutil.ZombieProcess):
+            p.environment = None
 
         processes.append(p)
 

@@ -129,7 +129,7 @@
       }
 
       function linkId(link) {
-        return `${link.source.id}::${link.target.id}`;
+        return `${link.source.id}::${link.target.id}::${link.type}`;
       }
 
       // returns visited nodes and edges up to maxDepth from startNode
