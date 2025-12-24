@@ -5,6 +5,8 @@ class Process:
         self.user: str | None = None
         self.command: str | None = None
         self.name: str | None = None
+        self.cpu_user: float | None = None
+        self.cpu_system: float | None = None
 
     def __repr__(self) -> str:
         return f"Process(pid={self.pid}, user={self.user}, name={self.name})"
@@ -14,18 +16,17 @@ class Process:
 # COMMAND   PID   USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME
 # python  26688 eugene    6w  FIFO   0,14      0t0   81903 pipe
 class ProcessOpenFile:
-    def __init__(self, fd: int, file_type: str, inode: int, name: str):
+    def __init__(self, fd: int, file_type: str, name: str):
         self.fd: int = fd
         self.file_type: str = file_type
-        # TODO: use node as in lsof, and allow it to be string (e.g. for TCP)
-        self.inode: int = inode
         self.name: str = name
+        self.node: str | None = None
         self.mode: str | None = None
 
     def __repr__(self) -> str:
         return (
             f"ProcessOpenFile(fd={self.fd}, type={self.file_type}, "
-            f"inode={self.inode}, name={self.name}, mode={self.mode})"
+            f"node={self.node}, name={self.name}, mode={self.mode})"
         )
 
 

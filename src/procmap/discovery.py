@@ -35,6 +35,11 @@ def discover_processes() -> list[Process]:
             " ".join(proc.info["cmdline"]) if proc.info["cmdline"] else None
         )
         p.name = proc.info.get("name")
+
+        cpu_times = proc.cpu_times()
+        p.cpu_user = cpu_times.user
+        p.cpu_system = cpu_times.system
+
         processes.append(p)
 
     return processes
@@ -161,7 +166,8 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
             type = record["type"]
             name = record["name"]
 
-            obj = ProcessOpenFile(fd, type, node, name)
+            obj = ProcessOpenFile(fd, type, name)
+            obj.node = node
             obj.mode = mode
 
             result_map[pid].append(obj)
@@ -174,7 +180,7 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
 def discover_pipe_connections(
     open_files_map: dict[int, list[ProcessOpenFile]],
 ) -> list[PipeConnection]:
-    node_to_processes: dict[int, list[tuple[int, ProcessOpenFile]]] = (
+    node_to_processes: dict[str, list[tuple[int, ProcessOpenFile]]] = (
         defaultdict(list)
     )
 
@@ -182,7 +188,9 @@ def discover_pipe_connections(
         for f in files:
             if f.file_type != "FIFO":
                 continue
-            node_to_processes[f.inode].append((pid, f))
+            if not f.node:
+                continue
+            node_to_processes[f.node].append((pid, f))
 
     pipe_connections: list[PipeConnection] = []
 
@@ -247,6 +255,8 @@ def build_graph() -> Graph:
             "command": proc.command,
             "user": proc.user,
             "name": proc.name,
+            "cpu_user": proc.cpu_user,
+            "cpu_system": proc.cpu_system,
         })
         pid_to_node[proc.pid] = node
 
