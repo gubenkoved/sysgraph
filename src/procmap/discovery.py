@@ -158,33 +158,31 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
     pid = None
     file_tags: dict[str, str] = {}
 
-    fd_re = re.compile(r'^[0-9]+$')
+    fd_re = re.compile(r"^[0-9]+$")
 
     def handle_buffer():
-        if not fd_re.match(file_tags['f']):
+        if not fd_re.match(file_tags["f"]):
             return
         open_file = ProcessOpenFile(
-            int(file_tags['f']),
-            file_tags['t'],
-            file_tags.get('n')
+            int(file_tags["f"]), file_tags["t"], file_tags.get("n")
         )
-        open_file.mode = file_tags.get('a')
-        open_file.node = file_tags.get('i')
+        open_file.mode = file_tags.get("a")
+        open_file.node = file_tags.get("i")
         result_map[pid].append(open_file)
 
     for line in result.stdout.splitlines():
         tag = line[0]
         value = line[1:]
 
-        if tag == 'p':
+        if tag == "p":
             pid = int(value)
             if file_tags:
                 handle_buffer()
-        elif tag == 'f':
+        elif tag == "f":
             if file_tags:
                 handle_buffer()
             file_tags = {}
-            file_tags['f'] = value
+            file_tags["f"] = value
         else:
             file_tags[tag] = value
 
@@ -306,7 +304,7 @@ def build_graph() -> Graph:
     socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
 
     def is_ipv6(address: str) -> bool:
-        return ':' in address
+        return ":" in address
 
     def ensure_socket(address: SocketAddress, socket_type, state: str):
         key = (address, socket_type)
@@ -324,8 +322,8 @@ def build_graph() -> Graph:
 
         if is_ipv6(address.ip):
             socket_node.properties["label"] = (
-                    f"[{address.ip}]:{address.port} ({simple_type})"
-                )
+                f"[{address.ip}]:{address.port} ({simple_type})"
+            )
         else:
             socket_node.properties["label"] = (
                 f"{address.ip}:{address.port} ({simple_type})"
@@ -388,5 +386,34 @@ def build_graph() -> Graph:
             LOGGER.warning(
                 "error processing connections for PID %d: %s", proc.pid, err
             )
+
+    # post-process all sockets which are NOT connected to any process -- these
+    # are remote endpoints, group the by IP address
+    external_ip_to_node = {}
+
+    def ensure_external_ip(address):
+        if address not in external_ip_to_node:
+            external_ip_to_node[address] = graph.add_node(
+                f"external_ip::{address}",
+                "external_ip",
+                {
+                    "label": address,
+                },
+            )
+        return external_ip_to_node[address]
+
+    for socket, socket_node in socket_to_node.items():
+        proc = socket_to_process.get(socket)
+        if proc:
+            continue
+        external_ip = socket[0].ip
+        external_ip_node = ensure_external_ip(external_ip)
+
+        # add connection
+        graph.add_edge(
+            external_ip_node.id,
+            socket_node.id,
+            "external_socket",
+        )
 
     return graph
