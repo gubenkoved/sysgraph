@@ -17,8 +17,6 @@ from procmap.model import (
 )
 from procmap.graph import Graph, Node
 
-import jc
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -148,40 +146,47 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
             "lsof",
             "-nP",
             "-Ki",  # suppress duplicates per each thread
+            "-Fpfnita",  # use machine parsable output
         ],
         capture_output=True,
         text=True,
         check=False,
     )
 
-    parsed = jc.parse("lsof", result.stdout)
-
     result_map: dict[int, list[ProcessOpenFile]] = defaultdict(list)
 
-    fd_re = re.compile("^(?P<fd>[0-9]+)(?P<mode>r|w|u)?$")
+    pid = None
+    file_tags: dict[str, str] = {}
 
-    for record in parsed:
-        try:
-            pid = int(record["pid"])
-            fd_match = fd_re.match(record["fd"])
+    fd_re = re.compile(r'^[0-9]+$')
 
-            if fd_match is None:
-                continue
+    def handle_buffer():
+        if not fd_re.match(file_tags['f']):
+            return
+        open_file = ProcessOpenFile(
+            int(file_tags['f']),
+            file_tags['t'],
+            file_tags.get('n')
+        )
+        open_file.mode = file_tags.get('a')
+        open_file.node = file_tags.get('i')
+        result_map[pid].append(open_file)
 
-            fd = int(fd_match.group("fd"))
-            mode = fd_match.group("mode")
+    for line in result.stdout.splitlines():
+        tag = line[0]
+        value = line[1:]
 
-            node = record["node"]
-            type = record["type"]
-            name = record["name"]
-
-            obj = ProcessOpenFile(fd, type, name)
-            obj.node = node
-            obj.mode = mode
-
-            result_map[pid].append(obj)
-        except Exception as err:
-            LOGGER.warning("error processing lsof record: %s, skip", err)
+        if tag == 'p':
+            pid = int(value)
+            if file_tags:
+                handle_buffer()
+        elif tag == 'f':
+            if file_tags:
+                handle_buffer()
+            file_tags = {}
+            file_tags['f'] = value
+        else:
+            file_tags[tag] = value
 
     return result_map
 

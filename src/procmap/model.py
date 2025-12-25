@@ -109,3 +109,6 @@ class NetConnection:
         if not self.remote_address:
             return f"{self.socket_type}::{self.local_address.ip}:{self.local_address.port}"
         return f"{self.socket_type}::{self.local_address.ip}:{self.local_address.port}::{self.remote_address.ip}:{self.remote_address.port}"
+
+    def __repr__(self) -> str:
+        return f'NetConnection({self.pid}, {self.local_address}, {self.remote_address}, {self.socket_type}, {self.state})'

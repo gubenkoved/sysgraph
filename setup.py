@@ -53,7 +53,6 @@ setup(
         "coloredlogs",
         "fastapi>=0.95",
         "uvicorn[standard]>=0.20",
-        "jc",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
