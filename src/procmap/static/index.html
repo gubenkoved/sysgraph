@@ -9,72 +9,46 @@
       button { font-family: 'Ubuntu', 'Segoe UI', 'Arial'; }
       #controls { position: absolute; top: 8px; left: 8px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
       #graph { width: 100%; height: 100%; }
-      #details { position: absolute; right: 8px; top: 8px; z-index: 10; width: 320px; max-height: 60vh; overflow:auto; background: rgba(255,255,255,0.95); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+      #details { position: absolute; left: 8px; top: 8px; z-index: 10; width: 460px; max-height: 60vh; overflow:auto; background: rgba(255,255,255,0.95); border-radius: 6px; padding: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
       .muted { color: #666; }
       button { padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; cursor: pointer }
       .control-slider-container { display:flex; align-items:center; margin-bottom:2px }
       .control-slider-label { width:48px; text-align:right; margin-left:8px;}
       hr { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 6px 0; }
     </style>
+
+    <!-- style tweakpane light theme -->
+    <style>
+      :root {
+        --tp-base-background-color: hsla(230, 5%, 90%, 1.00);
+        --tp-base-shadow-color: hsla(0, 0%, 0%, 0.10);
+        --tp-button-background-color: hsla(230, 7%, 75%, 1.00);
+        --tp-button-background-color-active: hsla(230, 7%, 60%, 1.00);
+        --tp-button-background-color-focus: hsla(230, 7%, 65%, 1.00);
+        --tp-button-background-color-hover: hsla(230, 7%, 70%, 1.00);
+        --tp-button-foreground-color: hsla(230, 10%, 30%, 1.00);
+        --tp-container-background-color: hsla(230, 15%, 30%, 0.20);
+        --tp-container-background-color-active: hsla(230, 15%, 30%, 0.32);
+        --tp-container-background-color-focus: hsla(230, 15%, 30%, 0.28);
+        --tp-container-background-color-hover: hsla(230, 15%, 30%, 0.24);
+        --tp-container-foreground-color: hsla(230, 10%, 30%, 1.00);
+        --tp-groove-foreground-color: hsla(230, 15%, 30%, 0.10);
+        --tp-input-background-color: hsla(230, 15%, 30%, 0.10);
+        --tp-input-background-color-active: hsla(230, 15%, 30%, 0.22);
+        --tp-input-background-color-focus: hsla(230, 15%, 30%, 0.18);
+        --tp-input-background-color-hover: hsla(230, 15%, 30%, 0.14);
+        --tp-input-foreground-color: hsla(230, 10%, 30%, 1.00);
+        --tp-label-foreground-color: hsla(230, 10%, 30%, 0.70);
+        --tp-monitor-background-color: hsla(230, 15%, 30%, 0.10);
+        --tp-monitor-foreground-color: hsla(230, 10%, 30%, 0.50);
+      }
+      .tp-rotv {
+        font-family: 'Ubuntu', 'Segoe UI', 'Arial', sans-serif !important;
+        opacity: 0.9;
+      }
+    </style>
   </head>
   <body>
-    <div id="controls">
-      <div style="margin-top:6px; font-size:12px;">
-        <button id="refreshBtn">Refresh</button>
-        <button id="unlockBtn" style="margin-left:8px">Unlock nodes</button>
-        <label style="margin-left:8px"><input type="checkbox" checked id="showIsolated" /> Show isolated nodes</label>
-        <div class="muted" style="margin-top:6px">TIP: Drag nodes to position (locked nodes outlined in <b>black</b>); <strong>Shift+click</strong> to release a fixed node.</div>
-
-        <hr />
-        <!-- Simulation sliders -->
-        <div>
-          <div class="control-slider-container">
-            <label style="width:110px">charge</label>
-            <input id="chargeRange" type="range" min="-800" max="-50" value="-450" step="10" style="flex:1" />
-            <span id="chargeVal" class="control-slider-label">-450</span>
-          </div>
-
-          <div class="control-slider-container">
-            <label style="width:110px">link dist</label>
-            <input id="linkDistRange" type="range" min="40" max="300" value="140" step="5" style="flex:1" />
-            <span id="linkDistVal" class="control-slider-label">140</span>
-          </div>
-
-          <div class="control-slider-container">
-            <label style="width:110px">link strength</label>
-            <input id="linkStrengthRange" type="range" min="0" max="1" value="0.8" step="0.01" style="flex:1" />
-            <span id="linkStrVal" class="control-slider-label">0.80</span>
-          </div>
-
-          <div class="control-slider-container">
-            <label style="width:110px">collision ×</label>
-            <input id="collisionMulRange" type="range" min="0.5" max="2" value="1" step="0.05" style="flex:1" />
-            <span id="collMulVal" class="control-slider-label">1.00</span>
-          </div>
-
-          <div class="control-slider-container">
-            <label style="width:110px">alpha target</label>
-            <input id="alphaTargetRange" type="range" min="0" max="0.5" value="0" step="0.01" style="flex:1" />
-            <span id="alphaTVal" class="control-slider-label">0.00</span>
-          </div>
-
-          <div class="control-slider-container">
-            <label style="width:110px">velocityDecay</label>
-            <input id="velDecayRange" type="range" min="0.01" max="0.99" value="0.99" step="0.01" style="flex:1" />
-            <span id="velDecayVal" class="control-slider-label">0.80</span>
-          </div>
-
-          <hr />
-
-          <div class="control-slider-container">
-            <label style="width:110px">links opacity</label>
-            <input id="linkOpacityRange" type="range" min="0.01" max="0.99" value="0.50" step="0.01" style="flex:1" />
-            <span id="linkOpacityVal" style="width:48px;text-align:right;margin-left:8px">0.50</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div id="details" hidden>
       <div id="detailsContent"></div>
     </div>
@@ -85,8 +59,67 @@
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://unpkg.com/force-graph/dist/force-graph.min.js"></script>
 
-    <script>
-      // Utilities
+    <script type="module">
+      import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+
+      const settings = {
+        d3Charge: -400,
+        d3LinkDistance: 140,
+        d3LinkStrength: 0.8,
+        d3CollisionMultiplier: 1.0,
+        d3AlphaTarget: 0.0,
+        d3VelocityDecay: 0.80,
+
+        linkOpacity: 0.5,
+        showIsolated: true,
+      };
+
+      const pane = new Pane({
+        title: 'parameters',
+      });
+
+      const refreshBtn = pane.addButton({
+        title: 'refresh data',
+      });
+      const unlockBtn = pane.addButton({
+          title: 'unlock nodes',
+        });
+
+      refreshBtn.on('click', () => {
+        refresh();
+      });
+
+      unlockBtn.on('click', () => {
+        const data = Graph.graphData();
+        if (!data || !data.nodes) return;
+        data.nodes.forEach(n => { n.fx = undefined; n.fy = undefined; });
+        Graph.graphData(data);
+      });
+
+      pane.addBinding(settings, 'd3Charge', { min: -800, max: 100, step: 10 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBinding(settings, 'd3LinkDistance', { min: 40, max: 300, step: 5 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBinding(settings, 'd3LinkStrength', { min: 0.0, max: 1.0, step: 0.01 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBinding(settings, 'd3CollisionMultiplier', { min: 0.5, max: 2.0, step: 0.05 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBinding(settings, 'd3AlphaTarget', { min: 0.0, max: 0.5, step: 0.01 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBinding(settings, 'd3VelocityDecay', { min: 0.01, max: 0.99, step: 0.01 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBlade({view: 'separator'});
+      pane.addBinding(settings, 'linkOpacity', { min: 0.01, max: 1.00, step: 0.01 });
+      pane.addBinding(settings, 'showIsolated').on('change', ev => {
+        refresh();
+      });
+
       const q = sel => document.querySelector(sel);
 
       const NODE_TYPE_COLORS = {
@@ -100,10 +133,6 @@
         'unix_domain_socket': '#1f78b4', // blue
         'pipe': '#9e1dde',  // magenta
         'socket_connection': '#e35f44',  // red
-      };
-
-      globalState = {
-        linkOpacity: 0.8,
       };
 
       function nodeColorFor(node) {
@@ -189,17 +218,17 @@
           return label + (n.type ? `\n(${n.type})` : '');
         })
         .linkColor(l => {
-          const shouldBeWashedOut = globalState.highlightLinkIds && !globalState.highlightLinkIds.has(linkId(l));
+          const shouldBeWashedOut = settings.highlightLinkIds && !settings.highlightLinkIds.has(linkId(l));
 
           if (!shouldBeWashedOut) {
-            return colorWithAlpha(edgeColorFor(l), globalState.linkOpacity);
+            return colorWithAlpha(edgeColorFor(l), settings.linkOpacity);
           } else {
             return colorWithAlpha(edgeColorFor(l), 0.1);
           }
         })
         .linkLabel(l => l.type)
         .linkDirectionalParticleColor(l => {
-          return colorWithAlpha(edgeColorFor(l), globalState.linkOpacity);
+          return colorWithAlpha(edgeColorFor(l), settings.linkOpacity);
         })
         .linkDirectionalParticles(0)
         .linkDirectionalArrowLength(link => {
@@ -221,7 +250,7 @@
           //const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
           const r = baseSize;
 
-          const shouldBeWashedOut = globalState.highlightNodesIds && !globalState.highlightNodesIds.has(node.id);
+          const shouldBeWashedOut = settings.highlightNodesIds && !settings.highlightNodesIds.has(node.id);
 
           // draw filled circle
           ctx.beginPath();
@@ -303,11 +332,11 @@
           if (node != null) {
             const visited = bfs(node, 1);
 
-            globalState.highlightNodesIds = visited.visitedNodeIds;
-            globalState.highlightLinkIds = visited.visitedEdgeIds;
+            settings.highlightNodesIds = visited.visitedNodeIds;
+            settings.highlightLinkIds = visited.visitedEdgeIds;
           } else {
-            globalState.highlightNodesIds = null;
-            globalState.highlightLinkIds = null;
+            settings.highlightNodesIds = null;
+            settings.highlightLinkIds = null;
           }
         })
         .onBackgroundClick(() => hideDetails())
@@ -317,78 +346,44 @@
         .d3Force('link', d3.forceLink().distance(140).strength(0.8))
         .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4));
 
+      // export to windows for easy access in devtools
+      window.settings = settings;
+      window.graph = Graph;
+
       // keep center updated on resize
       window.addEventListener('resize', () => {
         Graph.d3Force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
       });
 
-      // Overlay that shows live d3 simulation parameters (bottom-right)
-      (function addSimOverlay() {
-        const overlay = document.createElement('div');
-        overlay.id = 'simOverlay';
-        Object.assign(overlay.style, {
-          position: 'fixed',
-          right: '10px',
-          bottom: '10px',
-          background: 'rgba(255,255,255,0.70)',
-          border: '1px solid rgba(0,0,0,0.10)',
-          color: 'rgba(0,0,0,0.80)',
-          padding: '8px 10px',
-          borderRadius: '3px',
-          fontFamily: '"Ubuntu Mono", monospace',
-          fontSize: '12px',
-          lineHeight: '1.25',
-          zIndex: 9999,
-          pointerEvents: 'none',
-          minWidth: '160px',
-          opacity: '0.95'
-        });
+      function applyD3Params() {
+        //debugger
 
-        document.body.appendChild(overlay);
+        const chargeForce = Graph.d3Force('charge');
+        if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(settings.d3Charge);
 
-        function fmtNum(v, digits = 3) {
-          return (typeof v === 'number' && isFinite(v)) ? Number(v).toFixed(digits) : String(v);
+        const linkForce = Graph.d3Force('link');
+        if (linkForce) {
+          if (typeof linkForce.distance === 'function') linkForce.distance(settings.d3LinkDistance);
+          if (typeof linkForce.strength === 'function') linkForce.strength(settings.d3LinkStrength);
         }
 
-        function safeCall(fn, sampleArg) {
-          try {
-            const res = fn();
-            if (typeof res === 'function') {
-              // If a function, try to call it with a sample to get representative value
-              try { return fn(sampleArg !== undefined ? sampleArg : { val: 1 }); } catch(e) { return 'fn'; }
-            }
-            return res;
-          } catch (e) {
-            return '-';
-          }
+        const collisionForce = Graph.d3Force('collision');
+        if (collisionForce && typeof collisionForce.radius === 'function') {
+          collisionForce.radius(d => (18 + (d.val || 1) * 6) * settings.d3CollisionMultiplier);
         }
 
-        function updateOverlay() {
-          const data = Graph.graphData() || {};
-          const nodes = (data.nodes || []).length;
-          const links = (data.links || []).length;
+        // velocityDecay and alpha target
+        if (typeof Graph.d3VelocityDecay === 'function') Graph.d3VelocityDecay(settings.d3VelocityDecay);
+        if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(settings.d3AlphaTarget);
 
-          overlay.innerHTML = `
-            <div>nodes: <strong>${nodes}</strong>, links: <strong>${links}</strong></div>
-          `;
+        // tiny reheat so changes take effect visibly
+        if (typeof Graph.d3Alpha === 'function') {
+          Graph.d3Alpha(0.25);
+          setTimeout(() => { if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(0); }, 600);
         }
+      }
 
-        // refresh periodically for visibility; ties into ui updates
-        updateOverlay();
-        const intId = setInterval(updateOverlay, 500);
-
-        // update once on graph refresh as well
-        const originalRefresh = window.refresh;
-        window.refresh = function() {
-          const r = originalRefresh.apply(this, arguments);
-          updateOverlay();
-          return r;
-        };
-
-        // expose for debugging if needed
-        window._procmap_sim_overlay = { el: overlay, stop: () => clearInterval(intId) };
-      })();
-
+      // TODO: redo using some JSON viewer
       function showDetails(node) {
         const details = q('#details');
         const el = q('#detailsContent');
@@ -461,7 +456,7 @@
       async function refresh() {
         const data = await loadData();
         // optionally filter out isolated nodes
-        const showIsolated = q('#showIsolated').checked;
+        const showIsolated = settings.showIsolated;
         if (!showIsolated) {
           const connected = new Set();
           data.links.forEach(l => { connected.add(l.source); connected.add(l.target); });
@@ -478,96 +473,8 @@
         updateGraphData(data);
       }
 
-      document.getElementById('refreshBtn').addEventListener('click', refresh);
-      document.getElementById('showIsolated').addEventListener('change', refresh);
-      document.getElementById('unlockBtn').addEventListener('click', () => {
-        const data = Graph.graphData();
-        if (!data || !data.nodes) return;
-        data.nodes.forEach(n => { n.fx = undefined; n.fy = undefined; });
-        Graph.graphData(data);
-      });
-
-      // Simulation sliders handlers
-      (function wireSimSliders() {
-        const elems = {
-          charge: q('#chargeRange'),
-          chargeVal: q('#chargeVal'),
-          linkDist: q('#linkDistRange'),
-          linkDistVal: q('#linkDistVal'),
-          linkStr: q('#linkStrengthRange'),
-          linkStrVal: q('#linkStrVal'),
-          collMul: q('#collisionMulRange'),
-          collMulVal: q('#collMulVal'),
-          alphaT: q('#alphaTargetRange'),
-          alphaTVal: q('#alphaTVal'),
-          velDecay: q('#velDecayRange'),
-          velDecayVal: q('#velDecayVal'),
-          linkOpacity: q('#linkOpacityRange'),
-          linkOpacityVal: q('#linkOpacityVal'),
-        };
-
-        function fmt(v, digits=2){ return (typeof v === 'number') ? Number(v).toFixed(digits) : String(v); }
-
-        function applySimParams() {
-          const charge = Number(elems.charge.value);
-          const linkDist = Number(elems.linkDist.value);
-          const linkStr = Number(elems.linkStr.value);
-          const collMul = Number(elems.collMul.value);
-          const alphaTarget = Number(elems.alphaT.value);
-          const velDecay = Number(elems.velDecay.value);
-
-          // update forces if present
-          const chargeForce = Graph.d3Force('charge');
-          if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(charge);
-
-          const linkForce = Graph.d3Force('link');
-          if (linkForce) {
-            if (typeof linkForce.distance === 'function') linkForce.distance(linkDist);
-            if (typeof linkForce.strength === 'function') linkForce.strength(linkStr);
-          }
-
-          const collisionForce = Graph.d3Force('collision');
-          if (collisionForce && typeof collisionForce.radius === 'function') {
-            collisionForce.radius(d => (18 + (d.val || 1) * 6) * collMul);
-          }
-
-          // velocityDecay and alpha target
-          if (typeof Graph.d3VelocityDecay === 'function') Graph.d3VelocityDecay(velDecay);
-          if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(alphaTarget);
-
-          // tiny reheat so changes take effect visibly
-          if (typeof Graph.d3Alpha === 'function') {
-            Graph.d3Alpha(0.25);
-            setTimeout(() => { if (typeof Graph.d3AlphaTarget === 'function') Graph.d3AlphaTarget(0); }, 600);
-          }
-
-          // link opacity
-          const linkOpacity = Number(elems.linkOpacity.value);
-          globalState.linkOpacity = linkOpacity;
-
-          // update visual readouts
-          elems.chargeVal.textContent = String(charge);
-          elems.linkDistVal.textContent = String(linkDist);
-          elems.linkStrVal.textContent = fmt(linkStr,2);
-          elems.collMulVal.textContent = fmt(collMul,2);
-          elems.alphaTVal.textContent = fmt(alphaTarget,2);
-          elems.velDecayVal.textContent = fmt(velDecay,2);
-          elems.linkOpacityVal.textContent = fmt(linkOpacity,2);
-        }
-
-        // attach handlers
-        Object.keys(elems).forEach(k => {
-          if (!elems[k]) return;
-          if (elems[k].tagName === 'INPUT' && elems[k].type === 'range') {
-            elems[k].addEventListener('input', applySimParams);
-          }
-        });
-
-        // apply defaults once
-        setTimeout(applySimParams, 0);
-      })();
-
       // initial load
+      applyD3Params();
       refresh();
     </script>
   </body>
