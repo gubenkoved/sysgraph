@@ -305,7 +305,10 @@ def build_graph() -> Graph:
     socket_to_process: dict[tuple[SocketAddress, str], int] = {}
     socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
 
-    def ensure_socket(address, socket_type, state: str):
+    def is_ipv6(address: str) -> bool:
+        return ':' in address
+
+    def ensure_socket(address: SocketAddress, socket_type, state: str):
         key = (address, socket_type)
         if key in socket_to_node:
             return socket_to_node[key]
@@ -319,9 +322,15 @@ def build_graph() -> Graph:
 
         simple_type = simple_socket_type.get(socket_type, socket_type)
 
-        socket_node.properties["label"] = (
-            f"{address.ip}:{address.port} ({simple_type})"
-        )
+        if is_ipv6(address.ip):
+            socket_node.properties["label"] = (
+                    f"[{address.ip}]:{address.port} ({simple_type})"
+                )
+        else:
+            socket_node.properties["label"] = (
+                f"{address.ip}:{address.port} ({simple_type})"
+            )
+
         socket_node.properties["state"] = state
         socket_node.properties["socket_type"] = socket_type
 
