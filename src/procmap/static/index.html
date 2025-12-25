@@ -292,23 +292,22 @@
           // keep node pinned while dragging
           node.fx = node.x;
           node.fy = node.y;
-
-          globalState.mode = 'dragging';
-
-          visited = bfs(node, 1);
-
-          globalState.highlightNodesIds = visited.visitedNodeIds;
-          globalState.highlightLinkIds = visited.visitedEdgeIds;
         })
         .onNodeDragEnd(node => {
           // fix node in place after drag
           node.fx = node.x;
           node.fy = node.y;
+        })
+        .onNodeHover((node, prevNode) => {
+          if (node != null) {
+            const visited = bfs(node, 1);
 
-          globalState.highlightNodesIds = null;
-          globalState.highlightLinkIds = null;
-
-          globalState.mode = null;
+            globalState.highlightNodesIds = visited.visitedNodeIds;
+            globalState.highlightLinkIds = visited.visitedEdgeIds;
+          } else {
+            globalState.highlightNodesIds = null;
+            globalState.highlightLinkIds = null;
+          }
         })
         .onBackgroundClick(() => hideDetails())
         .autoPauseRedraw(false)
