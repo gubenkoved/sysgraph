@@ -58,6 +58,7 @@
     <!-- d3 included for convenience; force-graph works with these builds -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://unpkg.com/force-graph/dist/force-graph.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/json-formatter-js@2.5.23/dist/json-formatter.umd.js"></script>
 
     <script type="module">
       import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
@@ -383,19 +384,21 @@
         }
       }
 
-      // TODO: redo using some JSON viewer
       function showDetails(node) {
-        const details = q('#details');
-        const el = q('#detailsContent');
-        const header = `<strong>${node.id} (${node.type})</strong>`;
-        const props = node.properties || {};
-        let propsHtml = '<div style="margin-top:2px"><strong>Properties</strong><ul>';
-        const keys = Object.keys(props);
-        if (keys.length === 0) propsHtml += '<li><em>none</em></li>';
-        keys.forEach(k => { propsHtml += `<li><strong>${escapeHtml(k)}</strong>: <code>${escapeHtml(JSON.stringify(props[k]))}</code></li>`; });
-        propsHtml += '</ul></div>';
-        el.innerHTML = header + propsHtml;
-        details.hidden = false;
+        const data = {
+          id: node.id,
+          type: node.type,
+          properties: node.properties || {},
+        };
+
+        const formatter = new JSONFormatter(data, 2);
+
+        const container = document.getElementById('details');
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+        container.appendChild(formatter.render());
+        container.hidden = false;
       }
 
       function hideDetails() {
@@ -432,7 +435,7 @@
             Object.assign(ex, n);
             mergedNodes.push(ex);
           } else {
-            console.log('new node', n);
+            //console.log('new node', n);
             mergedNodes.push(n);
           }
         });
@@ -445,7 +448,7 @@
             // Object.assign(ex, l);
             mergedLinks.push(ex);
           } else {
-            console.log('new link', l);
+            //console.log('new link', l);
             mergedLinks.push(l);
           }
         });
