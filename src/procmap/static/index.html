@@ -73,6 +73,8 @@
 
         linkOpacity: 0.5,
         showIsolated: true,
+        // curvature interval per each link when there are multiple
+        curvatureStep: 0.002,
       };
 
       const pane = new Pane({
@@ -120,6 +122,9 @@
       pane.addBinding(settings, 'showIsolated').on('change', ev => {
         refresh();
       });
+      pane.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', ev => {
+        autoAdjustCurvature();
+      });
 
       const q = sel => document.querySelector(sel);
 
@@ -159,8 +164,13 @@
         return { nodes, links };
       }
 
+      // TODO: introduce link IDs on the serve side instead of this
       function linkId(link) {
-        return `${link.source.id}::${link.target.id}::${link.type}`;
+        return rawLinkId(link.source.id, link.target.id, link.type);
+      }
+
+      function rawLinkId(sourceId, targetId, type) {
+        return `${sourceId}::${targetId}::${type}`;
       }
 
       // returns visited nodes and edges up to maxDepth from startNode
@@ -218,6 +228,7 @@
           const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
           return label + (n.type ? `\n(${n.type})` : '');
         })
+        .linkCurvature(l => l.curvature || 0)
         .linkColor(l => {
           const shouldBeWashedOut = settings.highlightLinkIds && !settings.highlightLinkIds.has(linkId(l));
 
@@ -421,10 +432,9 @@
         // index existing nodes & links
         const existingNodesById = new Map((current.nodes || []).map(n => [n.id, n]));
         const existingLinksByKey = new Map();
+
         (current.links || []).forEach(l => {
-          const src = (typeof l.source === 'object') ? l.source.id : l.source;
-          const tgt = (typeof l.target === 'object') ? l.target.id : l.target;
-          const key = `${src}::${tgt}`;
+          const key = linkId(l);
           existingLinksByKey.set(key, l);
         });
 
@@ -444,11 +454,12 @@
         });
 
         data.links.forEach(l => {
-          const key = `${l.source}::${l.target}`;
+          const key = rawLinkId(l.source, l.target, l.type);
           const ex = existingLinksByKey.get(key);
           if (ex) {
-            // FIXME: in existing data source/targets are objects!
-            // Object.assign(ex, l);
+            // NOTE: in existing data source/targets are objects, while in the
+            //  new data they are IDs, so we cannot do full Object.assign here;
+            ex.properties = l.properties;
             mergedLinks.push(ex);
           } else {
             //console.log('new link', l);
@@ -459,8 +470,50 @@
         Graph.graphData({ nodes: mergedNodes, links: mergedLinks });
       }
 
+      function autoAdjustCurvature() {
+        // (key for pair of nodes) -> links between them (graph wrapped objects)
+        let sameNodesLinks = new Map();
+
+        const links = Graph.graphData().links;
+
+        links.forEach(l => {
+          // FIXME: sometimes source/target are not resolved if graph engine not run yet
+          if (l.source.id === undefined || l.target.id === undefined) {
+            return;
+          }
+
+          let pairKey = l.source.id < l.target.id ? `${l.source.id}::${l.target.id}` : `${l.target.id}::${l.source.id}`;
+
+          if (!sameNodesLinks[pairKey]) {
+            sameNodesLinks[pairKey] = [];
+          }
+          sameNodesLinks[pairKey].push(l)
+        })
+
+        // update curvature for multiple links between same nodes
+        Object.values(sameNodesLinks).forEach(links => {
+          if (links.length <= 1) {
+            links.forEach(l => l.curvature = 0);
+            return;
+          }
+
+          const n = links.length;
+          const maxCurvature = Math.min(1, settings.curvatureStep * n);
+          const intervalSize = maxCurvature * 2;
+          const intervalStep = intervalSize / (n - 1);
+
+          for (let idx = 0; idx < n; idx++) {
+            links[idx].curvature = -maxCurvature + idx * intervalStep;
+            if (links[idx].source.id > links[idx].target.id) {
+              links[idx].curvature *= -1;
+            }
+          }
+        });
+      }
+
       async function refresh() {
         const data = await loadData();
+
         // optionally filter out isolated nodes
         const showIsolated = settings.showIsolated;
         if (!showIsolated) {
@@ -477,6 +530,7 @@
         data.nodes.forEach(n => n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0))));
 
         updateGraphData(data);
+        autoAdjustCurvature();
       }
 
       // initial load
