@@ -1,4 +1,5 @@
 from typing import Any
+import uuid
 
 
 NodeId = str
@@ -30,19 +31,26 @@ class Relationship:
         target_id: NodeId,
         type: str,
         properties: dict[str, Any] | None = None,
+        id: str | None = None,
     ) -> None:
         self.source_id: NodeId = source_id
         self.target_id: NodeId = target_id
         self.type = type
         self.properties: dict[str, Any] = properties or {}
+        self.id: str = id or generate_id()
 
     def as_dict(self) -> dict:
         return {
+            "id": self.id,
             "source_id": self.source_id,
             "target_id": self.target_id,
             "type": self.type,
             "properties": self.properties,
         }
+
+
+def generate_id() -> str:
+    return str(uuid.uuid4())
 
 
 class Graph:
@@ -66,6 +74,7 @@ class Graph:
         target_id: NodeId,
         rel_type: str,
         properties: dict[str, Any] | None = None,
+        id: str | None = None,
     ) -> Relationship:
         if source_id not in self.edges:
             self.edges[source_id] = {}
@@ -77,7 +86,7 @@ class Graph:
 
         edge_list = by_source_map[target_id]
 
-        rel = Relationship(source_id, target_id, rel_type, properties)
+        rel = Relationship(source_id, target_id, rel_type, properties, id)
         edge_list.append(rel)
 
         return rel

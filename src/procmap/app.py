@@ -34,6 +34,7 @@ class GraphNodeSchema(BaseModel):
 
 
 class GraphEdgeSchema(BaseModel):
+    id: str
     source_id: str
     target_id: str
     type: str
@@ -66,6 +67,7 @@ def get_graph() -> GraphSchema:
         ],
         edges=[
             GraphEdgeSchema(
+                id=edge["id"],
                 source_id=edge["source_id"],
                 target_id=edge["target_id"],
                 type=edge["type"],

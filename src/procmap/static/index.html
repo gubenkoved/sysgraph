@@ -74,7 +74,7 @@
         linkOpacity: 0.5,
         showIsolated: true,
         // curvature interval per each link when there are multiple
-        curvatureStep: 0.002,
+        curvatureStep: 0.005,
       };
 
       const pane = new Pane({
@@ -159,18 +159,9 @@
 
         // Server format: { nodes: [{id, type, properties}], edges: [{source_id, target_id, type, properties}] }
         const nodes = (graph.nodes || []).map(n => ({ id: n.id, type: n.type, properties: n.properties || {}, val: 1 }));
-        const links = (graph.edges || []).map(e => ({ source: e.source_id, target: e.target_id, type: e.type, properties: e.properties || {} }));
+        const links = (graph.edges || []).map(e => ({ id: e.id, source: e.source_id, target: e.target_id, type: e.type, properties: e.properties || {} }));
 
         return { nodes, links };
-      }
-
-      // TODO: introduce link IDs on the serve side instead of this
-      function linkId(link) {
-        return rawLinkId(link.source.id, link.target.id, link.type);
-      }
-
-      function rawLinkId(sourceId, targetId, type) {
-        return `${sourceId}::${targetId}::${type}`;
       }
 
       // returns visited nodes and edges up to maxDepth from startNode
@@ -197,7 +188,7 @@
           if (depth >= maxDepth) continue;
           const neighbors = neighborsMap.get(node.id) || [];
           neighbors.forEach(edge => {
-            visitedEdges.add(linkId(edge));
+            visitedEdges.add(edge.id);
             const neighborNode = (edge.source.id === node.id) ? edge.target : edge.source;
             if (!visitedNodes.has(neighborNode.id)) {
               visitedNodes.add(neighborNode.id);
@@ -230,7 +221,7 @@
         })
         .linkCurvature(l => l.curvature || 0)
         .linkColor(l => {
-          const shouldBeWashedOut = settings.highlightLinkIds && !settings.highlightLinkIds.has(linkId(l));
+          const shouldBeWashedOut = settings.highlightLinkIds && !settings.highlightLinkIds.has(l.id);
 
           if (!shouldBeWashedOut) {
             return colorWithAlpha(edgeColorFor(l), settings.linkOpacity);
@@ -431,12 +422,7 @@
 
         // index existing nodes & links
         const existingNodesById = new Map((current.nodes || []).map(n => [n.id, n]));
-        const existingLinksByKey = new Map();
-
-        (current.links || []).forEach(l => {
-          const key = linkId(l);
-          existingLinksByKey.set(key, l);
-        });
+        const existingLinksById = new Map((current.links || []).map(l => [l.id, l]));
 
         // build merged node list reusing objects when possible
         const mergedNodes = [];
@@ -454,13 +440,13 @@
         });
 
         data.links.forEach(l => {
-          const key = rawLinkId(l.source, l.target, l.type);
-          const ex = existingLinksByKey.get(key);
-          if (ex) {
+          const key = l.id;
+          const existing = existingLinksById.get(key);
+          if (existing) {
             // NOTE: in existing data source/targets are objects, while in the
             //  new data they are IDs, so we cannot do full Object.assign here;
-            ex.properties = l.properties;
-            mergedLinks.push(ex);
+            existing.properties = l.properties;
+            mergedLinks.push(existing);
           } else {
             //console.log('new link', l);
             mergedLinks.push(l);
@@ -468,6 +454,17 @@
         });
 
         Graph.graphData({ nodes: mergedNodes, links: mergedLinks });
+
+        autoAdjustCurvature();
+      }
+
+      // NOTE: sometimes source/target are not resolved if graph engine not run yet
+      function linkSourceId(link) {
+        return (typeof link.source === 'object') ? link.source.id : link.source;
+      }
+
+      function linkTargetId(link) {
+        return (typeof link.target === 'object') ? link.target.id : link.target;
       }
 
       function autoAdjustCurvature() {
@@ -478,18 +475,13 @@
         const links = Graph.graphData().links;
 
         links.forEach(l => {
-          // FIXME: sometimes source/target are not resolved if graph engine not run yet
-          if (l.source.id === undefined || l.target.id === undefined) {
-            return;
-          }
-
           // FIXME: why do we have these duplicates?
-          if (seenLinks.has(l.index)) {
+          if (seenLinks.has(l.id)) {
             return;
           }
-          seenLinks.add(l.index);
+          seenLinks.add(l.id);
 
-          let pairKey = l.source.id < l.target.id ? `${l.source.id}::${l.target.id}` : `${l.target.id}::${l.source.id}`;
+          let pairKey = linkSourceId(l) < linkTargetId(l) ? `${linkSourceId(l)}::${linkTargetId(l)}` : `${linkTargetId(l)}::${linkSourceId(l)}`;
 
           if (!sameNodesLinks.has(pairKey)) {
             sameNodesLinks.set(pairKey, []);
@@ -539,7 +531,6 @@
         data.nodes.forEach(n => n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0))));
 
         updateGraphData(data);
-        autoAdjustCurvature();
       }
 
       // initial load

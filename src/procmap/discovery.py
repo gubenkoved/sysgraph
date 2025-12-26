@@ -169,19 +169,22 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
         open_file.mode = file_tags.get("a")
         open_file.node = file_tags.get("i")
         result_map[pid].append(open_file)
+        file_tags.clear()
 
     for line in result.stdout.splitlines():
+        # LOGGER.debug(f"parsing lsof line: {line}")
+
         tag = line[0]
         value = line[1:]
 
         if tag == "p":
-            pid = int(value)
+            # NOTE: these are for previous process (if any)
             if file_tags:
                 handle_buffer()
+            pid = int(value)
         elif tag == "f":
             if file_tags:
                 handle_buffer()
-            file_tags = {}
             file_tags["f"] = value
         else:
             file_tags[tag] = value
