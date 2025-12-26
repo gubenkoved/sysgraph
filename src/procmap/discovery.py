@@ -292,12 +292,22 @@ def build_graph() -> Graph:
                     source_id=node.id,
                     target_id=process_node.id,
                     rel_type="pipe",
+                    properties={
+                        "label": f"pipe (fd={file.fd})",
+                        "fd": file.fd,
+                        "mode": file.mode,
+                    }
                 )
             else:
                 _ = graph.add_edge(
                     source_id=process_node.id,
                     target_id=node.id,
                     rel_type="pipe",
+                    properties={
+                        "label": f"pipe (fd={file.fd})",
+                        "fd": file.fd,
+                        "mode": file.mode,
+                    }
                 )
 
     socket_to_process: dict[tuple[SocketAddress, str], int] = {}

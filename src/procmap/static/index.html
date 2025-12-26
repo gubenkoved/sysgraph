@@ -227,7 +227,9 @@
             return colorWithAlpha(edgeColorFor(l), 0.1);
           }
         })
-        .linkLabel(l => l.type)
+        .linkLabel(l => {
+          return l.properties.label || l.type;
+        })
         .linkDirectionalParticleColor(l => {
           return colorWithAlpha(edgeColorFor(l), settings.linkOpacity);
         })
