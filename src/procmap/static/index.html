@@ -473,6 +473,7 @@
       function autoAdjustCurvature() {
         // (key for pair of nodes) -> links between them (graph wrapped objects)
         let sameNodesLinks = new Map();
+        let seenLinks = new Set();
 
         const links = Graph.graphData().links;
 
@@ -482,19 +483,27 @@
             return;
           }
 
+          // FIXME: why do we have these duplicates?
+          if (seenLinks.has(l.index)) {
+            return;
+          }
+          seenLinks.add(l.index);
+
           let pairKey = l.source.id < l.target.id ? `${l.source.id}::${l.target.id}` : `${l.target.id}::${l.source.id}`;
 
-          if (!sameNodesLinks[pairKey]) {
-            sameNodesLinks[pairKey] = [];
+          if (!sameNodesLinks.has(pairKey)) {
+            sameNodesLinks.set(pairKey, []);
           }
-          sameNodesLinks[pairKey].push(l)
+          sameNodesLinks.get(pairKey).push(l)
         })
 
+        console.log(sameNodesLinks);
+
         // update curvature for multiple links between same nodes
-        Object.values(sameNodesLinks).forEach(links => {
+        for (const [nodesKey, links] of sameNodesLinks) {
           if (links.length <= 1) {
             links.forEach(l => l.curvature = 0);
-            return;
+            continue;
           }
 
           const n = links.length;
@@ -508,7 +517,7 @@
               links[idx].curvature *= -1;
             }
           }
-        });
+        }
       }
 
       async function refresh() {
