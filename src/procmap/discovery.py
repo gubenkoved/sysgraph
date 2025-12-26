@@ -310,7 +310,7 @@ def build_graph() -> Graph:
                     }
                 )
 
-    socket_to_process: dict[tuple[SocketAddress, str], int] = {}
+    socket_to_pids: dict[tuple[SocketAddress, str], list[int]] = {}
     socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
 
     def is_ipv6(address: str) -> bool:
@@ -369,9 +369,8 @@ def build_graph() -> Graph:
 
             for net_con in net_connections:
                 socket_id = (net_con.local_address, net_con.socket_type)
-                socket_to_process[socket_id] = proc.pid
 
-                # add sockets to graph
+                # ensure socket in graph
                 local_socket = ensure_socket(
                     net_con.local_address,
                     net_con.socket_type,
@@ -379,11 +378,13 @@ def build_graph() -> Graph:
                 )
 
                 # process connection
-                graph.add_edge(
-                    source_id=proc_node.id,
-                    target_id=local_socket.id,
-                    rel_type="socket",
-                )
+                if pid not in socket_to_pids.get(socket_id, []):
+                    socket_to_pids[socket_id] = socket_to_pids.get(socket_id, []) + [pid]
+                    graph.add_edge(
+                        source_id=proc_node.id,
+                        target_id=local_socket.id,
+                        rel_type="socket",
+                    )
 
                 if net_con.remote_address:
                     remote_socket = ensure_socket(
@@ -413,9 +414,11 @@ def build_graph() -> Graph:
         return external_ip_to_node[address]
 
     for socket, socket_node in socket_to_node.items():
-        proc = socket_to_process.get(socket)
-        if proc:
+        pids = socket_to_pids.get(socket)
+
+        if pids:
             continue
+
         external_ip = socket[0].ip
         external_ip_node = ensure_external_ip(external_ip)
 
