@@ -212,7 +212,6 @@ def get_net_connections(pid: int) -> list[NetConnection]:
     return connections
 
 
-# TODO: add TCP connections (support local process, external process)
 def build_graph() -> Graph:
     graph = Graph()
 
