@@ -260,6 +260,14 @@ def build_graph() -> Graph:
                     rel_type="unix_domain_socket",
                     properties={
                         "directional": False,
+                        "inodes": (
+                            con.socket1.local_inode,
+                            con.socket1.peer_inode,
+                        ),
+                        "paths": (
+                            con.socket1.local_path,
+                            con.socket2.peer_path,
+                        ),
                     },
                 )
 
@@ -298,7 +306,7 @@ def build_graph() -> Graph:
                         "label": f"pipe (fd={file.fd})",
                         "fd": file.fd,
                         "mode": file.mode,
-                    }
+                    },
                 )
             else:
                 _ = graph.add_edge(
@@ -309,7 +317,7 @@ def build_graph() -> Graph:
                         "label": f"pipe (fd={file.fd})",
                         "fd": file.fd,
                         "mode": file.mode,
-                    }
+                    },
                 )
 
     socket_to_pids: dict[tuple[SocketAddress, str], list[int]] = {}
@@ -381,7 +389,9 @@ def build_graph() -> Graph:
 
                 # process connection
                 if pid not in socket_to_pids.get(socket_id, []):
-                    socket_to_pids[socket_id] = socket_to_pids.get(socket_id, []) + [pid]
+                    socket_to_pids[socket_id] = socket_to_pids.get(
+                        socket_id, []
+                    ) + [pid]
                     graph.add_edge(
                         source_id=proc_node.id,
                         target_id=local_socket.id,

@@ -152,14 +152,30 @@
       }
 
       async function loadData() {
-        // Fetch generic graph from server
         const res = await fetch('/api/graph');
-        if (!res.ok) throw new Error('Failed to fetch /api/graph: ' + res.status);
+
+        if (!res.ok)
+          throw new Error('Failed to fetch /api/graph: ' + res.status);
+
         const graph = await res.json();
 
         // Server format: { nodes: [{id, type, properties}], edges: [{source_id, target_id, type, properties}] }
-        const nodes = (graph.nodes || []).map(n => ({ id: n.id, type: n.type, properties: n.properties || {}, val: 1 }));
-        const links = (graph.edges || []).map(e => ({ id: e.id, source: e.source_id, target: e.target_id, type: e.type, properties: e.properties || {} }));
+        const nodes = (graph.nodes || []).map(n => ({
+          id: n.id,
+          type: n.type,
+          elementType: "node",
+          properties: n.properties || {},
+          val: 1,
+        }));
+
+        const links = (graph.edges || []).map(e => ({
+          id: e.id,
+          source: e.source_id,
+          target: e.target_id,
+          type: e.type,
+          elementType: "link",
+          properties: e.properties || {},
+        }));
 
         return { nodes, links };
       }
@@ -324,6 +340,9 @@
             showDetails(node);
           }
         })
+        .onLinkClick((link, event) => {
+          showDetails(link);
+        })
         .onNodeDrag(node => {
           // keep node pinned while dragging
           node.fx = node.x;
@@ -389,11 +408,12 @@
         }
       }
 
-      function showDetails(node) {
+      function showDetails(node_or_link) {
         const data = {
-          id: node.id,
-          type: node.type,
-          properties: node.properties || {},
+          id: node_or_link.id,
+          type: node_or_link.type,
+          element_type: node_or_link.elementType,
+          properties: node_or_link.properties || {},
         };
 
         const formatter = new JSONFormatter(data, 2);
