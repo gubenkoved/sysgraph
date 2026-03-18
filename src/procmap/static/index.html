@@ -286,7 +286,7 @@
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
           ctx.fill();
 
-          // draw red outline for locked (pinned) nodes
+          // draw outline for locked (pinned) nodes
           const locked = (node.fx !== undefined || node.fy !== undefined);
           if (locked) {
             // stroke width should scale inversely with zoom so it remains visible
@@ -479,6 +479,7 @@
       }
 
       // NOTE: sometimes source/target are not resolved if graph engine not run yet
+      // this method will work for both cases (resolved will have link.source as object)
       function linkSourceId(link) {
         return (typeof link.source === 'object') ? link.source.id : link.source;
       }
@@ -509,7 +510,7 @@
           sameNodesLinks.get(pairKey).push(l)
         })
 
-        console.log(sameNodesLinks);
+        // console.log(sameNodesLinks);
 
         // update curvature for multiple links between same nodes
         for (const [nodesKey, links] of sameNodesLinks) {
@@ -523,9 +524,11 @@
           const intervalSize = maxCurvature * 2;
           const intervalStep = intervalSize / (n - 1);
 
+          // NOTE: we need to pick some "canonical" link direction to handle
+          // links in different directions properly
           for (let idx = 0; idx < n; idx++) {
             links[idx].curvature = -maxCurvature + idx * intervalStep;
-            if (links[idx].source.id > links[idx].target.id) {
+            if (linkSourceId(links[idx]) != linkSourceId(links[0])) {
               links[idx].curvature *= -1;
             }
           }
