@@ -126,6 +126,22 @@
         autoAdjustCurvature();
       });
 
+      const pinAllBtn = pane.addButton({
+          title: 'pin all',
+        });
+
+      const unpinAllBtn = pane.addButton({
+          title: 'unpin all',
+        });
+
+      pinAllBtn.on('click', () => {
+        pinAll();
+      });
+
+      unpinAllBtn.on('click', () => {
+        unpinAll();
+      });
+
       const q = sel => document.querySelector(sel);
 
       const NODE_TYPE_COLORS = {
@@ -554,6 +570,24 @@
         data.nodes.forEach(n => n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0))));
 
         updateGraphData(data);
+      }
+
+      async function pinAll() {
+        const data = Graph.graphData();
+
+        data.nodes.forEach(node => {
+          node.fx = node.x;
+          node.fy = node.y;
+        });
+      }
+
+      async function unpinAll() {
+        const data = Graph.graphData();
+
+        data.nodes.forEach(node => {
+          node.fx = undefined;
+          node.fy = undefined;
+        });
       }
 
       // initial load
