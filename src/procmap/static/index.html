@@ -70,6 +70,7 @@
         d3CollisionMultiplier: 1.0,
         d3AlphaTarget: 0.0,
         d3VelocityDecay: 0.80,
+        d3ForceXYStrength: 0.1,
 
         linkOpacity: 0.5,
         showIsolated: true,
@@ -84,19 +85,9 @@
       const refreshBtn = pane.addButton({
         title: 'refresh data',
       });
-      const unlockBtn = pane.addButton({
-          title: 'unlock nodes',
-        });
 
       refreshBtn.on('click', () => {
         refresh();
-      });
-
-      unlockBtn.on('click', () => {
-        const data = Graph.graphData();
-        if (!data || !data.nodes) return;
-        data.nodes.forEach(n => { n.fx = undefined; n.fy = undefined; });
-        Graph.graphData(data);
       });
 
       pane.addBinding(settings, 'd3Charge', { min: -800, max: 100, step: 10 }).on('change', ev => {
@@ -115,6 +106,9 @@
         applyD3Params();
       });
       pane.addBinding(settings, 'd3VelocityDecay', { min: 0.01, max: 0.99, step: 0.01 }).on('change', ev => {
+        applyD3Params();
+      });
+      pane.addBinding(settings, 'd3ForceXYStrength', { min: 0.00, max: 0.99, step: 0.01 }).on('change', ev => {
         applyD3Params();
       });
       pane.addBlade({view: 'separator'});
@@ -385,7 +379,9 @@
         // tune d3 forces to reduce overlaps
         .d3Force('charge', d3.forceManyBody().strength(-450))
         .d3Force('link', d3.forceLink().distance(140).strength(0.8))
-        .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4));
+        .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4))
+        .d3Force('forceX', d3.forceX())
+        .d3Force('forceY', d3.forceY());
 
       // export to windows for easy access in devtools
       window.settings = settings;
@@ -407,6 +403,12 @@
           if (typeof linkForce.distance === 'function') linkForce.distance(settings.d3LinkDistance);
           if (typeof linkForce.strength === 'function') linkForce.strength(settings.d3LinkStrength);
         }
+
+        const forceX = Graph.d3Force('forceX');
+        const forceY = Graph.d3Force('forceY');
+
+        forceX.strength(settings.d3ForceXYStrength);
+        forceY.strength(settings.d3ForceXYStrength);
 
         const collisionForce = Graph.d3Force('collision');
         if (collisionForce && typeof collisionForce.radius === 'function') {
