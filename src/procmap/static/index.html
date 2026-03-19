@@ -55,6 +55,8 @@
 
     <div id="graph"></div>
 
+    <input type="file" id="importFile" accept=".json" style="display:none">
+
     <!-- d3 included for convenience; force-graph works with these builds -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://unpkg.com/force-graph/dist/force-graph.min.js"></script>
@@ -86,7 +88,17 @@
         title: 'refresh data',
       });
 
-      refreshBtn.on('click', () => {
+      refreshBtn.on('click', async () => {
+        data = await loadDataFromApi();
+        refresh();
+      });
+
+      const cleanBtn = pane.addButton({
+          title: 'clear',
+        });
+
+      cleanBtn.on('click', async () => {
+        data = initData();
         refresh();
       });
 
@@ -136,6 +148,52 @@
         unpinAll();
       });
 
+      pane.addBlade({ view: 'separator' });
+
+      const exportBtn = pane.addButton({
+        title: 'export data',
+      });
+
+      const importBtn = pane.addButton({
+        title: 'import data',
+      });
+
+      function initData() {
+        return {
+          nodes: [],
+          edges: [],
+        }
+      }
+
+      let data = initData();
+
+      exportBtn.on('click', () => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'graph-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      importBtn.on('click', () => {
+        document.getElementById('importFile').click();
+      });
+
+      document.getElementById('importFile').addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+
+        if (!file) return;
+
+        const text = await file.text();
+
+        // update the data
+        data = JSON.parse(text);
+
+        await refresh();
+      });
+
       const q = sel => document.querySelector(sel);
 
       const NODE_TYPE_COLORS = {
@@ -161,33 +219,32 @@
         return EDGE_TYPE_COLORS[type] || '#999';
       }
 
-      async function loadData() {
+      async function loadDataFromApi() {
         const res = await fetch('/api/graph');
 
         if (!res.ok)
           throw new Error('Failed to fetch /api/graph: ' + res.status);
 
-        const graph = await res.json();
+        const response = await res.json();
 
-        // Server format: { nodes: [{id, type, properties}], edges: [{source_id, target_id, type, properties}] }
-        const nodes = (graph.nodes || []).map(n => ({
+        const nodes = (response.nodes || []).map(n => ({
           id: n.id,
           type: n.type,
-          elementType: "node",
           properties: n.properties || {},
-          val: 1,
         }));
 
-        const links = (graph.edges || []).map(e => ({
+        const links = (response.edges || []).map(e => ({
           id: e.id,
-          source: e.source_id,
-          target: e.target_id,
+          source_id: e.source_id,
+          target_id: e.target_id,
           type: e.type,
-          elementType: "link",
           properties: e.properties || {},
         }));
 
-        return { nodes, links };
+        return {
+          nodes: nodes,
+          edges: links,
+        };
       }
 
       // returns visited nodes and edges up to maxDepth from startNode
@@ -430,7 +487,7 @@
         const data = {
           id: node_or_link.id,
           type: node_or_link.type,
-          element_type: node_or_link.elementType,
+          kind: node_or_link.kind,
           properties: node_or_link.properties || {},
         };
 
@@ -450,50 +507,6 @@
 
       function escapeHtml(s) {
         return s.replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-      }
-
-      function updateGraphData(data){
-        console.log('updating graph data:', data.nodes.length, 'nodes,', data.links.length, 'links');
-
-        // merge new data with existing nodes for smoother updates.
-        const current = Graph.graphData() || { nodes: [], links: [] };
-
-        // index existing nodes & links
-        const existingNodesById = new Map((current.nodes || []).map(n => [n.id, n]));
-        const existingLinksById = new Map((current.links || []).map(l => [l.id, l]));
-
-        // build merged node list reusing objects when possible
-        const mergedNodes = [];
-        const mergedLinks = [];
-
-        data.nodes.forEach(n => {
-          const ex = existingNodesById.get(n.id);
-          if (ex) {
-            Object.assign(ex, n);
-            mergedNodes.push(ex);
-          } else {
-            //console.log('new node', n);
-            mergedNodes.push(n);
-          }
-        });
-
-        data.links.forEach(l => {
-          const key = l.id;
-          const existing = existingLinksById.get(key);
-          if (existing) {
-            // NOTE: in existing data source/targets are objects, while in the
-            //  new data they are IDs, so we cannot do full Object.assign here;
-            existing.properties = l.properties;
-            mergedLinks.push(existing);
-          } else {
-            //console.log('new link', l);
-            mergedLinks.push(l);
-          }
-        });
-
-        Graph.graphData({ nodes: mergedNodes, links: mergedLinks });
-
-        autoAdjustCurvature();
       }
 
       // NOTE: sometimes source/target are not resolved if graph engine not run yet
@@ -554,24 +567,100 @@
       }
 
       async function refresh() {
-        const data = await loadData();
-
         // optionally filter out isolated nodes
         const showIsolated = settings.showIsolated;
+
+        let processedData = { nodes: [], edges: []};
+
+        // transform for graph format
+        for (const node of data.nodes) {
+          processedData.nodes.push({
+            id: node.id,
+            type: node.type,
+            kind: "node",
+            properties: node.properties || {},
+          })
+        }
+
+        for (const edge of data.edges) {
+          processedData.edges.push({
+            id: edge.id,
+            type: edge.type,
+            kind: "edge",
+            source: edge.source_id,
+            target: edge.target_id,
+            properties: edge.properties || {},
+          })
+        }
+
         if (!showIsolated) {
           const connected = new Set();
-          data.links.forEach(l => { connected.add(l.source); connected.add(l.target); });
-          data.nodes = data.nodes.filter(n => connected.has(n.id));
+          processedData.edges.forEach(l => {
+            connected.add(l.source);
+            connected.add(l.target);
+          });
+          processedData.nodes = data.nodes.filter(n => connected.has(n.id));
         }
 
         // compute size by degree
         const deg = new Map();
 
-        data.nodes.forEach(n => deg.set(n.id, 0));
-        data.links.forEach(l => { deg.set(l.source, (deg.get(l.source) || 0) + 1); deg.set(l.target, (deg.get(l.target) || 0) + 1); });
-        data.nodes.forEach(n => n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0))));
+        processedData.nodes.forEach(n => {
+          deg.set(n.id, 0);
+        });
+        processedData.edges.forEach(l => {
+          deg.set(l.source, (deg.get(l.source) || 0) + 1);
+          deg.set(l.target, (deg.get(l.target) || 0) + 1);
+        });
+        processedData.nodes.forEach(n => {
+          n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0)));
+        });
 
-        updateGraphData(data);
+        renderGraphData(processedData);
+      }
+
+      function renderGraphData(data) {
+        console.log('updating graph data:', data.nodes.length, 'nodes,', data.edges.length, 'links');
+
+        // merge new data with existing nodes for smoother updates.
+        const current = Graph.graphData() || { nodes: [], links: [] };
+
+        // index existing nodes & links
+        const existingNodesById = new Map((current.nodes || []).map(n => [n.id, n]));
+        const existingLinksById = new Map((current.links || []).map(l => [l.id, l]));
+
+        // build merged node list reusing objects when possible
+        const mergedNodes = [];
+        const mergedLinks = [];
+
+        data.nodes.forEach(n => {
+          const ex = existingNodesById.get(n.id);
+          if (ex) {
+            Object.assign(ex, n);
+            mergedNodes.push(ex);
+          } else {
+            //console.log('new node', n);
+            mergedNodes.push(n);
+          }
+        });
+
+        data.edges.forEach(l => {
+          const key = l.id;
+          const existing = existingLinksById.get(key);
+          if (existing) {
+            // NOTE: in existing data source/targets are objects, while in the
+            //  new data they are IDs, so we cannot do full Object.assign here;
+            existing.properties = l.properties;
+            mergedLinks.push(existing);
+          } else {
+            //console.log('new link', l);
+            mergedLinks.push(l);
+          }
+        });
+
+        Graph.graphData({ nodes: mergedNodes, links: mergedLinks });
+
+        autoAdjustCurvature();
       }
 
       async function pinAll() {
@@ -594,6 +683,7 @@
 
       // initial load
       applyD3Params();
+      data = await loadDataFromApi();
       refresh();
     </script>
   </body>
