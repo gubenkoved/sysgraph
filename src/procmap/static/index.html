@@ -93,15 +93,6 @@
         refresh();
       });
 
-      const cleanBtn = pane.addButton({
-          title: 'clear',
-        });
-
-      cleanBtn.on('click', async () => {
-        data = initData();
-        refresh();
-      });
-
       pane.addBinding(settings, 'd3Charge', { min: -800, max: 100, step: 10 }).on('change', ev => {
         applyD3Params();
       });
@@ -150,6 +141,15 @@
 
       pane.addBlade({ view: 'separator' });
 
+      const cleanBtn = pane.addButton({
+        title: 'clear',
+      });
+
+      cleanBtn.on('click', async () => {
+        data = initData();
+        refresh();
+      });
+
       const exportBtn = pane.addButton({
         title: 'export data',
       });
@@ -192,6 +192,8 @@
         data = JSON.parse(text);
 
         await refresh();
+
+        event.target.value = '';
       });
 
       const q = sel => document.querySelector(sel);
