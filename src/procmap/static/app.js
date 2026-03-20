@@ -262,6 +262,16 @@ function colorWithAlpha(color, alpha) {
     return col.toString();
 }
 
+function drawCicle(ctx, x, y, r, strokeWidth, strokeStyle) {
+    ctx.save();
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = strokeStyle;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+    ctx.stroke();
+    ctx.restore();
+}
+
 // configure graph
 // Create ForceGraph instance
 const Graph = ForceGraph()(document.getElementById('graph'))
@@ -328,21 +338,14 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         if (locked) {
             // stroke width should scale inversely with zoom so it remains visible
             //const strokeWidth = Math.max(1.2, 2 / globalScale);
-            const strokeWidth = 2;
-
-            ctx.save();
-            ctx.lineWidth = strokeWidth;
 
             if (!shouldBeWashedOut) {
-                ctx.strokeStyle = 'rgba(0,0,0,0.95)';
+                drawCicle(ctx, node.x, node.y, r + 1, 2, 'rgba(0,0,0,0.95)');
+                drawCicle(ctx, node.x, node.y, r, 1, 'rgba(255,255,255,0.8)');
             } else {
-                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                drawCicle(ctx, node.x, node.y, r + 1, 2, 'rgba(0,0,0,0.2)');
+                drawCicle(ctx, node.x, node.y, r, 1, 'rgba(255,255,255,0.2)');
             }
-
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, r + strokeWidth / 2, 0, 2 * Math.PI, false);
-            ctx.stroke();
-            ctx.restore();
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)
