@@ -65,6 +65,8 @@
     <script type="module">
       import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
+      const linkOpacity = 0.5;
+
       const settings = {
         d3Charge: -400,
         d3LinkDistance: 140,
@@ -74,10 +76,26 @@
         d3VelocityDecay: 0.80,
         d3ForceXYStrength: 0.1,
 
-        linkOpacity: 0.5,
         showIsolated: true,
         // curvature interval per each link when there are multiple
         curvatureStep: 0.005,
+
+        nodeColors: {
+          process: { r: 21, g: 127, b: 200, a: 1.0 },
+          socket: { r: 220, g: 75, b: 47, a: 1.0 },
+          pipe: { r: 169, g: 57, b: 249, a: 1.0 },
+          external_ip: { r: 255, g: 103, b: 0, a: 1.0 },
+          "$default": {r: 40, g: 40, b: 40, a: 1.0 },
+        },
+
+        edgeColors: {
+          unix_domain_socket: { r: 31, g: 120, b: 180, a: linkOpacity },
+          pipe: { r: 207, g: 110, b: 255, a: linkOpacity },
+          socket_connection: { r: 255, g: 76, b: 40, a: linkOpacity },
+          socket: { r: 255, g: 76, b: 40, a: linkOpacity },
+          child_process: { r: 40, g: 40, b: 40, a: linkOpacity },
+          "$default": { r: 40, g: 40, b: 40, a: linkOpacity },
+        }
       };
 
       const pane = new Pane({
@@ -115,7 +133,6 @@
         applyD3Params();
       });
       pane.addBlade({view: 'separator'});
-      pane.addBinding(settings, 'linkOpacity', { min: 0.01, max: 1.00, step: 0.01 });
       pane.addBinding(settings, 'showIsolated').on('change', ev => {
         refresh();
       });
@@ -158,6 +175,24 @@
         title: 'import data',
       });
 
+      const nodeColorsFolder = pane.addFolder({
+        title: "node colors",
+        explanded: true,
+      })
+
+      for (const key in settings.nodeColors) {
+        nodeColorsFolder.addBinding(settings.nodeColors, key)
+      }
+
+      const edgeColorsFolder = pane.addFolder({
+        title: "edge colors",
+        explanded: true,
+      })
+
+      for (const key in settings.edgeColors) {
+        edgeColorsFolder.addBinding(settings.edgeColors, key)
+      }
+
       function initData() {
         return {
           nodes: [],
@@ -199,27 +234,24 @@
 
       const q = sel => document.querySelector(sel);
 
-      const NODE_TYPE_COLORS = {
-          'process': '#2171ad',  // blue
-          'socket': '#e35f44',  // red
-          'pipe': '#9e1dde',  // magenta
-          'external_ip': '#f58442',  // orange
-        };
-
-      const EDGE_TYPE_COLORS = {
-        'unix_domain_socket': '#1f78b4', // blue
-        'pipe': '#9e1dde',  // magenta
-        'socket_connection': '#e35f44',  // red
-      };
+      function toCssColor({ r, g, b, a }) {
+        return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
+      }
 
       function nodeColorFor(node) {
           const type = node.type;
-          return NODE_TYPE_COLORS[type] || '#999';
+          if (type in settings.nodeColors) {
+            return toCssColor(settings.nodeColors[type]);
+          }
+          return toCssColor(settings.nodeColors["$default"]);
         }
 
       function edgeColorFor(edge) {
         const type = edge.type;
-        return EDGE_TYPE_COLORS[type] || '#999';
+        if (type in settings.edgeColors) {
+          return toCssColor(settings.edgeColors[type]);
+        }
+        return toCssColor(settings.edgeColors["$default"]);
       }
 
       async function loadDataFromApi() {
@@ -310,7 +342,7 @@
           const shouldBeWashedOut = settings.highlightLinkIds && !settings.highlightLinkIds.has(l.id);
 
           if (!shouldBeWashedOut) {
-            return colorWithAlpha(edgeColorFor(l), settings.linkOpacity);
+            return edgeColorFor(l);
           } else {
             return colorWithAlpha(edgeColorFor(l), 0.1);
           }
@@ -319,7 +351,7 @@
           return l.properties.label || l.type;
         })
         .linkDirectionalParticleColor(l => {
-          return colorWithAlpha(edgeColorFor(l), settings.linkOpacity);
+          return edgeColorFor(l);
         })
         .linkDirectionalParticles(0)
         .linkDirectionalArrowLength(link => {
