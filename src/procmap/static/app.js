@@ -2,6 +2,15 @@ import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpan
 
 const linkOpacity = 0.5;
 
+// Tool state
+let currentTool = 'pointer';
+let selectedNodeIds = new Set();
+let isSelecting = false;
+let selectionStart = null;
+let selectionEnd = null;
+let selectionStartCanvas = null;
+let selectionEndCanvas = null;
+
 const settings = {
     d3Charge: -400,
     d3LinkDistance: 140,
@@ -333,6 +342,12 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
         ctx.fill();
 
+        // draw red outline for selected nodes with pulsing radius
+        if (selectedNodeIds.has(node.id)) {
+            const pulse = 1.2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
+            drawCicle(ctx, node.x, node.y, r + 1 + pulse, 2, 'rgba(255,0,0,1.0)');
+        }
+
         // draw outline for locked (pinned) nodes
         const locked = (node.fx !== undefined || node.fy !== undefined);
         if (locked) {
@@ -372,12 +387,8 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         ctx.fill();
     })
     .onNodeClick((node, event) => {
-        // Shift/Alt+click to release fixed position, otherwise show details
-        if (event && (event.shiftKey || event.altKey)) {
-            node.fx = undefined;
-            node.fy = undefined;
-        } else {
-            showDetails(node);
+        if (currentTool === 'pointer') {
+            handleNodeClick(node, event);
         }
     })
     .onLinkClick((link, event) => {
@@ -404,7 +415,16 @@ const Graph = ForceGraph()(document.getElementById('graph'))
             settings.highlightLinkIds = null;
         }
     })
-    .onBackgroundClick(() => hideDetails())
+    .onBackgroundClick(() => {
+        if (currentTool === 'pointer') {
+            hideDetails();
+        } else if (currentTool === 'rect-select') {
+            // Clear selection on background click
+            selectedNodeIds.clear();
+            updateSelectionInfo();
+            Graph.refresh();
+        }
+    })
     .autoPauseRedraw(false)
     // tune d3 forces to reduce overlaps
     .d3Force('charge', d3.forceManyBody().strength(-450))
@@ -417,9 +437,190 @@ const Graph = ForceGraph()(document.getElementById('graph'))
 window.settings = settings;
 window.graph = Graph;
 
-// keep center updated on resize
+// Get canvas element for selection logic
+const canvas = document.querySelector('#graph canvas');
+
+// Tool switching and selection logic
+function setTool(tool) {
+    currentTool = tool;
+    document.getElementById('toolPointer').classList.toggle('active', tool === 'pointer');
+    document.getElementById('toolRectSelect').classList.toggle('active', tool === 'rect-select');
+    
+    if (tool === 'pointer') {
+        selectionCanvas.style.pointerEvents = 'none';
+        canvas.style.cursor = 'default';
+        // Re-enable normal click handlers
+        Graph.onNodeClick(handleNodeClick);
+    } else if (tool === 'rect-select') {
+        selectionCanvas.style.pointerEvents = 'auto';
+        selectionCanvas.style.cursor = 'crosshair';
+        // Disable normal node click handlers for selection tool
+        Graph.onNodeClick(null);
+    }
+}
+
+function handleNodeClick(node, event) {
+    if (event && (event.shiftKey || event.altKey)) {
+        node.fx = undefined;
+        node.fy = undefined;
+    } else {
+        showDetails(node);
+    }
+}
+
+function updateSelectionInfo() {
+    const info = document.getElementById('selectionInfo');
+    if (selectedNodeIds.size > 0) {
+        info.textContent = `${selectedNodeIds.size} node${selectedNodeIds.size !== 1 ? 's' : ''} selected`;
+    } else {
+        info.textContent = '';
+    }
+}
+
+function isNodeInRect(node, rect) {
+    const minX = Math.min(rect.x1, rect.x2);
+    const maxX = Math.max(rect.x1, rect.x2);
+    const minY = Math.min(rect.y1, rect.y2);
+    const maxY = Math.max(rect.y1, rect.y2);
+    
+    const r = Math.max(4, (node.val || 1) * 3);
+    return node.x + r > minX && node.x - r < maxX && node.y + r > minY && node.y - r < maxY;
+}
+
+// Custom overlay for drawing selection rectangle
+const selectionCanvas = document.createElement('canvas');
+selectionCanvas.style.position = 'absolute';
+selectionCanvas.style.top = '0';
+selectionCanvas.style.left = '0';
+selectionCanvas.style.cursor = 'crosshair';
+selectionCanvas.style.zIndex = '50';
+selectionCanvas.style.display = 'block';
+selectionCanvas.style.pointerEvents = 'none';
+selectionCanvas.style.background = 'transparent';
+const graphContainer = document.getElementById('graph');
+graphContainer.appendChild(selectionCanvas);
+
+function resizeGraphViewport() {
+    const rect = graphContainer.getBoundingClientRect();
+    Graph.width(rect.width);
+    Graph.height(rect.height);
+    selectionCanvas.width = rect.width;
+    selectionCanvas.height = rect.height;
+    Graph.d3Force('center', d3.forceCenter(rect.width / 2, rect.height / 2));
+}
+
+resizeGraphViewport();
+
+function drawSelectionRectangle() {
+    const ctx = selectionCanvas.getContext('2d');
+    ctx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+    
+    if (isSelecting && selectionStartCanvas && selectionEndCanvas) {
+        const startX = selectionStartCanvas.x;
+        const endX = selectionEndCanvas.x;
+        const startY = selectionStartCanvas.y;
+        const endY = selectionEndCanvas.y;
+
+        const minX = Math.min(startX, endX);
+        const maxX = Math.max(startX, endX);
+        const minY = Math.min(startY, endY);
+        const maxY = Math.max(startY, endY);
+        
+        ctx.fillStyle = 'rgba(33, 150, 243, 0.1)';
+        ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
+        
+        ctx.strokeStyle = 'rgba(33, 150, 243, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+    }
+}
+
+// Mouse event handlers
+selectionCanvas.addEventListener('mousedown', (event) => {
+    if (currentTool === 'rect-select') {
+        const graphRect = graphContainer.getBoundingClientRect();
+        const localX = event.clientX - graphRect.left;
+        const localY = event.clientY - graphRect.top;
+        const graphCoords = Graph.screen2GraphCoords(event.clientX, event.clientY);
+        isSelecting = true;
+        selectionStart = graphCoords;
+        selectionEnd = graphCoords;
+        selectionStartCanvas = { x: localX, y: localY };
+        selectionEndCanvas = { x: localX, y: localY };
+        drawSelectionRectangle();
+    }
+});
+
+selectionCanvas.addEventListener('mousemove', (event) => {
+    if (isSelecting && currentTool === 'rect-select') {
+        const graphRect = graphContainer.getBoundingClientRect();
+        const localX = event.clientX - graphRect.left;
+        const localY = event.clientY - graphRect.top;
+        const graphCoords = Graph.screen2GraphCoords(event.clientX, event.clientY);
+        selectionEnd = graphCoords;
+        selectionEndCanvas = { x: localX, y: localY };
+        drawSelectionRectangle();
+    }
+});
+
+selectionCanvas.addEventListener('mouseup', (event) => {
+    if (isSelecting && currentTool === 'rect-select') {
+        const graphRect = graphContainer.getBoundingClientRect();
+        const localX = event.clientX - graphRect.left;
+        const localY = event.clientY - graphRect.top;
+        const graphCoords = Graph.screen2GraphCoords(event.clientX, event.clientY);
+
+        selectionEnd = graphCoords;
+        selectionEndCanvas = { x: localX, y: localY };
+        isSelecting = false;
+        
+        // Find nodes in selection rectangle
+        const rect = {
+            x1: selectionStart.x,
+            y1: selectionStart.y,
+            x2: selectionEnd.x,
+            y2: selectionEnd.y,
+        };
+        
+        selectedNodeIds.clear();
+        const nodes = Graph.graphData().nodes;
+        nodes.forEach(node => {
+            if (isNodeInRect(node, rect)) {
+                selectedNodeIds.add(node.id);
+            }
+        });
+        
+        updateSelectionInfo();
+        selectionStartCanvas = null;
+        selectionEndCanvas = null;
+        drawSelectionRectangle();
+        Graph.refresh();
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'p' || event.key === 'P') {
+        setTool('pointer');
+    } else if (event.key === 'r' || event.key === 'R') {
+        setTool('rect-select');
+    }
+});
+
+// Toolbar button handlers
+document.getElementById('toolPointer').addEventListener('click', () => {
+    setTool('pointer');
+    selectedNodeIds.clear();
+    updateSelectionInfo();
+    Graph.refresh();
+});
+
+document.getElementById('toolRectSelect').addEventListener('click', () => {
+    setTool('rect-select');
+});
+
 window.addEventListener('resize', () => {
-    Graph.d3Force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+    resizeGraphViewport();
 });
 
 function applyD3Params() {
