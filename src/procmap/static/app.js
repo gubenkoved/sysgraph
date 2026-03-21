@@ -282,7 +282,6 @@ function drawCicle(ctx, x, y, r, strokeWidth, strokeStyle) {
 }
 
 // configure graph
-// Create ForceGraph instance
 const Graph = ForceGraph()(document.getElementById('graph'))
     .nodeId('id')
     .graphData({ nodes: [], links: [] })
@@ -342,12 +341,6 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
         ctx.fill();
 
-        // draw red outline for selected nodes with pulsing radius
-        if (selectedNodeIds.has(node.id)) {
-            const pulse = 1.2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            drawCicle(ctx, node.x, node.y, r + 1 + pulse, 2, 'rgba(255,0,0,1.0)');
-        }
-
         // draw outline for locked (pinned) nodes
         const locked = (node.fx !== undefined || node.fy !== undefined);
         if (locked) {
@@ -361,6 +354,12 @@ const Graph = ForceGraph()(document.getElementById('graph'))
                 drawCicle(ctx, node.x, node.y, r + 1, 2, 'rgba(0,0,0,0.2)');
                 drawCicle(ctx, node.x, node.y, r, 1, 'rgba(255,255,255,0.2)');
             }
+        }
+
+        // draw red outline for selected nodes with pulsing radius
+        if (selectedNodeIds.has(node.id)) {
+            const pulse = 1.2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
+            drawCicle(ctx, node.x, node.y, r + 2 + pulse, 2, 'rgba(255,0,0,1.0)');
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)
@@ -422,7 +421,6 @@ const Graph = ForceGraph()(document.getElementById('graph'))
             // Clear selection on background click
             selectedNodeIds.clear();
             updateSelectionInfo();
-            Graph.refresh();
         }
     })
     .autoPauseRedraw(false)
@@ -445,7 +443,7 @@ function setTool(tool) {
     currentTool = tool;
     document.getElementById('toolPointer').classList.toggle('active', tool === 'pointer');
     document.getElementById('toolRectSelect').classList.toggle('active', tool === 'rect-select');
-    
+
     if (tool === 'pointer') {
         selectionCanvas.style.pointerEvents = 'none';
         canvas.style.cursor = 'default';
@@ -482,7 +480,7 @@ function isNodeInRect(node, rect) {
     const maxX = Math.max(rect.x1, rect.x2);
     const minY = Math.min(rect.y1, rect.y2);
     const maxY = Math.max(rect.y1, rect.y2);
-    
+
     const r = Math.max(4, (node.val || 1) * 3);
     return node.x + r > minX && node.x - r < maxX && node.y + r > minY && node.y - r < maxY;
 }
@@ -506,7 +504,7 @@ function resizeGraphViewport() {
     Graph.height(rect.height);
     selectionCanvas.width = rect.width;
     selectionCanvas.height = rect.height;
-    Graph.d3Force('center', d3.forceCenter(rect.width / 2, rect.height / 2));
+    // Graph.d3Force('center', d3.forceCenter(rect.width / 2, rect.height / 2));
 }
 
 resizeGraphViewport();
@@ -514,7 +512,7 @@ resizeGraphViewport();
 function drawSelectionRectangle() {
     const ctx = selectionCanvas.getContext('2d');
     ctx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
-    
+
     if (isSelecting && selectionStartCanvas && selectionEndCanvas) {
         const startX = selectionStartCanvas.x;
         const endX = selectionEndCanvas.x;
@@ -525,12 +523,12 @@ function drawSelectionRectangle() {
         const maxX = Math.max(startX, endX);
         const minY = Math.min(startY, endY);
         const maxY = Math.max(startY, endY);
-        
+
         ctx.fillStyle = 'rgba(33, 150, 243, 0.1)';
         ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
-        
+
         ctx.strokeStyle = 'rgba(33, 150, 243, 0.8)';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
     }
 }
@@ -541,7 +539,7 @@ selectionCanvas.addEventListener('mousedown', (event) => {
         const graphRect = graphContainer.getBoundingClientRect();
         const localX = event.clientX - graphRect.left;
         const localY = event.clientY - graphRect.top;
-        const graphCoords = Graph.screen2GraphCoords(event.clientX, event.clientY);
+        const graphCoords = Graph.screen2GraphCoords(localX, localY);
         isSelecting = true;
         selectionStart = graphCoords;
         selectionEnd = graphCoords;
@@ -556,7 +554,7 @@ selectionCanvas.addEventListener('mousemove', (event) => {
         const graphRect = graphContainer.getBoundingClientRect();
         const localX = event.clientX - graphRect.left;
         const localY = event.clientY - graphRect.top;
-        const graphCoords = Graph.screen2GraphCoords(event.clientX, event.clientY);
+        const graphCoords = Graph.screen2GraphCoords(localX, localY);
         selectionEnd = graphCoords;
         selectionEndCanvas = { x: localX, y: localY };
         drawSelectionRectangle();
@@ -568,12 +566,12 @@ selectionCanvas.addEventListener('mouseup', (event) => {
         const graphRect = graphContainer.getBoundingClientRect();
         const localX = event.clientX - graphRect.left;
         const localY = event.clientY - graphRect.top;
-        const graphCoords = Graph.screen2GraphCoords(event.clientX, event.clientY);
+        const graphCoords = Graph.screen2GraphCoords(localX, localY);
 
         selectionEnd = graphCoords;
         selectionEndCanvas = { x: localX, y: localY };
         isSelecting = false;
-        
+
         // Find nodes in selection rectangle
         const rect = {
             x1: selectionStart.x,
@@ -581,7 +579,7 @@ selectionCanvas.addEventListener('mouseup', (event) => {
             x2: selectionEnd.x,
             y2: selectionEnd.y,
         };
-        
+
         selectedNodeIds.clear();
         const nodes = Graph.graphData().nodes;
         nodes.forEach(node => {
@@ -589,12 +587,11 @@ selectionCanvas.addEventListener('mouseup', (event) => {
                 selectedNodeIds.add(node.id);
             }
         });
-        
+
         updateSelectionInfo();
         selectionStartCanvas = null;
         selectionEndCanvas = null;
         drawSelectionRectangle();
-        Graph.refresh();
     }
 });
 
@@ -612,7 +609,6 @@ document.getElementById('toolPointer').addEventListener('click', () => {
     setTool('pointer');
     selectedNodeIds.clear();
     updateSelectionInfo();
-    Graph.refresh();
 });
 
 document.getElementById('toolRectSelect').addEventListener('click', () => {
@@ -677,10 +673,6 @@ function showDetails(node_or_link) {
 
 function hideDetails() {
     q('#details').hidden = true;
-}
-
-function escapeHtml(s) {
-    return s.replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
 // NOTE: sometimes source/target are not resolved if graph engine not run yet
