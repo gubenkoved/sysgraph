@@ -305,6 +305,10 @@ function colorAdjustAlpha(color, factor) {
     return col.toString();
 }
 
+function darkerColor(color) {
+    return d3.color(color).darker();
+}
+
 
 function drawCicle(ctx, x, y, r, strokeWidth, strokeStyle) {
     ctx.save();
@@ -390,6 +394,13 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         ctx.fillStyle = fillStyle;
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
         ctx.fill();
+
+        // bit darker outline
+        ctx.beginPath();
+        ctx.strokeWidth = 1;
+        ctx.strokeStyle = darkerColor(fillStyle);
+        ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
+        ctx.stroke();
 
         // draw outline for locked (pinned) nodes
         const locked = (node.fx !== undefined || node.fy !== undefined);
