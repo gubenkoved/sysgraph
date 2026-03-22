@@ -11,6 +11,25 @@ let selectionEnd = null;
 let selectionStartCanvas = null;
 let selectionEndCanvas = null;
 
+const defaultNodeColor = { r: 40, g: 40, b: 40, a: 1.0 };
+const defaultEdgeColor = { r: 40, g: 40, b: 40, a: linkOpacity };
+
+const perTypeDefaultColors = {
+    nodes: {
+        process: { r: 21, g: 127, b: 200, a: 1.0 },
+        socket: { r: 220, g: 75, b: 47, a: 1.0 },
+        pipe: { r: 169, g: 57, b: 249, a: 1.0 },
+        external_ip: { r: 255, g: 103, b: 0, a: 1.0 },
+    },
+    edges: {
+        unix_domain_socket: { r: 31, g: 120, b: 180, a: linkOpacity },
+        pipe: { r: 207, g: 110, b: 255, a: linkOpacity },
+        socket_connection: { r: 255, g: 76, b: 40, a: linkOpacity },
+        socket: { r: 255, g: 76, b: 40, a: linkOpacity },
+        child_process: { r: 40, g: 40, b: 40, a: linkOpacity },
+    }
+}
+
 const settings = {
     d3Charge: -400,
     d3LinkDistance: 140,
@@ -24,22 +43,8 @@ const settings = {
     // curvature interval per each link when there are multiple
     curvatureStep: 0.005,
 
-    nodeColors: {
-        process: { r: 21, g: 127, b: 200, a: 1.0 },
-        socket: { r: 220, g: 75, b: 47, a: 1.0 },
-        pipe: { r: 169, g: 57, b: 249, a: 1.0 },
-        external_ip: { r: 255, g: 103, b: 0, a: 1.0 },
-        "$default": { r: 40, g: 40, b: 40, a: 1.0 },
-    },
-
-    edgeColors: {
-        unix_domain_socket: { r: 31, g: 120, b: 180, a: linkOpacity },
-        pipe: { r: 207, g: 110, b: 255, a: linkOpacity },
-        socket_connection: { r: 255, g: 76, b: 40, a: linkOpacity },
-        socket: { r: 255, g: 76, b: 40, a: linkOpacity },
-        child_process: { r: 40, g: 40, b: 40, a: linkOpacity },
-        "$default": { r: 40, g: 40, b: 40, a: linkOpacity },
-    }
+    nodeColors: {},
+    edgeColors: {},
 };
 
 const pane = new Pane({
@@ -119,23 +124,15 @@ const importBtn = pane.addButton({
     title: 'import data',
 });
 
-const nodeColorsFolder = pane.addFolder({
+let nodeColorsFolder = pane.addFolder({
     title: "node colors",
     explanded: true,
 })
 
-for (const key in settings.nodeColors) {
-    nodeColorsFolder.addBinding(settings.nodeColors, key)
-}
-
-const edgeColorsFolder = pane.addFolder({
+let edgeColorsFolder = pane.addFolder({
     title: "edge colors",
     explanded: true,
 })
-
-for (const key in settings.edgeColors) {
-    edgeColorsFolder.addBinding(settings.edgeColors, key)
-}
 
 function initData() {
     return {
@@ -187,7 +184,7 @@ function nodeColorFor(node) {
     if (type in settings.nodeColors) {
         return toCssColor(settings.nodeColors[type]);
     }
-    return toCssColor(settings.nodeColors["$default"]);
+    return toCssColor(defaultNodeColor);
 }
 
 function edgeColorFor(edge) {
@@ -195,7 +192,7 @@ function edgeColorFor(edge) {
     if (type in settings.edgeColors) {
         return toCssColor(settings.edgeColors[type]);
     }
-    return toCssColor(settings.edgeColors["$default"]);
+    return toCssColor(defaultEdgeColor);
 }
 
 async function loadDataFromApi() {
@@ -732,7 +729,50 @@ function autoAdjustCurvature() {
     }
 }
 
+function updateColorPanes() {
+    nodeColorsFolder.dispose();
+    edgeColorsFolder.dispose();
+
+    nodeColorsFolder = pane.addFolder({
+        title: "node colors",
+        explanded: true,
+    })
+
+    edgeColorsFolder = pane.addFolder({
+        title: "edge colors",
+        explanded: true,
+    })
+
+    const nodeTypes = new Set();
+
+    for (const node of data.nodes) {
+        nodeTypes.add(node.type);
+    }
+
+    const edgeTypes = new Set();
+
+    for (const edge of data.edges) {
+        edgeTypes.add(edge.type);
+    }
+
+    for (const key of nodeTypes) {
+        if (!(key in settings.nodeColors)) {
+            settings.nodeColors[key] = structuredClone(perTypeDefaultColors.nodes[key] || defaultNodeColor);
+        }
+        nodeColorsFolder.addBinding(settings.nodeColors, key);
+    }
+
+    for (const key of edgeTypes) {
+        if (!(key in settings.edgeColors)) {
+            settings.edgeColors[key] = structuredClone(perTypeDefaultColors.edges[key] || defaultEdgeColor);
+        }
+        edgeColorsFolder.addBinding(settings.edgeColors, key)
+    }
+}
+
 async function refresh() {
+    updateColorPanes();
+
     // optionally filter out isolated nodes
     const showIsolated = settings.showIsolated;
 
