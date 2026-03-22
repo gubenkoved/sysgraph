@@ -178,13 +178,23 @@ document.getElementById('importFile').addEventListener('change', async (event) =
 
     const text = await file.text();
 
-    // update the data
     data = JSON.parse(text);
+
+    preProcessData();
 
     await refresh();
 
     event.target.value = '';
 });
+
+function preProcessData() {
+    // generate edge IDs if unspecified as we will need it
+    for (const edge of data.edges) {
+        if (edge.id === undefined) {
+            edge.id = "auto:" + crypto.randomUUID();
+        }
+    }
+}
 
 const q = sel => document.querySelector(sel);
 
