@@ -38,6 +38,7 @@ const settings = {
     d3AlphaTarget: 0.0,
     d3VelocityDecay: 0.80,
     d3ForceXYStrength: 0.1,
+    d3CenterForce: true,
 
     showIsolated: true,
     // curvature interval per each link when there are multiple
@@ -81,7 +82,12 @@ pane.addBinding(settings, 'd3VelocityDecay', { min: 0.01, max: 0.99, step: 0.01 
 pane.addBinding(settings, 'd3ForceXYStrength', { min: 0.00, max: 0.99, step: 0.01 }).on('change', ev => {
     applyD3Params();
 });
+pane.addBinding(settings, 'd3CenterForce').on('change', ev => {
+    applyD3Params();
+});
+
 pane.addBlade({ view: 'separator' });
+
 pane.addBinding(settings, 'showIsolated').on('change', ev => {
     refresh();
 });
@@ -617,8 +623,6 @@ window.addEventListener('resize', () => {
 });
 
 function applyD3Params() {
-    //debugger
-
     const chargeForce = Graph.d3Force('charge');
     if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(settings.d3Charge);
 
@@ -633,6 +637,13 @@ function applyD3Params() {
 
     forceX.strength(settings.d3ForceXYStrength);
     forceY.strength(settings.d3ForceXYStrength);
+
+    if (settings.d3CenterForce) {
+        const centerForce = d3.forceCenter();
+        Graph.d3Force('center', centerForce);
+    } else {
+        Graph.d3Force('center', null);
+    }
 
     const collisionForce = Graph.d3Force('collision');
     if (collisionForce && typeof collisionForce.radius === 'function') {
