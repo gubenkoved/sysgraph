@@ -2,15 +2,6 @@ import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpan
 
 const linkOpacity = 0.5;
 
-// Tool state
-let currentTool = 'pointer';
-let selectedNodeIds = new Set();
-let isSelecting = false;
-let selectionStart = null;
-let selectionEnd = null;
-let selectionStartCanvas = null;
-let selectionEndCanvas = null;
-
 const defaultNodeColor = { r: 40, g: 40, b: 40, a: 1.0 };
 const defaultEdgeColor = { r: 40, g: 40, b: 40, a: linkOpacity };
 
@@ -53,6 +44,15 @@ const settings = {
 
 const state = {
     highlight: null,
+    currentTool: "pointer",
+    selection: {
+        selectedNodeIds: new Set(),
+        isSelecting: false,
+        selectionStart: null,
+        selectionEnd: null,
+        selectionStartCanvas: null,
+        selectionEndCanvas: null,
+    }
 }
 
 const pane = new Pane({
@@ -392,7 +392,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         }
 
         // draw red outline for selected nodes with pulsing radius
-        if (selectedNodeIds.has(node.id)) {
+        if (state.selection.selectedNodeIds.has(node.id)) {
             const pulse = 1.2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
             drawCicle(ctx, node.x, node.y, r + 2 + pulse, 2, 'rgba(255,0,0,1.0)');
         }
@@ -416,7 +416,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         ctx.fill();
     })
     .onNodeClick((node, event) => {
-        if (currentTool === 'pointer') {
+        if (state.currentTool === 'pointer') {
             handleNodeClick(node, event);
         }
     })
@@ -448,11 +448,11 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         }
     })
     .onBackgroundClick(() => {
-        if (currentTool === 'pointer') {
+        if (state.currentTool === 'pointer') {
             hideDetails();
-        } else if (currentTool === 'rect-select') {
+        } else if (state.currentTool === 'rect-select') {
             // Clear selection on background click
-            selectedNodeIds.clear();
+            state.selection.selectedNodeIds.clear();
             updateSelectionInfo();
         }
     })
@@ -473,7 +473,7 @@ const canvas = document.querySelector('#graph canvas');
 
 // Tool switching and selection logic
 function setTool(tool) {
-    currentTool = tool;
+    state.currentTool = tool;
     document.getElementById('toolPointer').classList.toggle('active', tool === 'pointer');
     document.getElementById('toolRectSelect').classList.toggle('active', tool === 'rect-select');
 
@@ -501,8 +501,8 @@ function handleNodeClick(node, event) {
 
 function updateSelectionInfo() {
     const info = document.getElementById('selectionInfo');
-    if (selectedNodeIds.size > 0) {
-        info.textContent = `${selectedNodeIds.size} node${selectedNodeIds.size !== 1 ? 's' : ''} selected`;
+    if (state.selection.selectedNodeIds.size > 0) {
+        info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
     } else {
         info.textContent = '';
     }
@@ -546,11 +546,11 @@ function drawSelectionRectangle() {
     const ctx = selectionCanvas.getContext('2d');
     ctx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
 
-    if (isSelecting && selectionStartCanvas && selectionEndCanvas) {
-        const startX = selectionStartCanvas.x;
-        const endX = selectionEndCanvas.x;
-        const startY = selectionStartCanvas.y;
-        const endY = selectionEndCanvas.y;
+    if (state.selection.isSelecting && state.selection.selectionStartCanvas && state.selection.selectionEndCanvas) {
+        const startX = state.selection.selectionStartCanvas.x;
+        const endX = state.selection.selectionEndCanvas.x;
+        const startY = state.selection.selectionStartCanvas.y;
+        const endY = state.selection.selectionEndCanvas.y;
 
         const minX = Math.min(startX, endX);
         const maxX = Math.max(startX, endX);
@@ -568,62 +568,62 @@ function drawSelectionRectangle() {
 
 // Mouse event handlers
 selectionCanvas.addEventListener('mousedown', (event) => {
-    if (currentTool === 'rect-select') {
+    if (state.currentTool === 'rect-select') {
         const graphRect = graphContainer.getBoundingClientRect();
         const localX = event.clientX - graphRect.left;
         const localY = event.clientY - graphRect.top;
         const graphCoords = Graph.screen2GraphCoords(localX, localY);
-        isSelecting = true;
-        selectionStart = graphCoords;
-        selectionEnd = graphCoords;
-        selectionStartCanvas = { x: localX, y: localY };
-        selectionEndCanvas = { x: localX, y: localY };
+        state.selection.isSelecting = true;
+        state.selection.selectionStart = graphCoords;
+        state.selection.selectionEnd = graphCoords;
+        state.selection.selectionStartCanvas = { x: localX, y: localY };
+        state.selection.selectionEndCanvas = { x: localX, y: localY };
         drawSelectionRectangle();
     }
 });
 
 selectionCanvas.addEventListener('mousemove', (event) => {
-    if (isSelecting && currentTool === 'rect-select') {
+    if (state.selection.isSelecting && state.currentTool === 'rect-select') {
         const graphRect = graphContainer.getBoundingClientRect();
         const localX = event.clientX - graphRect.left;
         const localY = event.clientY - graphRect.top;
         const graphCoords = Graph.screen2GraphCoords(localX, localY);
-        selectionEnd = graphCoords;
-        selectionEndCanvas = { x: localX, y: localY };
+        state.selection.selectionEnd = graphCoords;
+        state.selection.selectionEndCanvas = { x: localX, y: localY };
         drawSelectionRectangle();
     }
 });
 
 selectionCanvas.addEventListener('mouseup', (event) => {
-    if (isSelecting && currentTool === 'rect-select') {
+    if (state.selection.isSelecting && state.currentTool === 'rect-select') {
         const graphRect = graphContainer.getBoundingClientRect();
         const localX = event.clientX - graphRect.left;
         const localY = event.clientY - graphRect.top;
         const graphCoords = Graph.screen2GraphCoords(localX, localY);
 
-        selectionEnd = graphCoords;
-        selectionEndCanvas = { x: localX, y: localY };
-        isSelecting = false;
+        state.selection.selectionEnd = graphCoords;
+        state.selection.selectionEndCanvas = { x: localX, y: localY };
+        state.selection.isSelecting = false;
 
         // Find nodes in selection rectangle
         const rect = {
-            x1: selectionStart.x,
-            y1: selectionStart.y,
-            x2: selectionEnd.x,
-            y2: selectionEnd.y,
+            x1: state.selection.selectionStart.x,
+            y1: state.selection.selectionStart.y,
+            x2: state.selection.selectionEnd.x,
+            y2: state.selection.selectionEnd.y,
         };
 
-        selectedNodeIds.clear();
+        state.selection.selectedNodeIds.clear();
         const nodes = Graph.graphData().nodes;
         nodes.forEach(node => {
             if (isNodeInRect(node, rect)) {
-                selectedNodeIds.add(node.id);
+                state.selection.selectedNodeIds.add(node.id);
             }
         });
 
         updateSelectionInfo();
-        selectionStartCanvas = null;
-        selectionEndCanvas = null;
+        state.selection.selectionStartCanvas = null;
+        state.selection.selectionEndCanvas = null;
         drawSelectionRectangle();
     }
 });
@@ -640,7 +640,7 @@ document.addEventListener('keydown', (event) => {
 // Toolbar button handlers
 document.getElementById('toolPointer').addEventListener('click', () => {
     setTool('pointer');
-    selectedNodeIds.clear();
+    state.selection.selectedNodeIds.clear();
     updateSelectionInfo();
 });
 
