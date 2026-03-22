@@ -14,6 +14,9 @@ let selectionEndCanvas = null;
 const defaultNodeColor = { r: 40, g: 40, b: 40, a: 1.0 };
 const defaultEdgeColor = { r: 40, g: 40, b: 40, a: linkOpacity };
 
+// alpha multipler for distances 0, 1, 2, 3 (and more)
+const highlightAlphaMultipliers = [1.0, 1.0, 0.5, 0.1]
+
 const perTypeDefaultColors = {
     nodes: {
         process: { r: 21, g: 127, b: 200, a: 1.0 },
@@ -47,6 +50,10 @@ const settings = {
     nodeColors: {},
     edgeColors: {},
 };
+
+const state = {
+    highlight: null,
+}
 
 const pane = new Pane({
     title: 'parameters',
@@ -229,42 +236,50 @@ async function loadDataFromApi() {
     };
 }
 
-// returns visited nodes and edges up to maxDepth from startNode
-function bfs(startNode, maxDepth) {
-    const visitedNodes = new Set();
-    const visitedEdges = new Set();
+function bfs(startNode, maxDistance) {
+    const nodeDistancesMap = new Map();
+    const edgeDistancesMap = new Map();
 
-    const queue = [{ node: startNode, depth: 0 }];
-    visitedNodes.add(startNode.id);
+    const queue = [{ node: startNode, distance: 0 }];
+    nodeDistancesMap.set(startNode.id, 0);
 
-    // map from node id to neighboring edges
-    const neighborsMap = new Map();
+    // pre-compute map from node id to neighboring edges
+    const edgesMap = new Map();
     Graph.graphData().links.forEach(l => {
         const srcId = l.source.id;
         const tgtId = l.target.id;
-        if (!neighborsMap.has(srcId)) neighborsMap.set(srcId, []);
-        if (!neighborsMap.has(tgtId)) neighborsMap.set(tgtId, []);
-        neighborsMap.get(srcId).push(l);
-        neighborsMap.get(tgtId).push(l);
+        if (!edgesMap.has(srcId)) edgesMap.set(srcId, []);
+        if (!edgesMap.has(tgtId)) edgesMap.set(tgtId, []);
+        edgesMap.get(srcId).push(l);
+        edgesMap.get(tgtId).push(l);
     });
 
     while (queue.length > 0) {
-        const { node, depth } = queue.shift();
-        if (depth >= maxDepth) continue;
-        const neighbors = neighborsMap.get(node.id) || [];
-        neighbors.forEach(edge => {
-            visitedEdges.add(edge.id);
+        const { node, distance } = queue.shift();
+
+        if (distance >= maxDistance)
+            continue;
+
+        const edges = edgesMap.get(node.id) || [];
+
+        for (const edge of edges) {
+            if (edgeDistancesMap.has(edge.id))
+                continue;
+
+            edgeDistancesMap.set(edge.id, distance + 1);
+
             const neighborNode = (edge.source.id === node.id) ? edge.target : edge.source;
-            if (!visitedNodes.has(neighborNode.id)) {
-                visitedNodes.add(neighborNode.id);
-                queue.push({ node: neighborNode, depth: depth + 1 });
+
+            if (!nodeDistancesMap.has(neighborNode.id)) {
+                nodeDistancesMap.set(neighborNode.id, distance + 1);
+                queue.push({ node: neighborNode, distance: distance + 1 });
             }
-        });
+        }
     }
 
     return {
-        visitedNodeIds: visitedNodes,
-        visitedEdgeIds: visitedEdges,
+        nodeDistancesMap: nodeDistancesMap,
+        edgeDistancesMap: edgeDistancesMap,
     }
 }
 
@@ -273,6 +288,13 @@ function colorWithAlpha(color, alpha) {
     col.opacity = alpha;
     return col.toString();
 }
+
+function colorAdjustAlpha(color, factor) {
+    const col = d3.color(color);
+    col.opacity *= factor;
+    return col.toString();
+}
+
 
 function drawCicle(ctx, x, y, r, strokeWidth, strokeStyle) {
     ctx.save();
@@ -295,13 +317,21 @@ const Graph = ForceGraph()(document.getElementById('graph'))
     })
     .linkCurvature(l => l.curvature || 0)
     .linkColor(l => {
-        const shouldBeWashedOut = settings.highlightLinkIds && !settings.highlightLinkIds.has(l.id);
+        let fillStyle = edgeColorFor(l);
+        let alphaMultiplier = 1.0;
 
-        if (!shouldBeWashedOut) {
-            return edgeColorFor(l);
-        } else {
-            return colorWithAlpha(edgeColorFor(l), 0.1);
+        if (state.highlight) {
+            alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1];
+            const edgeDistance = state.highlight.edgeDistancesMap.get(l.id);
+
+            if (edgeDistance < highlightAlphaMultipliers.length - 1) {
+                alphaMultiplier = highlightAlphaMultipliers[edgeDistance];
+            }
+
+            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
+
+        return fillStyle;
     })
     .linkLabel(l => {
         return l.properties.label || l.type;
@@ -330,17 +360,24 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         //const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
         const r = baseSize;
 
-        const shouldBeWashedOut = settings.highlightNodesIds && !settings.highlightNodesIds.has(node.id);
+        // regular fill style
+        let fillStyle = nodeColorFor(node);
+        let alphaMultiplier = 1.0;
 
-        // draw filled circle
-        ctx.beginPath();
+        if (state.highlight) {
+            alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1];
+            const nodeDistance = state.highlight.nodeDistancesMap.get(node.id);
 
-        if (!shouldBeWashedOut) {
-            ctx.fillStyle = nodeColorFor(node);
-        } else {
-            ctx.fillStyle = colorWithAlpha(nodeColorFor(node), 0.1);
+            if (nodeDistance < highlightAlphaMultipliers.length - 1) {
+                alphaMultiplier = highlightAlphaMultipliers[nodeDistance];
+            }
+
+            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
 
+        // draw the node as filled circle
+        ctx.beginPath();
+        ctx.fillStyle = fillStyle;
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
         ctx.fill();
 
@@ -350,13 +387,8 @@ const Graph = ForceGraph()(document.getElementById('graph'))
             // stroke width should scale inversely with zoom so it remains visible
             //const strokeWidth = Math.max(1.2, 2 / globalScale);
 
-            if (!shouldBeWashedOut) {
-                drawCicle(ctx, node.x, node.y, r + 1, 2, 'rgba(0,0,0,0.95)');
-                drawCicle(ctx, node.x, node.y, r, 1, 'rgba(255,255,255,0.8)');
-            } else {
-                drawCicle(ctx, node.x, node.y, r + 1, 2, 'rgba(0,0,0,0.2)');
-                drawCicle(ctx, node.x, node.y, r, 1, 'rgba(255,255,255,0.2)');
-            }
+            drawCicle(ctx, node.x, node.y, r + 1, 2, colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
+            drawCicle(ctx, node.x, node.y, r, 1, colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
         }
 
         // draw red outline for selected nodes with pulsing radius
@@ -368,16 +400,11 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         // generic label (use properties.name/label if available, otherwise type + id)
         const name = node.properties && (node.properties.name || node.properties.label);
         const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
+
         //const fontSize = Math.max(3, 12 / globalScale);
         const fontSize = 12;
         ctx.font = `${fontSize}px Ubuntu, sans-serif`;
-
-        if (shouldBeWashedOut) {
-            ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        } else {
-            ctx.fillStyle = 'rgba(0,0,0,0.75)';
-        }
-
+        ctx.fillStyle = colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier);
         ctx.fillText(label, node.x + r + 4, node.y + fontSize / 2.8);
     })
     // pointer area for interactions (keeps it reasonably large for hit testing)
@@ -408,13 +435,16 @@ const Graph = ForceGraph()(document.getElementById('graph'))
     })
     .onNodeHover((node, prevNode) => {
         if (node != null) {
-            const visited = bfs(node, 1);
+            const { nodeDistancesMap, edgeDistancesMap } = bfs(node, 2);
 
-            settings.highlightNodesIds = visited.visitedNodeIds;
-            settings.highlightLinkIds = visited.visitedEdgeIds;
+            state.highlight = {
+                nodeDistancesMap,
+                edgeDistancesMap
+            }
+
+            console.log(state.highlight);
         } else {
-            settings.highlightNodesIds = null;
-            settings.highlightLinkIds = null;
+            state.highlight = null;
         }
     })
     .onBackgroundClick(() => {
