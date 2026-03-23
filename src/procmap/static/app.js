@@ -502,13 +502,15 @@ function setTool(tool) {
         selectionCanvas.style.pointerEvents = 'none';
         canvas.style.cursor = 'default';
         // Re-enable normal click handlers
-        //Graph.onNodeClick(handleNodeClick);
+        // Graph.onNodeClick(handleNodeClick);
     } else if (tool === 'rect-select') {
         selectionCanvas.style.pointerEvents = 'auto';
         selectionCanvas.style.cursor = 'crosshair';
         // Disable normal node click handlers for selection tool
         // Graph.onNodeClick(null);
     }
+
+    updateSelectionInfo();
 }
 
 function handleNodeClick(node, event) {
@@ -522,11 +524,41 @@ function handleNodeClick(node, event) {
 
 function updateSelectionInfo() {
     const info = document.getElementById('selectionInfo');
+    const deleteButton = document.getElementById('deleteSelected');
     if (state.selection.selectedNodeIds.size > 0) {
         info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
+        deleteButton.style.display = state.currentTool === 'rect-select' ? 'inline-block' : 'none';
     } else {
         info.textContent = '';
+        deleteButton.style.display = 'none';
     }
+}
+
+async function deleteSelectedNodes() {
+    // edit the source data, not the current graph state, so that
+    // any changes on graph can be exported as well
+
+    const currentData = Graph.graphData();
+    if (!currentData || state.selection.selectedNodeIds.size === 0) return;
+
+    // drop selected nodes
+    const remainingNodes = data.nodes.filter(
+        node => !state.selection.selectedNodeIds.has(node.id));
+
+    // filter out edges that connect to/from deleted nodes
+    const remainingEdges = data.edges.filter(edge =>
+        !state.selection.selectedNodeIds.has(edge.source_id) &&
+        !state.selection.selectedNodeIds.has(edge.target_id)
+    );
+
+    data.nodes = remainingNodes;
+    data.edges = remainingEdges;
+
+    await refresh();
+
+    // clear the selection
+    state.selection.selectedNodeIds.clear();
+    updateSelectionInfo();
 }
 
 function isNodeInRect(node, rect) {
@@ -654,11 +686,13 @@ selectionCanvas.addEventListener('mouseup', (event) => {
 });
 
 // Keyboard shortcuts
-document.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', async (event) => {
     if (event.key === 'p' || event.key === 'P') {
         setTool('pointer');
     } else if (event.key === 'r' || event.key === 'R') {
         setTool('rect-select');
+    } else if (event.key === 'Delete' && state.currentTool === 'rect-select' && state.selection.selectedNodeIds.size > 0) {
+        await deleteSelectedNodes();
     }
 });
 
@@ -671,6 +705,10 @@ document.getElementById('toolPointer').addEventListener('click', () => {
 
 document.getElementById('toolRectSelect').addEventListener('click', () => {
     setTool('rect-select');
+});
+
+document.getElementById('deleteSelected').addEventListener('click', async () => {
+    await deleteSelectedNodes();
 });
 
 window.addEventListener('resize', () => {
