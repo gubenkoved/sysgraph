@@ -502,12 +502,12 @@ function setTool(tool) {
         selectionCanvas.style.pointerEvents = 'none';
         canvas.style.cursor = 'default';
         // Re-enable normal click handlers
-        Graph.onNodeClick(handleNodeClick);
+        //Graph.onNodeClick(handleNodeClick);
     } else if (tool === 'rect-select') {
         selectionCanvas.style.pointerEvents = 'auto';
         selectionCanvas.style.cursor = 'crosshair';
         // Disable normal node click handlers for selection tool
-        Graph.onNodeClick(null);
+        // Graph.onNodeClick(null);
     }
 }
 
@@ -634,7 +634,11 @@ selectionCanvas.addEventListener('mouseup', (event) => {
             y2: state.selection.selectionEnd.y,
         };
 
-        state.selection.selectedNodeIds.clear();
+        // replace current selection unless Shift key is pressed
+        if (!event.shiftKey) {
+            state.selection.selectedNodeIds.clear();
+        }
+
         const nodes = Graph.graphData().nodes;
         nodes.forEach(node => {
             if (isNodeInRect(node, rect)) {
