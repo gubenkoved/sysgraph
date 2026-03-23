@@ -1,4 +1,8 @@
 import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+import { settings } from './modules/settings.js';
+import { state, data, initData, updateData } from './modules/state.js';
+import { bfs } from './modules/graphAlgs.js';
+import * as util from './modules/util.js';
 
 const linkOpacity = 0.5;
 
@@ -24,37 +28,6 @@ const perTypeDefaultColors = {
     }
 }
 
-const settings = {
-    d3Charge: -400,
-    d3LinkDistance: 140,
-    d3LinkStrength: 0.8,
-    d3CollisionMultiplier: 1.0,
-    d3AlphaTarget: 0.0,
-    d3VelocityDecay: 0.80,
-    d3ForceXYStrength: 0.1,
-    d3CenterForce: true,
-
-    showIsolated: true,
-    // curvature interval per each link when there are multiple
-    curvatureStep: 0.005,
-
-    nodeColors: {},
-    edgeColors: {},
-};
-
-const state = {
-    highlight: null,
-    currentTool: "pointer",
-    selection: {
-        selectedNodeIds: new Set(),
-        isSelecting: false,
-        selectionStart: null,
-        selectionEnd: null,
-        selectionStartCanvas: null,
-        selectionEndCanvas: null,
-    }
-}
-
 const pane = new Pane({
     title: 'parameters',
 });
@@ -64,7 +37,8 @@ const refreshBtn = pane.addButton({
 });
 
 refreshBtn.on('click', async () => {
-    data = await loadDataFromApi();
+    const loadedData = await loadDataFromApi();
+    updateData(loadedData);
     refresh();
 });
 
@@ -147,15 +121,6 @@ let edgeColorsFolder = pane.addFolder({
     explanded: true,
 })
 
-function initData() {
-    return {
-        nodes: [],
-        edges: [],
-    }
-}
-
-let data = initData();
-
 exportBtn.on('click', () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -178,7 +143,9 @@ document.getElementById('importFile').addEventListener('change', async (event) =
 
     const text = await file.text();
 
-    data = JSON.parse(text);
+    const loadedData = JSON.parse(text);
+
+    updateData(loadedData);
 
     preProcessData();
 
@@ -246,80 +213,6 @@ async function loadDataFromApi() {
     };
 }
 
-function bfs(startNode, maxDistance) {
-    const nodeDistancesMap = new Map();
-    const edgeDistancesMap = new Map();
-
-    const queue = [{ node: startNode, distance: 0 }];
-    nodeDistancesMap.set(startNode.id, 0);
-
-    // pre-compute map from node id to neighboring edges
-    const edgesMap = new Map();
-    Graph.graphData().links.forEach(l => {
-        const srcId = l.source.id;
-        const tgtId = l.target.id;
-        if (!edgesMap.has(srcId)) edgesMap.set(srcId, []);
-        if (!edgesMap.has(tgtId)) edgesMap.set(tgtId, []);
-        edgesMap.get(srcId).push(l);
-        edgesMap.get(tgtId).push(l);
-    });
-
-    while (queue.length > 0) {
-        const { node, distance } = queue.shift();
-
-        if (distance >= maxDistance)
-            continue;
-
-        const edges = edgesMap.get(node.id) || [];
-
-        for (const edge of edges) {
-            if (edgeDistancesMap.has(edge.id))
-                continue;
-
-            edgeDistancesMap.set(edge.id, distance + 1);
-
-            const neighborNode = (edge.source.id === node.id) ? edge.target : edge.source;
-
-            if (!nodeDistancesMap.has(neighborNode.id)) {
-                nodeDistancesMap.set(neighborNode.id, distance + 1);
-                queue.push({ node: neighborNode, distance: distance + 1 });
-            }
-        }
-    }
-
-    return {
-        nodeDistancesMap: nodeDistancesMap,
-        edgeDistancesMap: edgeDistancesMap,
-    }
-}
-
-function colorWithAlpha(color, alpha) {
-    const col = d3.color(color);
-    col.opacity = alpha;
-    return col.toString();
-}
-
-function colorAdjustAlpha(color, factor) {
-    const col = d3.color(color);
-    col.opacity *= factor;
-    return col.toString();
-}
-
-function darkerColor(color) {
-    return d3.color(color).darker();
-}
-
-
-function drawCicle(ctx, x, y, r, strokeWidth, strokeStyle) {
-    ctx.save();
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = strokeStyle;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-    ctx.stroke();
-    ctx.restore();
-}
-
 // configure graph
 const Graph = ForceGraph()(document.getElementById('graph'))
     .nodeId('id')
@@ -342,7 +235,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
                 alphaMultiplier = highlightAlphaMultipliers[edgeDistance];
             }
 
-            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
+            fillStyle = util.colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
 
         return fillStyle;
@@ -386,7 +279,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
                 alphaMultiplier = highlightAlphaMultipliers[nodeDistance];
             }
 
-            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
+            fillStyle = util.colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
 
         // draw the node as filled circle
@@ -398,7 +291,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         // bit darker outline
         ctx.beginPath();
         ctx.strokeWidth = 1;
-        ctx.strokeStyle = darkerColor(fillStyle);
+        ctx.strokeStyle = util.darkerColor(fillStyle);
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
         ctx.stroke();
 
@@ -408,14 +301,14 @@ const Graph = ForceGraph()(document.getElementById('graph'))
             // stroke width should scale inversely with zoom so it remains visible
             //const strokeWidth = Math.max(1.2, 2 / globalScale);
 
-            drawCicle(ctx, node.x, node.y, r + 1, 2, colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
-            drawCicle(ctx, node.x, node.y, r, 1, colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
+            util.drawCicle(ctx, node.x, node.y, r + 1, 2, util.colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
+            util.drawCicle(ctx, node.x, node.y, r, 1, util.colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
         }
 
         // draw red outline for selected nodes with pulsing radius
         if (state.selection.selectedNodeIds.has(node.id)) {
             const pulse = 1.2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            drawCicle(ctx, node.x, node.y, r + 2 + pulse, 2, 'rgba(255,0,0,1.0)');
+            util.drawCicle(ctx, node.x, node.y, r + 2 + pulse, 2, 'rgba(255,0,0,1.0)');
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)
@@ -425,7 +318,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
         //const fontSize = Math.max(3, 12 / globalScale);
         const fontSize = 12;
         ctx.font = `${fontSize}px Ubuntu, sans-serif`;
-        ctx.fillStyle = colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier);
+        ctx.fillStyle = util.colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier);
         ctx.fillText(label, node.x + r + 4, node.y + fontSize / 2.8);
     })
     // pointer area for interactions (keeps it reasonably large for hit testing)
@@ -456,7 +349,7 @@ const Graph = ForceGraph()(document.getElementById('graph'))
     })
     .onNodeHover((node, prevNode) => {
         if (node != null) {
-            const { nodeDistancesMap, edgeDistancesMap } = bfs(node, 2);
+            const { nodeDistancesMap, edgeDistancesMap } = bfs(data, node.id, 2);
 
             state.highlight = {
                 nodeDistancesMap,
@@ -974,18 +867,18 @@ function renderGraphData(data) {
 }
 
 async function pinAll() {
-    const data = Graph.graphData();
+    const graphData = Graph.graphData();
 
-    data.nodes.forEach(node => {
+    graphData.nodes.forEach(node => {
         node.fx = node.x;
         node.fy = node.y;
     });
 }
 
 async function unpinAll() {
-    const data = Graph.graphData();
+    const graphData = Graph.graphData();
 
-    data.nodes.forEach(node => {
+    graphData.nodes.forEach(node => {
         node.fx = undefined;
         node.fy = undefined;
     });
@@ -995,6 +888,7 @@ async function unpinAll() {
 window.addEventListener('load', async () => {
     console.log("initial loading...");
     applyD3Params();
-    data = await loadDataFromApi();
+    const loadedData = await loadDataFromApi();
+    updateData(loadedData);
     refresh();
 });
