@@ -468,7 +468,7 @@ function updateColorPanes() {
 }
 
 async function pinAll() {
-    const graphData = Graph.graphData();
+    const graphData = ForceGraphInstance.graphData();
 
     graphData.nodes.forEach(node => {
         node.fx = node.x;
@@ -477,7 +477,7 @@ async function pinAll() {
 }
 
 async function unpinAll() {
-    const graphData = Graph.graphData();
+    const graphData = ForceGraphInstance.graphData();
 
     graphData.nodes.forEach(node => {
         node.fx = undefined;
