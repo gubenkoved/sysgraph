@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { on, emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { data } from './state.js';
-import { settings, highlightAlphaMultipliers } from './settings.js'
+import { settings, highlightAlphaMultipliers, defaultNodeColor, defaultEdgeColor } from './settings.js'
 import * as util from './util.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
@@ -198,9 +198,10 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         if (state.currentTool === 'pointer') {
             emit('background-click', null);
         } else if (state.currentTool === 'rect-select') {
+            // TODO: is this even reachable?
             // Clear selection on background click
             state.selection.selectedNodeIds.clear();
-            updateSelectionInfo();
+            // updateSelectionInfo();
         }
     })
     .autoPauseRedraw(false)

@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "checkJs": true,
+        "allowJs": true,
+        "jsx": "preserve",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "baseUrl": ".",
+        "paths": {
+        }
+    },
+    "include": [
+        "src/procmap/static/**/*",
+        "src/procmap/static/modules/**/*",
+        "src/procmap/static/cdn-module-types.d.ts"
+    ]
+}
