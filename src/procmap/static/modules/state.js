@@ -1,3 +1,5 @@
+import { Graph } from './graph.js';
+
 export const state = {
     highlight: null,
     currentTool: "pointer",
@@ -11,15 +13,25 @@ export const state = {
     }
 }
 
-export let data = initData();
+let graph = initializeEmptyGraph();
 
-export function initData() {
-    return {
-        nodes: [],
-        edges: [],
-    }
+/**
+ @returns {Graph}
+*/
+export function initializeEmptyGraph() {
+    return new Graph();
 }
 
-export function updateData(newData) {
-    data = newData;
+/**
+ @param {Graph} newGraph
+*/
+export function updateGraph(newGraph) {
+    graph = newGraph;
+}
+
+/**
+ @returns {Graph}
+*/
+export function getGraph() {
+    return graph;
 }

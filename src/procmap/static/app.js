@@ -1,5 +1,6 @@
 import { settings, getDefaultNodeColor, getDefaultEdgeColor } from './modules/settings.js';
-import { state, data, initData, updateData } from './modules/state.js';
+import { state, getGraph, updateGraph, initializeEmptyGraph } from './modules/state.js';
+import { Graph } from './modules/graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './modules/graph-ui.js'
 import { on, emit } from './modules/event-bus.js';
 
@@ -35,7 +36,7 @@ const refreshBtn = pane.addButton({
 
 refreshBtn.on('click', async () => {
     const loadedData = await loadDataFromApi();
-    updateData(loadedData);
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
     refreshGraphUI();
 });
 
@@ -100,8 +101,8 @@ const cleanBtn = pane.addButton({
 });
 
 cleanBtn.on('click', async () => {
-    const emptyData = initData();
-    updateData(emptyData);
+    const emptyGraph = initializeEmptyGraph();
+    updateGraph(emptyGraph);
     refreshGraphUI();
 });
 
@@ -147,7 +148,7 @@ document.getElementById('importFile').addEventListener('change', async (event) =
 
     const loadedData = JSON.parse(text);
 
-    updateData(loadedData);
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
 
     preProcessData();
 
@@ -197,7 +198,7 @@ async function loadDataFromApi() {
 
 // export to windows for easy access in devtools
 window.settings = settings;
-window.graph = ForceGraphInstance;
+window.getGraph = getGraph;
 
 // Get canvas element for selection logic
 const canvas = document.querySelector('#graph canvas');
@@ -235,18 +236,20 @@ async function deleteSelectedNodes() {
     // edit the source data, not the current graph state, so that
     // any changes on graph can be exported as well
 
+    const graph = getGraph();
+
     // drop selected nodes
-    const remainingNodes = data.nodes.filter(
+    const remainingNodes = [...graph.nodes.values()].filter(
         node => !state.selection.selectedNodeIds.has(node.id));
 
     // filter out edges that connect to/from deleted nodes
-    const remainingEdges = data.edges.filter(edge =>
+    const remainingEdges = [...graph.edges.values()].filter(edge =>
         !state.selection.selectedNodeIds.has(edge.source_id) &&
         !state.selection.selectedNodeIds.has(edge.target_id)
     );
 
-    data.nodes = remainingNodes;
-    data.edges = remainingEdges;
+    const filteredGraph = new Graph(remainingNodes, remainingEdges);
+    updateGraph(filteredGraph);
 
     await refreshGraphUI();
 
@@ -445,15 +448,17 @@ function updateColorPanes() {
         explanded: true,
     })
 
+    const graph = getGraph();
+
     const nodeTypes = new Set();
 
-    for (const node of data.nodes) {
+    for (const node of graph.nodes.values()) {
         nodeTypes.add(node.type);
     }
 
     const edgeTypes = new Set();
 
-    for (const edge of data.edges) {
+    for (const edge of graph.edges.values()) {
         edgeTypes.add(edge.type);
     }
 
@@ -495,6 +500,7 @@ window.addEventListener('load', async () => {
     console.log("initial loading...");
     emit("d3-simulation-paramters-changed", null);
     const loadedData = await loadDataFromApi();
-    updateData(loadedData);
+    const graph = new Graph(loadedData.nodes, loadedData.edges);
+    updateGraph(graph);
     refreshGraphUI();
 });

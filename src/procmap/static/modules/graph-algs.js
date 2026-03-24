@@ -1,4 +1,6 @@
-// TODO: introduce a static type to statically represent graph structure
+/**
+ @param {import('./graph.js').Graph} graph
+*/
 export function bfs(graph, startNodeId, maxDistance) {
     const nodeDistancesMap = new Map();
     const edgeDistancesMap = new Map();
@@ -6,30 +8,13 @@ export function bfs(graph, startNodeId, maxDistance) {
     const queue = [{ nodeId: startNodeId, distance: 0 }];
     nodeDistancesMap.set(startNodeId, 0);
 
-    // pre-compute map from node id to neighboring edges
-    const edgesMap = new Map();
-
-    graph.edges.forEach(edge => {
-        const srcId = edge.source_id;
-        const tgtId = edge.target_id;
-
-        if (!edgesMap.has(srcId))
-            edgesMap.set(srcId, []);
-
-        if (!edgesMap.has(tgtId))
-            edgesMap.set(tgtId, []);
-
-        edgesMap.get(srcId).push(edge);
-        edgesMap.get(tgtId).push(edge);
-    });
-
     while (queue.length > 0) {
         const { nodeId, distance } = queue.shift();
 
         if (distance >= maxDistance)
             continue;
 
-        const edges = edgesMap.get(nodeId) || [];
+        const edges = graph.adjacency.get(nodeId) || [];
 
         for (const edge of edges) {
             if (edgeDistancesMap.has(edge.id))
@@ -49,5 +34,14 @@ export function bfs(graph, startNodeId, maxDistance) {
     return {
         nodeDistancesMap: nodeDistancesMap,
         edgeDistancesMap: edgeDistancesMap,
+    }
+}
+
+/**
+ @param {import('./graph.js').Graph} graph
+*/
+export function search(graph, expression) {
+    return {
+        nodeIds: [],
     }
 }

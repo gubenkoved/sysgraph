@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { on, emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
-import { data } from './state.js';
+import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js'
 import * as util from './util.js';
 
@@ -186,7 +186,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     })
     .onNodeHover((node, prevNode) => {
         if (node != null) {
-            const { nodeDistancesMap, edgeDistancesMap } = bfs(data, node.id, 2);
+            const graph = getGraph();
+
+            const { nodeDistancesMap, edgeDistancesMap } = bfs(graph, node.id, 2);
 
             state.highlight = {
                 nodeDistancesMap,
@@ -220,10 +222,12 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 export async function refreshGraphUI() {
     emit('pre-graph-ui-refresh', null);
 
+    const graph = getGraph();
+
     let processedData = { nodes: [], edges: [] };
 
     // transform for graph format
-    for (const node of data.nodes) {
+    for (const node of graph.nodes.values()) {
         processedData.nodes.push({
             id: node.id,
             type: node.type,
@@ -232,7 +236,7 @@ export async function refreshGraphUI() {
         })
     }
 
-    for (const edge of data.edges) {
+    for (const edge of graph.edges.values()) {
         processedData.edges.push({
             id: edge.id,
             type: edge.type,
@@ -250,7 +254,7 @@ export async function refreshGraphUI() {
             connected.add(l.source);
             connected.add(l.target);
         });
-        processedData.nodes = data.nodes.filter(n => connected.has(n.id));
+        processedData.nodes = [...graph.nodes.values()].filter(n => connected.has(n.id));
     }
 
     // compute size by degree
