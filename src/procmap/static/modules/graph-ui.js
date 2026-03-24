@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { on, emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { data } from './state.js';
-import { settings, highlightAlphaMultipliers, defaultNodeColor, defaultEdgeColor } from './settings.js'
+import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js'
 import * as util from './util.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
@@ -17,19 +17,23 @@ function toCssColor({ r, g, b, a }) {
 }
 
 function nodeColorFor(node) {
-    const type = node.type;
-    if (type in settings.nodeColors) {
-        return toCssColor(settings.nodeColors[type]);
+    let colorStruct = getDefaultNodeColor(node.type);
+
+    if (node.type in settings.nodeColors) {
+        colorStruct = settings.nodeColors[node.type]
     }
-    return toCssColor(defaultNodeColor);
+
+    return toCssColor(colorStruct);
 }
 
 function edgeColorFor(edge) {
-    const type = edge.type;
-    if (type in settings.edgeColors) {
-        return toCssColor(settings.edgeColors[type]);
+    let colorStruct = getDefaultEdgeColor(edge.type);
+
+    if (edge.type in settings.edgeColors) {
+        colorStruct = settings.edgeColors[edge.type];
     }
-    return toCssColor(defaultEdgeColor);
+
+    return toCssColor(colorStruct);
 }
 
 // NOTE: sometimes source/target are not resolved if graph engine not run yet

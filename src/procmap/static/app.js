@@ -1,4 +1,4 @@
-import { settings, perTypeDefaultColors, defaultNodeColor, defaultEdgeColor } from './modules/settings.js';
+import { settings, getDefaultNodeColor, getDefaultEdgeColor } from './modules/settings.js';
 import { state, data, initData, updateData } from './modules/state.js';
 import { ForceGraphInstance, refreshGraphUI } from './modules/graph-ui.js'
 import { on, emit } from './modules/event-bus.js';
@@ -458,14 +458,14 @@ function updateColorPanes() {
 
     for (const key of nodeTypes) {
         if (!(key in settings.nodeColors)) {
-            settings.nodeColors[key] = structuredClone(perTypeDefaultColors.nodes[key] || defaultNodeColor);
+            settings.nodeColors[key] = structuredClone(getDefaultNodeColor(key));
         }
         nodeColorsFolder.addBinding(settings.nodeColors, key);
     }
 
     for (const key of edgeTypes) {
         if (!(key in settings.edgeColors)) {
-            settings.edgeColors[key] = structuredClone(perTypeDefaultColors.edges[key] || defaultEdgeColor);
+            settings.edgeColors[key] = structuredClone(getDefaultEdgeColor(key));
         }
         edgeColorsFolder.addBinding(settings.edgeColors, key)
     }
