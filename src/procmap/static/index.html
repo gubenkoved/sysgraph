@@ -51,8 +51,13 @@
         font-family: 'Ubuntu', 'Segoe UI', 'Arial', sans-serif !important;
         opacity: 0.9;
       }
-      .tp-dfwv {
-        top: 58px !important;
+
+      #settingsPane {
+        max-height: calc(100% - 20px);
+        position: absolute;
+        overflow-y: auto;
+        right: 10px;
+        top: 10px;
       }
     </style>
   </head>
@@ -71,6 +76,9 @@
       </div>
 
       <div id="graph"></div>
+
+      <div id="settingsPane">
+      </div>
     </div>
 
     <input type="file" id="importFile" accept=".json" style="display:none">

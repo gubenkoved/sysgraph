@@ -26,6 +26,7 @@ on("background-click", _ => {
 
 const pane = new Pane({
     title: 'parameters',
+    container: document.getElementById("settingsPane"),
 });
 
 const refreshBtn = pane.addButton({
