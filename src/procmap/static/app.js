@@ -126,7 +126,8 @@ let edgeColorsFolder = pane.addFolder({
 
 exportBtn.on('click', () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const graph = getGraph();
+    const blob = new Blob([JSON.stringify(graph.toData(), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -148,23 +149,15 @@ document.getElementById('importFile').addEventListener('change', async (event) =
 
     const loadedData = JSON.parse(text);
 
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+    // initialize edge ID if missing
+    loadedData.edges.forEach(e => e.id ??= "auto:" + crypto.randomUUID());
 
-    preProcessData();
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
 
     await refreshGraphUI();
 
     event.target.value = '';
 });
-
-function preProcessData() {
-    // generate edge IDs if unspecified as we will need it
-    for (const edge of data.edges) {
-        if (edge.id === undefined) {
-            edge.id = "auto:" + crypto.randomUUID();
-        }
-    }
-}
 
 const q = sel => document.querySelector(sel);
 
@@ -239,11 +232,11 @@ async function deleteSelectedNodes() {
     const graph = getGraph();
 
     // drop selected nodes
-    const remainingNodes = [...graph.nodes.values()].filter(
+    const remainingNodes = graph.getNodes().filter(
         node => !state.selection.selectedNodeIds.has(node.id));
 
     // filter out edges that connect to/from deleted nodes
-    const remainingEdges = [...graph.edges.values()].filter(edge =>
+    const remainingEdges = graph.getEdges().filter(edge =>
         !state.selection.selectedNodeIds.has(edge.source_id) &&
         !state.selection.selectedNodeIds.has(edge.target_id)
     );
@@ -452,13 +445,13 @@ function updateColorPanes() {
 
     const nodeTypes = new Set();
 
-    for (const node of graph.nodes.values()) {
+    for (const node of graph.getNodes()) {
         nodeTypes.add(node.type);
     }
 
     const edgeTypes = new Set();
 
-    for (const edge of graph.edges.values()) {
+    for (const edge of graph.getEdges()) {
         edgeTypes.add(edge.type);
     }
 

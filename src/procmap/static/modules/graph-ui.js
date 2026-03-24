@@ -227,7 +227,7 @@ export async function refreshGraphUI() {
     let processedData = { nodes: [], edges: [] };
 
     // transform for graph format
-    for (const node of graph.nodes.values()) {
+    for (const node of graph.getNodes()) {
         processedData.nodes.push({
             id: node.id,
             type: node.type,
@@ -236,7 +236,7 @@ export async function refreshGraphUI() {
         })
     }
 
-    for (const edge of graph.edges.values()) {
+    for (const edge of graph.getEdges()) {
         processedData.edges.push({
             id: edge.id,
             type: edge.type,
@@ -254,7 +254,7 @@ export async function refreshGraphUI() {
             connected.add(l.source);
             connected.add(l.target);
         });
-        processedData.nodes = [...graph.nodes.values()].filter(n => connected.has(n.id));
+        processedData.nodes = graph.getNodes().filter(n => connected.has(n.id));
     }
 
     // compute size by degree

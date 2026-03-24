@@ -1,16 +1,16 @@
 export class Graph {
     constructor(nodes = [], edges = []) {
-        this.nodes = new Map(nodes.map(n => [n.id, n]));
-        this.edges = new Map(edges.map(edge => [edge.id, edge]));
+        this.nodesMap = new Map(nodes.map(n => [n.id, n]));
+        this.edgesMap = new Map(edges.map(edge => [edge.id, edge]));
 
         // pre-compute adjacency (edge direction is not considered)
         this.adjacency = new Map();
 
-        for (const nodeId of this.nodes.keys()) {
+        for (const nodeId of this.nodesMap.keys()) {
             this.adjacency.set(nodeId, []);
         }
 
-        for (const edge of edges.values()) {
+        for (const edge of this.edgesMap.values()) {
             if (!this.adjacency.has(edge.source_id)) {
                 this.adjacency.set(edge.source_id, []);
             }
@@ -23,10 +23,17 @@ export class Graph {
     }
 
     getNodes() {
-        return [...this.nodes.values()];
+        return [...this.nodesMap.values()];
     }
 
     getEdges() {
-        return [...this.edges.values()];
+        return [...this.edgesMap.values()];
+    }
+
+    toData() {
+        return {
+            nodes: this.getNodes(),
+            edges: this.getEdges(),
+        }
     }
 }
