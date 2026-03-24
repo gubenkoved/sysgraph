@@ -270,6 +270,7 @@ selectionCanvas.style.zIndex = '50';
 selectionCanvas.style.display = 'block';
 selectionCanvas.style.pointerEvents = 'none';
 selectionCanvas.style.background = 'transparent';
+
 const graphContainer = document.getElementById('graph');
 graphContainer.appendChild(selectionCanvas);
 
@@ -279,7 +280,6 @@ function resizeGraphViewport() {
     ForceGraphInstance.height(rect.height);
     selectionCanvas.width = rect.width;
     selectionCanvas.height = rect.height;
-    // Graph.d3Force('center', d3.forceCenter(rect.width / 2, rect.height / 2));
 }
 
 resizeGraphViewport();
