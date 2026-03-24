@@ -1,8 +1,11 @@
-import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 import { settings, perTypeDefaultColors, defaultNodeColor, defaultEdgeColor } from './modules/settings.js';
 import { state, data, initData, updateData } from './modules/state.js';
 import { ForceGraphInstance, refreshGraphUI } from './modules/graph-ui.js'
 import { on, emit } from './modules/event-bus.js';
+
+import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+import { JSONFormatter } from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
+
 
 // setup graph UI handlers
 on("node-clicked", node => {

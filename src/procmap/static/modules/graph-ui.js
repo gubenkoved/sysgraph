@@ -5,6 +5,9 @@ import { data } from './state.js';
 import { settings, highlightAlphaMultipliers } from './settings.js'
 import * as util from './util.js';
 
+import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
+
 // setup event handlers
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
 on("d3-simulation-paramters-changed", applyD3Params);
