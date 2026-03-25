@@ -1,6 +1,5 @@
-from typing import Any
 import uuid
-
+from typing import Any
 
 NodeId = str
 

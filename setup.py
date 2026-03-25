@@ -5,7 +5,8 @@ This file uses a modern setuptools pattern with a `src/` layout.
 Edit metadata (author, email, description, classifiers, dependencies) as needed.
 """
 from pathlib import Path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 HERE = Path(__file__).parent
 

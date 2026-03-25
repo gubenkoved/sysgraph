@@ -7,3 +7,4 @@ PROJ_DIR="${CUR_DIR}/../src/procmap"
 # Ruff can both lint and format (`ruff format`) and also sort imports.
 ruff check "$PROJ_DIR"
 ruff format "$PROJ_DIR"
+isort "$PROJ_DIR"

@@ -1,21 +1,21 @@
 import logging
 import re
 import subprocess
-
-import psutil
 from collections import defaultdict
 from socket import AddressFamily
 
+import psutil
+
+from procmap.graph import Graph, Node
 from procmap.model import (
+    NetConnection,
     Process,
-    UnixDomainSocket,
-    UnixDomainSocketProcRef,
-    UnixDomainSocketConnection,
     ProcessOpenFile,
     SocketAddress,
-    NetConnection,
+    UnixDomainSocket,
+    UnixDomainSocketConnection,
+    UnixDomainSocketProcRef,
 )
-from procmap.graph import Graph, Node
 
 LOGGER = logging.getLogger(__name__)
 

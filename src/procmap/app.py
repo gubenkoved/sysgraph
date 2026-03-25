@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -7,7 +8,6 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import logging
 
 from procmap.discovery import build_graph
 
