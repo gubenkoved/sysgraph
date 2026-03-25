@@ -10,7 +10,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
 
 // setup event handlers
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
-on("d3-simulation-paramters-changed", applyD3Params);
+on("d3-simulation-parameters-changed", applyD3Params);
 
 function toCssColor({ r, g, b, a }) {
     return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
@@ -133,14 +133,14 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             // stroke width should scale inversely with zoom so it remains visible
             //const strokeWidth = Math.max(1.2, 2 / globalScale);
 
-            util.drawCicle(ctx, node.x, node.y, r + 1, 2, util.colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
-            util.drawCicle(ctx, node.x, node.y, r, 1, util.colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
+            util.drawCircle(ctx, node.x, node.y, r + 1, 2, util.colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
+            util.drawCircle(ctx, node.x, node.y, r, 1, util.colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
         }
 
         // draw red outline for selected nodes with pulsing radius
         if (state.selection.selectedNodeIds.has(node.id)) {
             const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            util.drawCicle(ctx, node.x, node.y, r + 3 + pulse, 4, 'rgba(255,0,0,1.0)');
+            util.drawCircle(ctx, node.x, node.y, r + 3 + pulse, 4, 'rgba(255,0,0,1.0)');
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)

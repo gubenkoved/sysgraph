@@ -1,551 +1,65 @@
-import { settings, getDefaultNodeColor, getDefaultEdgeColor } from './modules/settings.js';
-import { state, getGraph, updateGraph, initializeEmptyGraph } from './modules/state.js';
+import { settings } from './modules/settings.js';
+import { state, getGraph, updateGraph } from './modules/state.js';
 import { Graph } from './modules/graph.js';
-import { ForceGraphInstance, refreshGraphUI } from './modules/graph-ui.js'
+import { refreshGraphUI } from './modules/graph-ui.js';
 import { on, emit } from './modules/event-bus.js';
 import { search } from './modules/search.js';
-
-import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+import { loadDataFromApi } from './modules/data-io.js';
+import { updateColorPanes } from './modules/settings-pane.js';
+import { initToolbar, setTool, updateSelectionInfo } from './modules/toolbar.js';
+import { initSelection, setUpdateSelectionInfo } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 
+// --- details panel ---
+const detailsContainer = document.getElementById('details');
 
-// setup graph UI handlers
-on("node-clicked", node => {
-    showDetails(node);
-});
-
-on("link-clicked", link => {
-    showDetails(link);
-});
-
-on("pre-graph-ui-refresh", _ => {
-    updateColorPanes();
-});
-
-on("background-click", _ => {
-    hideDetails();
-});
-
-const pane = new Pane({
-    title: 'parameters',
-    container: document.getElementById("settingsPane"),
-});
-
-const refreshBtn = pane.addButton({
-    title: 'refresh data',
-});
-
-refreshBtn.on('click', async () => {
-    const loadedData = await loadDataFromApi();
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    refreshGraphUI();
-});
-
-function emitD3SimulationParamtersUpdatedEvent() {
-    emit("d3-simulation-paramters-changed", null);
-}
-
-pane.addBinding(settings, 'd3Charge', { min: -800, max: 100, step: 10 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3LinkDistance', { min: 40, max: 300, step: 5 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3LinkStrength', { min: 0.0, max: 1.0, step: 0.01 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3CollisionMultiplier', { min: 0.5, max: 2.0, step: 0.05 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3AlphaTarget', { min: 0.0, max: 0.5, step: 0.01 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3VelocityDecay', { min: 0.01, max: 0.99, step: 0.01 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3ForceXYStrength', { min: 0.00, max: 0.99, step: 0.01 }).on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-pane.addBinding(settings, 'd3CenterForce').on('change', ev => {
-    emitD3SimulationParamtersUpdatedEvent();
-});
-
-pane.addBlade({ view: 'separator' });
-
-pane.addBinding(settings, 'showIsolated').on('change', ev => {
-    refreshGraphUI();
-});
-pane.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', ev => {
-    emit("graph-ui-links-curvature-updated", null);
-});
-
-const pinAllBtn = pane.addButton({
-    title: 'pin all',
-});
-
-const unpinAllBtn = pane.addButton({
-    title: 'unpin all',
-});
-
-pinAllBtn.on('click', () => {
-    pinAll();
-});
-
-unpinAllBtn.on('click', () => {
-    unpinAll();
-});
-
-pane.addBlade({ view: 'separator' });
-
-const cleanBtn = pane.addButton({
-    title: 'clear',
-});
-
-cleanBtn.on('click', async () => {
-    const emptyGraph = initializeEmptyGraph();
-    updateGraph(emptyGraph);
-    refreshGraphUI();
-});
-
-const exportBtn = pane.addButton({
-    title: 'export data',
-});
-
-const importBtn = pane.addButton({
-    title: 'import data',
-});
-
-let nodeColorsFolder = pane.addFolder({
-    title: "node colors",
-    explanded: true,
-})
-
-let edgeColorsFolder = pane.addFolder({
-    title: "edge colors",
-    explanded: true,
-})
-
-exportBtn.on('click', () => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const graph = getGraph();
-    const blob = new Blob([JSON.stringify(graph.toData(), null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${timestamp}_graph.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-});
-
-importBtn.on('click', () => {
-    document.getElementById('importFile').click();
-});
-
-document.getElementById('importFile').addEventListener('change', async (event) => {
-    const file = event.target.files[0];
-
-    if (!file) return;
-
-    const text = await file.text();
-
-    const loadedData = JSON.parse(text);
-
-    // initialize edge ID if missing
-    loadedData.edges.forEach(e => e.id ??= "auto:" + crypto.randomUUID());
-
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-
-    await refreshGraphUI();
-
-    event.target.value = '';
-});
-
-async function loadDataFromApi() {
-    const res = await fetch('/api/graph');
-
-    if (!res.ok)
-        throw new Error('Failed to fetch /api/graph: ' + res.status);
-
-    const response = await res.json();
-
-    const nodes = (response.nodes || []).map(n => ({
-        id: n.id,
-        type: n.type,
-        properties: n.properties || {},
-    }));
-
-    const links = (response.edges || []).map(e => ({
-        id: e.id,
-        source_id: e.source_id,
-        target_id: e.target_id,
-        type: e.type,
-        properties: e.properties || {},
-    }));
-
-    return {
-        nodes: nodes,
-        edges: links,
-    };
-}
-
-// export to windows for easy access in devtools
-window.settings = settings;
-window.getGraph = getGraph;
-
-// Get canvas element for selection logic
-const canvas = document.querySelector('#graph canvas');
-
-const searchInput = document.getElementById('searchInput');
-
-searchInput.addEventListener('sl-input', (event) => {
-    event.stopPropagation();
-    emit("search-expression-changed", event.target.value);
-});
-
-on("search-expression-changed", (expression) => {
-    const graph = getGraph();
-    const result = search(graph, expression);
-
-    state.selection.selectedNodeIds = result.nodeIds;
-
-    updateSelectionInfo();
-})
-
-function setTool(tool) {
-    state.currentTool = tool;
-
-    document.getElementById('toolPointer').variant = tool === 'pointer' ? 'primary' : 'default';
-    document.getElementById('toolRectSelect').variant = tool === 'rect-select' ? 'primary' : 'default';
-    document.getElementById('toolSearch').variant = tool === 'search' ? 'primary' : 'default';
-
-    if (tool === 'rect-select') {
-        selectionCanvas.style.pointerEvents = 'auto';
-        selectionCanvas.style.cursor = 'crosshair';
-    } else {
-        selectionCanvas.style.pointerEvents = 'none';
-        canvas.style.cursor = 'default';
-    }
-
-    if (tool === 'search') {
-        searchInput.style.display = 'inline-block';
-        searchInput.focus();
-    } else {
-        searchInput.style.display = 'none';
-    }
-
-    updateSelectionInfo();
-}
-
-function updateSelectionInfo() {
-    const info = document.getElementById('selectionInfo');
-    const deleteButton = document.getElementById('deleteSelected');
-    const unselectButton = document.getElementById('unselectAll');
-    const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
-
-    if (isSelectionTool) {
-        deleteButton.style.display = 'inline-block';
-        unselectButton.style.display = 'inline-block';
-        if (state.selection.selectedNodeIds.size > 0) {
-            info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
-            deleteButton.disabled = false;
-            unselectButton.disabled = false;
-        } else {
-            info.textContent = '';
-            deleteButton.disabled = true;
-            unselectButton.disabled = true;
-        }
-    } else {
-        info.textContent = '';
-        deleteButton.style.display = 'none';
-        unselectButton.style.display = 'none';
-    }
-}
-
-async function deleteSelectedNodes() {
-    // edit the source data, not the current graph state, so that
-    // any changes on graph can be exported as well
-
-    const graph = getGraph();
-
-    // drop selected nodes
-    const remainingNodes = graph.getNodes().filter(
-        node => !state.selection.selectedNodeIds.has(node.id));
-
-    // filter out edges that connect to/from deleted nodes
-    const remainingEdges = graph.getEdges().filter(edge =>
-        !state.selection.selectedNodeIds.has(edge.source_id) &&
-        !state.selection.selectedNodeIds.has(edge.target_id)
-    );
-
-    const filteredGraph = new Graph(remainingNodes, remainingEdges);
-    updateGraph(filteredGraph);
-
-    await refreshGraphUI();
-
-    // clear the selection
-    state.selection.selectedNodeIds.clear();
-    updateSelectionInfo();
-}
-
-function isNodeInRect(node, rect) {
-    const minX = Math.min(rect.x1, rect.x2);
-    const maxX = Math.max(rect.x1, rect.x2);
-    const minY = Math.min(rect.y1, rect.y2);
-    const maxY = Math.max(rect.y1, rect.y2);
-
-    const r = Math.max(4, (node.val || 1) * 3);
-    return node.x + r > minX && node.x - r < maxX && node.y + r > minY && node.y - r < maxY;
-}
-
-// Custom overlay for drawing selection rectangle
-const selectionCanvas = document.createElement('canvas');
-selectionCanvas.style.position = 'absolute';
-selectionCanvas.style.top = '0';
-selectionCanvas.style.left = '0';
-selectionCanvas.style.cursor = 'crosshair';
-selectionCanvas.style.zIndex = '50';
-selectionCanvas.style.display = 'block';
-selectionCanvas.style.pointerEvents = 'none';
-selectionCanvas.style.background = 'transparent';
-
-const graphContainer = document.getElementById('graph');
-graphContainer.appendChild(selectionCanvas);
-
-function resizeGraphViewport() {
-    const rect = graphContainer.getBoundingClientRect();
-    ForceGraphInstance.width(rect.width);
-    ForceGraphInstance.height(rect.height);
-    selectionCanvas.width = rect.width;
-    selectionCanvas.height = rect.height;
-}
-
-resizeGraphViewport();
-
-function drawSelectionRectangle() {
-    const ctx = selectionCanvas.getContext('2d');
-    ctx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
-
-    if (state.selection.isSelecting && state.selection.selectionStartCanvas && state.selection.selectionEndCanvas) {
-        const startX = state.selection.selectionStartCanvas.x;
-        const endX = state.selection.selectionEndCanvas.x;
-        const startY = state.selection.selectionStartCanvas.y;
-        const endY = state.selection.selectionEndCanvas.y;
-
-        const minX = Math.min(startX, endX);
-        const maxX = Math.max(startX, endX);
-        const minY = Math.min(startY, endY);
-        const maxY = Math.max(startY, endY);
-
-        ctx.fillStyle = 'rgba(33, 150, 243, 0.1)';
-        ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
-
-        ctx.strokeStyle = 'rgba(33, 150, 243, 0.8)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
-    }
-}
-
-// Mouse event handlers
-selectionCanvas.addEventListener('mousedown', (event) => {
-    if (state.currentTool === 'rect-select') {
-        const graphRect = graphContainer.getBoundingClientRect();
-        const localX = event.clientX - graphRect.left;
-        const localY = event.clientY - graphRect.top;
-        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
-        state.selection.isSelecting = true;
-        state.selection.selectionStart = graphCoords;
-        state.selection.selectionEnd = graphCoords;
-        state.selection.selectionStartCanvas = { x: localX, y: localY };
-        state.selection.selectionEndCanvas = { x: localX, y: localY };
-        drawSelectionRectangle();
-    }
-});
-
-selectionCanvas.addEventListener('mousemove', (event) => {
-    if (state.selection.isSelecting && state.currentTool === 'rect-select') {
-        const graphRect = graphContainer.getBoundingClientRect();
-        const localX = event.clientX - graphRect.left;
-        const localY = event.clientY - graphRect.top;
-        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
-        state.selection.selectionEnd = graphCoords;
-        state.selection.selectionEndCanvas = { x: localX, y: localY };
-        drawSelectionRectangle();
-    }
-});
-
-selectionCanvas.addEventListener('mouseup', (event) => {
-    if (state.selection.isSelecting && state.currentTool === 'rect-select') {
-        const graphRect = graphContainer.getBoundingClientRect();
-        const localX = event.clientX - graphRect.left;
-        const localY = event.clientY - graphRect.top;
-        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
-
-        state.selection.selectionEnd = graphCoords;
-        state.selection.selectionEndCanvas = { x: localX, y: localY };
-        state.selection.isSelecting = false;
-
-        // Find nodes in selection rectangle
-        const rect = {
-            x1: state.selection.selectionStart.x,
-            y1: state.selection.selectionStart.y,
-            x2: state.selection.selectionEnd.x,
-            y2: state.selection.selectionEnd.y,
-        };
-
-        // replace current selection unless Shift key is pressed
-        if (!event.shiftKey) {
-            state.selection.selectedNodeIds.clear();
-        }
-
-        const nodes = ForceGraphInstance.graphData().nodes;
-        nodes.forEach(node => {
-            if (isNodeInRect(node, rect)) {
-                state.selection.selectedNodeIds.add(node.id);
-            }
-        });
-
-        updateSelectionInfo();
-        state.selection.selectionStartCanvas = null;
-        state.selection.selectionEndCanvas = null;
-        drawSelectionRectangle();
-    }
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', async (event) => {
-    const el = event.target;
-
-    const isTyping =
-        el.tagName === 'INPUT' ||
-        el.tagName === 'SL-INPUT' ||
-        el.tagName === 'TEXTAREA' ||
-        el.isContentEditable;
-
-    if (isTyping)
-        return;
-
-    if (event.key === 'p' || event.key === 'P') {
-        setTool('pointer');
-    } else if (event.key === 'r' || event.key === 'R') {
-        setTool('rect-select');
-    } else if (event.key === 'Delete' && state.currentTool === 'rect-select' && state.selection.selectedNodeIds.size > 0) {
-        await deleteSelectedNodes();
-    }
-});
-
-// Toolbar button handlers
-document.getElementById('toolPointer').addEventListener('click', () => {
-    setTool('pointer');
-});
-
-document.getElementById('toolRectSelect').addEventListener('click', () => {
-    setTool('rect-select');
-});
-
-document.getElementById('toolSearch').addEventListener('click', () => {
-    setTool('search');
-});
-
-document.getElementById('deleteSelected').addEventListener('click', async () => {
-    await deleteSelectedNodes();
-});
-
-document.getElementById('unselectAll').addEventListener('click', () => {
-    state.selection.selectedNodeIds.clear();
-    updateSelectionInfo();
-});
-
-window.addEventListener('resize', () => {
-    resizeGraphViewport();
-});
-
-function showDetails(node_or_link) {
+function showDetails(nodeOrLink) {
     const data = {
-        id: node_or_link.id,
-        type: node_or_link.type,
-        kind: node_or_link.kind,
-        properties: node_or_link.properties || {},
+        id: nodeOrLink.id,
+        type: nodeOrLink.type,
+        kind: nodeOrLink.kind,
+        properties: nodeOrLink.properties || {},
     };
 
     const formatter = new JSONFormatter(data, 2);
 
-    const container = document.getElementById('details');
-    while (container.firstChild) {
-        container.removeChild(container.firstChild);
+    while (detailsContainer.firstChild) {
+        detailsContainer.removeChild(detailsContainer.firstChild);
     }
-    container.appendChild(formatter.render());
-    container.hidden = false;
+    detailsContainer.appendChild(formatter.render());
+    detailsContainer.hidden = false;
 }
 
 function hideDetails() {
-    document.querySelector('#details').hidden = true;
+    detailsContainer.hidden = true;
 }
 
-function updateColorPanes() {
-    nodeColorsFolder.dispose();
-    edgeColorsFolder.dispose();
+// --- event wiring ---
+on("node-clicked", node => showDetails(node));
+on("link-clicked", link => showDetails(link));
+on("pre-graph-ui-refresh", () => updateColorPanes());
+on("background-click", () => hideDetails());
 
-    nodeColorsFolder = pane.addFolder({
-        title: "node colors",
-        explanded: true,
-    })
-
-    edgeColorsFolder = pane.addFolder({
-        title: "edge colors",
-        explanded: true,
-    })
-
+on("search-expression-changed", (expression) => {
     const graph = getGraph();
+    const result = search(graph, expression);
+    state.selection.selectedNodeIds = result.nodeIds;
+    updateSelectionInfo();
+});
 
-    const nodeTypes = new Set();
+// export to window for easy access in devtools
+window.settings = settings;
+window.getGraph = getGraph;
 
-    for (const node of graph.getNodes()) {
-        nodeTypes.add(node.type);
-    }
+// --- initialize selection overlay & toolbar ---
+const { selectionCanvas, canvas } = initSelection();
+setUpdateSelectionInfo(updateSelectionInfo);
+initToolbar(selectionCanvas, canvas);
 
-    const edgeTypes = new Set();
-
-    for (const edge of graph.getEdges()) {
-        edgeTypes.add(edge.type);
-    }
-
-    for (const key of nodeTypes) {
-        if (!(key in settings.nodeColors)) {
-            settings.nodeColors[key] = structuredClone(getDefaultNodeColor(key));
-        }
-        nodeColorsFolder.addBinding(settings.nodeColors, key);
-    }
-
-    for (const key of edgeTypes) {
-        if (!(key in settings.edgeColors)) {
-            settings.edgeColors[key] = structuredClone(getDefaultEdgeColor(key));
-        }
-        edgeColorsFolder.addBinding(settings.edgeColors, key)
-    }
-}
-
-async function pinAll() {
-    const graphData = ForceGraphInstance.graphData();
-
-    graphData.nodes.forEach(node => {
-        node.fx = node.x;
-        node.fy = node.y;
-    });
-}
-
-async function unpinAll() {
-    const graphData = ForceGraphInstance.graphData();
-
-    graphData.nodes.forEach(node => {
-        node.fx = undefined;
-        node.fy = undefined;
-    });
-}
-
-// initial load
+// --- initial load ---
 window.addEventListener('load', async () => {
     console.log("initial loading...");
-    emit("d3-simulation-paramters-changed", null);
+    emit("d3-simulation-parameters-changed", null);
     const loadedData = await loadDataFromApi();
     const graph = new Graph(loadedData.nodes, loadedData.edges);
     updateGraph(graph);

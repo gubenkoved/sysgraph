@@ -16,7 +16,7 @@ export function darkerColor(color) {
     return d3.color(color).darker();
 }
 
-export function drawCicle(ctx, x, y, r, strokeWidth, strokeStyle) {
+export function drawCircle(ctx, x, y, r, strokeWidth, strokeStyle) {
     ctx.save();
     ctx.lineWidth = strokeWidth;
     ctx.strokeStyle = strokeStyle;
