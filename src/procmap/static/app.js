@@ -239,20 +239,25 @@ function setTool(tool) {
 function updateSelectionInfo() {
     const info = document.getElementById('selectionInfo');
     const deleteButton = document.getElementById('deleteSelected');
+    const unselectButton = document.getElementById('unselectAll');
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
     if (isSelectionTool) {
         deleteButton.style.display = 'inline-block';
+        unselectButton.style.display = 'inline-block';
         if (state.selection.selectedNodeIds.size > 0) {
             info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
             deleteButton.disabled = false;
+            unselectButton.disabled = false;
         } else {
             info.textContent = '';
             deleteButton.disabled = true;
+            unselectButton.disabled = true;
         }
     } else {
         info.textContent = '';
         deleteButton.style.display = 'none';
+        unselectButton.style.display = 'none';
     }
 }
 
@@ -431,8 +436,6 @@ document.addEventListener('keydown', async (event) => {
 // Toolbar button handlers
 document.getElementById('toolPointer').addEventListener('click', () => {
     setTool('pointer');
-    state.selection.selectedNodeIds.clear();
-    updateSelectionInfo();
 });
 
 document.getElementById('toolRectSelect').addEventListener('click', () => {
@@ -445,6 +448,11 @@ document.getElementById('toolSearch').addEventListener('click', () => {
 
 document.getElementById('deleteSelected').addEventListener('click', async () => {
     await deleteSelectedNodes();
+});
+
+document.getElementById('unselectAll').addEventListener('click', () => {
+    state.selection.selectedNodeIds.clear();
+    updateSelectionInfo();
 });
 
 window.addEventListener('resize', () => {
