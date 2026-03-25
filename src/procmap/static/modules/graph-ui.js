@@ -139,8 +139,8 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // draw red outline for selected nodes with pulsing radius
         if (state.selection.selectedNodeIds.has(node.id)) {
-            const pulse = 1.2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            util.drawCicle(ctx, node.x, node.y, r + 2 + pulse, 2, 'rgba(255,0,0,1.0)');
+            const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
+            util.drawCicle(ctx, node.x, node.y, r + 3 + pulse, 4, 'rgba(255,0,0,1.0)');
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)
@@ -166,10 +166,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             if (event && (event.shiftKey || event.altKey)) {
                 node.fx = undefined;
                 node.fy = undefined;
-            } else {
-                emit("node-clicked", node);
             }
         }
+        emit("node-clicked", node);
     })
     .onLinkClick((link, event) => {
         emit("link-clicked", link);

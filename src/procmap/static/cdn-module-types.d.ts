@@ -19,3 +19,8 @@ declare module "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm" {
     export default JSONFormatter;
     export { JSONFormatter };
 }
+
+declare module "https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.mjs" {
+  import Fuse from "fuse";
+  export default Fuse;
+}

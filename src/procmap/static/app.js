@@ -3,6 +3,7 @@ import { state, getGraph, updateGraph, initializeEmptyGraph } from './modules/st
 import { Graph } from './modules/graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './modules/graph-ui.js'
 import { on, emit } from './modules/event-bus.js';
+import { search } from './modules/search.js';
 
 import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
@@ -159,8 +160,6 @@ document.getElementById('importFile').addEventListener('change', async (event) =
     event.target.value = '';
 });
 
-const q = sel => document.querySelector(sel);
-
 async function loadDataFromApi() {
     const res = await fetch('/api/graph');
 
@@ -196,18 +195,42 @@ window.getGraph = getGraph;
 // Get canvas element for selection logic
 const canvas = document.querySelector('#graph canvas');
 
-// Tool switching and selection logic
+const searchInput = document.getElementById('searchInput');
+
+searchInput.addEventListener('input', (event) => {
+    event.stopPropagation();
+    emit("search-expression-changed", event.target.value);
+});
+
+on("search-expression-changed", (expression) => {
+    const graph = getGraph();
+    const result = search(graph, expression);
+
+    state.selection.selectedNodeIds = result.nodeIds;
+
+    updateSelectionInfo();
+})
+
 function setTool(tool) {
     state.currentTool = tool;
+
     document.getElementById('toolPointer').classList.toggle('active', tool === 'pointer');
     document.getElementById('toolRectSelect').classList.toggle('active', tool === 'rect-select');
+    document.getElementById('toolSearch').classList.toggle('active', tool === 'search');
 
-    if (tool === 'pointer') {
-        selectionCanvas.style.pointerEvents = 'none';
-        canvas.style.cursor = 'default';
-    } else if (tool === 'rect-select') {
+    if (tool === 'rect-select') {
         selectionCanvas.style.pointerEvents = 'auto';
         selectionCanvas.style.cursor = 'crosshair';
+    } else {
+        selectionCanvas.style.pointerEvents = 'none';
+        canvas.style.cursor = 'default';
+    }
+
+    if (tool === 'search') {
+        searchInput.style.display = 'inline-block';
+        searchInput.focus();
+    } else {
+        searchInput.style.display = 'none';
     }
 
     updateSelectionInfo();
@@ -216,9 +239,11 @@ function setTool(tool) {
 function updateSelectionInfo() {
     const info = document.getElementById('selectionInfo');
     const deleteButton = document.getElementById('deleteSelected');
+
     if (state.selection.selectedNodeIds.size > 0) {
         info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
-        deleteButton.style.display = state.currentTool === 'rect-select' ? 'inline-block' : 'none';
+        // deleteButton.style.display = state.currentTool === 'rect-select' ? 'inline-block' : 'none';
+        deleteButton.style.display = 'inline-block';
     } else {
         info.textContent = '';
         deleteButton.style.display = 'none';
@@ -377,6 +402,16 @@ selectionCanvas.addEventListener('mouseup', (event) => {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', async (event) => {
+    const el = event.target;
+
+    const isTyping =
+        el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.isContentEditable;
+
+    if (isTyping)
+        return;
+
     if (event.key === 'p' || event.key === 'P') {
         setTool('pointer');
     } else if (event.key === 'r' || event.key === 'R') {
@@ -395,6 +430,10 @@ document.getElementById('toolPointer').addEventListener('click', () => {
 
 document.getElementById('toolRectSelect').addEventListener('click', () => {
     setTool('rect-select');
+});
+
+document.getElementById('toolSearch').addEventListener('click', () => {
+    setTool('search');
 });
 
 document.getElementById('deleteSelected').addEventListener('click', async () => {
@@ -424,7 +463,7 @@ function showDetails(node_or_link) {
 }
 
 function hideDetails() {
-    q('#details').hidden = true;
+    document.querySelector('#details').hidden = true;
 }
 
 function updateColorPanes() {
