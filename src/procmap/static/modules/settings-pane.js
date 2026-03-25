@@ -106,16 +106,29 @@ document.getElementById('importFile').addEventListener('change', async (event) =
     event.target.value = '';
 });
 
+// --- filter panes ---
+let nodeFiltersFolder = pane.addFolder({ title: "node filters", expanded: false });
+let edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: false });
+
 // --- color panes ---
 let nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: true });
 let edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: true });
 
-export function updateColorPanes() {
+export function updateDynamicGraphPanes() {
+    const nfExpanded = nodeFiltersFolder.expanded;
+    const efExpanded = edgeFiltersFolder.expanded;
+    const ncExpanded = nodeColorsFolder.expanded;
+    const ecExpanded = edgeColorsFolder.expanded;
+
+    nodeFiltersFolder.dispose();
+    edgeFiltersFolder.dispose();
     nodeColorsFolder.dispose();
     edgeColorsFolder.dispose();
 
-    nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: true });
-    edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: true });
+    nodeFiltersFolder = pane.addFolder({ title: "node filters", expanded: nfExpanded });
+    edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: efExpanded });
+    nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: ncExpanded });
+    edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: ecExpanded });
 
     const graph = getGraph();
 
@@ -127,6 +140,24 @@ export function updateColorPanes() {
     const edgeTypes = new Set();
     for (const edge of graph.getEdges()) {
         edgeTypes.add(edge.type);
+    }
+
+    for (const key of nodeTypes) {
+        if (!(key in settings.nodeFilters)) {
+            settings.nodeFilters[key] = true;
+        }
+        nodeFiltersFolder.addBinding(settings.nodeFilters, key).on('change', () => {
+            refreshGraphUI();
+        });
+    }
+
+    for (const key of edgeTypes) {
+        if (!(key in settings.edgeFilters)) {
+            settings.edgeFilters[key] = true;
+        }
+        edgeFiltersFolder.addBinding(settings.edgeFilters, key).on('change', () => {
+            refreshGraphUI();
+        });
     }
 
     for (const key of nodeTypes) {

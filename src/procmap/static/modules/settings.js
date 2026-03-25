@@ -16,6 +16,9 @@ export const settings = {
 
     nodeColors: {},
     edgeColors: {},
+
+    nodeFilters: {},
+    edgeFilters: {},
 };
 
 export const defaultLinkOpacity = 0.5;

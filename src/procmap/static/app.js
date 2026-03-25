@@ -5,7 +5,7 @@ import { refreshGraphUI } from './modules/graph-ui.js';
 import { on, emit } from './modules/event-bus.js';
 import { search } from './modules/search.js';
 import { loadDataFromApi } from './modules/data-io.js';
-import { updateColorPanes } from './modules/settings-pane.js';
+import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, setTool, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection, setUpdateSelectionInfo } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
@@ -37,7 +37,7 @@ function hideDetails() {
 // --- event wiring ---
 on("node-clicked", node => showDetails(node));
 on("link-clicked", link => showDetails(link));
-on("pre-graph-ui-refresh", () => updateColorPanes());
+on("pre-graph-ui-refresh", () => updateDynamicGraphPanes());
 on("background-click", () => hideDetails());
 
 on("search-expression-changed", (expression) => {

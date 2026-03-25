@@ -246,6 +246,27 @@ export async function refreshGraphUI() {
         })
     }
 
+    // filter out excluded node types and their connected edges
+    const filteredNodeIds = new Set();
+    for (const [type, enabled] of Object.entries(settings.nodeFilters)) {
+        if (!enabled) {
+            for (const n of processedData.nodes) {
+                if (n.type === type) filteredNodeIds.add(n.id);
+            }
+        }
+    }
+    if (filteredNodeIds.size > 0) {
+        processedData.nodes = processedData.nodes.filter(n => !filteredNodeIds.has(n.id));
+        processedData.edges = processedData.edges.filter(e => !filteredNodeIds.has(e.source) && !filteredNodeIds.has(e.target));
+    }
+
+    // filter out excluded edge types
+    for (const [type, enabled] of Object.entries(settings.edgeFilters)) {
+        if (!enabled) {
+            processedData.edges = processedData.edges.filter(e => e.type !== type);
+        }
+    }
+
     // optionally filter out isolated nodes
     if (!settings.showIsolated) {
         const connected = new Set();
