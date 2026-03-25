@@ -197,7 +197,7 @@ const canvas = document.querySelector('#graph canvas');
 
 const searchInput = document.getElementById('searchInput');
 
-searchInput.addEventListener('input', (event) => {
+searchInput.addEventListener('sl-input', (event) => {
     event.stopPropagation();
     emit("search-expression-changed", event.target.value);
 });
@@ -214,9 +214,9 @@ on("search-expression-changed", (expression) => {
 function setTool(tool) {
     state.currentTool = tool;
 
-    document.getElementById('toolPointer').classList.toggle('active', tool === 'pointer');
-    document.getElementById('toolRectSelect').classList.toggle('active', tool === 'rect-select');
-    document.getElementById('toolSearch').classList.toggle('active', tool === 'search');
+    document.getElementById('toolPointer').variant = tool === 'pointer' ? 'primary' : 'default';
+    document.getElementById('toolRectSelect').variant = tool === 'rect-select' ? 'primary' : 'default';
+    document.getElementById('toolSearch').variant = tool === 'search' ? 'primary' : 'default';
 
     if (tool === 'rect-select') {
         selectionCanvas.style.pointerEvents = 'auto';
@@ -239,11 +239,17 @@ function setTool(tool) {
 function updateSelectionInfo() {
     const info = document.getElementById('selectionInfo');
     const deleteButton = document.getElementById('deleteSelected');
+    const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
-    if (state.selection.selectedNodeIds.size > 0) {
-        info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
-        // deleteButton.style.display = state.currentTool === 'rect-select' ? 'inline-block' : 'none';
+    if (isSelectionTool) {
         deleteButton.style.display = 'inline-block';
+        if (state.selection.selectedNodeIds.size > 0) {
+            info.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
+            deleteButton.disabled = false;
+        } else {
+            info.textContent = '';
+            deleteButton.disabled = true;
+        }
     } else {
         info.textContent = '';
         deleteButton.style.display = 'none';
@@ -406,6 +412,7 @@ document.addEventListener('keydown', async (event) => {
 
     const isTyping =
         el.tagName === 'INPUT' ||
+        el.tagName === 'SL-INPUT' ||
         el.tagName === 'TEXTAREA' ||
         el.isContentEditable;
 
