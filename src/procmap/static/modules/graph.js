@@ -30,6 +30,10 @@ export class Graph {
         return [...this.edgesMap.values()];
     }
 
+    getAdjacentEdges(nodeId) {
+        return this.adjacency.get(nodeId) || [];
+    }
+
     toData() {
         return {
             nodes: this.getNodes(),

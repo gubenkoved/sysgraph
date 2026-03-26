@@ -209,11 +209,12 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             action: () => {
                 const graph = getGraph();
                 const visibleNodeIds = new Set([node.id]);
-                const edges = graph.adjacency.get(node.id) || [];
+                const edges = graph.getAdjacentEdges(node.id);;
                 for (const edge of edges) {
-                    visibleNodeIds.add(edge.source_id === node.id ? edge.target_id : edge.source_id);
+                    const adjacentNodeId = edge.source_id === node.id ? edge.target_id : edge.source_id;
+                    visibleNodeIds.add(adjacentNodeId);
                 }
-                state.adjacencyFilter = { centerNodeId: node.id, visibleNodeIds };
+                state.adjacencyFilter = { visibleNodeIds };
                 refreshGraphUI();
             }
         });
@@ -223,17 +224,18 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
                 label: 'Show adjacent (extend)',
                 action: () => {
                     const graph = getGraph();
-                    const edges = graph.adjacency.get(node.id) || [];
+                    const edges = graph.getAdjacentEdges(node.id);
                     state.adjacencyFilter.visibleNodeIds.add(node.id);
                     for (const edge of edges) {
-                        state.adjacencyFilter.visibleNodeIds.add(edge.source_id === node.id ? edge.target_id : edge.source_id);
+                        const adjacentNodeId = edge.source_id === node.id ? edge.target_id : edge.source_id;
+                        state.adjacencyFilter.visibleNodeIds.add(adjacentNodeId);
                     }
                     refreshGraphUI();
                 }
             });
 
             items.push({
-                label: 'Show all nodes',
+                label: 'Reset adjacency filter',
                 action: () => {
                     state.adjacencyFilter = null;
                     refreshGraphUI();
@@ -247,7 +249,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         event.preventDefault();
         if (state.adjacencyFilter) {
             showContextMenu(event.clientX, event.clientY, [{
-                label: 'Show all nodes',
+                label: 'Reset adjacency filter',
                 action: () => {
                     state.adjacencyFilter = null;
                     refreshGraphUI();
