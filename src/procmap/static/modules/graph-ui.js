@@ -74,20 +74,23 @@ function drawCircle(ctx, x, y, r, strokeWidth, strokeStyle) {
     ctx.restore();
 }
 
-function drawText(ctx, text, x, y, fontSize, fillStyle) {
+function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle', textAlign = 'left') {
     ctx.save();
     ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
+    ctx.textAlign = textAlign;
+    ctx.textBaseline = textBaseline;
+
     ctx.fillStyle = fillStyle;
-    ctx.fillText(text, x, y + fontSize / 2.8);
+    ctx.fillText(text, x, y);
     ctx.restore();
 }
 
-function drawTextWithStroke(ctx, text, x, y, fontSize, fillStyle, strokeStyle, strokeWidth, textAlign = 'center') {
+function drawTextWithStroke(ctx, text, x, y, fontSize, fillStyle, strokeStyle, strokeWidth, textBaseline = 'middle', textAlign = 'center') {
     ctx.save();
     ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
 
     ctx.textAlign = textAlign;
-    ctx.textBaseline = 'middle';
+    ctx.textBaseline = textBaseline;
 
     // outline
     ctx.lineWidth = strokeWidth;
@@ -189,7 +192,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
                 ctx, `+${hiddenCount}`, node.x + r, node.y - r, 9,
                 colorAdjustAlpha('rgba(17, 214, 27, 0.9)', alphaMultiplier),
                 colorAdjustAlpha('rgba(8, 168, 8, 0.91)', alphaMultiplier),
-                0.3, 'left',
+                0.3, 'baseline', 'left',
             );
         }
 
@@ -349,6 +352,11 @@ function updateAdjacenyFilter(nodeId, extendExisting = false) {
                 state.adjacencyFilter.visibleNodeIds.add(nodeId);
             }
         }
+
+        // TODO: these counters should work on ALREADY filtered graph; this will require proper
+        // graph filtering pipeline with layered filters:
+        //      raw graph -> deleted nodes filter -> node/edge filters -> adjacency filters)
+        // with counts reflecting hidden by the adjacency filters specifically
 
         // iterate adjacency visible nodes and evaluate if there are nodes that are hidden
         // due to adjacency filtering in its neighborhood
