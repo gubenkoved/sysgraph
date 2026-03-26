@@ -1,5 +1,5 @@
 import { settings, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js';
-import { getGraph, updateGraph, initializeEmptyGraph } from './state.js';
+import { getGraph, resetState, updateGraph } from './state.js';
 import { Graph } from './graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
 import { emit } from './event-bus.js';
@@ -72,9 +72,7 @@ pane.addBlade({ view: 'separator' });
 
 // --- clear / export / import ---
 pane.addButton({ title: 'clear' }).on('click', async () => {
-    const emptyGraph = initializeEmptyGraph();
-    updateGraph(emptyGraph);
-    refreshGraphUI();
+    emit("clear-button-clicked", null);
 });
 
 pane.addButton({ title: 'export data' }).on('click', () => {
@@ -100,7 +98,9 @@ document.getElementById('importFile').addEventListener('change', async (event) =
     const text = await file.text();
     const loadedData = parseGraphData(text);
 
+    resetState();
     updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+
     await refreshGraphUI();
 
     event.target.value = '';

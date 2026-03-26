@@ -1,12 +1,11 @@
-import { settings } from './modules/settings.js';
-import { state, getGraph, updateGraph } from './modules/state.js';
+import { state, getGraph, updateGraph, resetState } from './modules/state.js';
 import { Graph } from './modules/graph.js';
 import { refreshGraphUI } from './modules/graph-ui.js';
 import { on, emit } from './modules/event-bus.js';
 import { search } from './modules/search.js';
 import { loadDataFromApi } from './modules/data-io.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
-import { initToolbar, setTool, updateSelectionInfo } from './modules/toolbar.js';
+import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection, setUpdateSelectionInfo } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 
@@ -39,6 +38,10 @@ on("node-clicked", node => showDetails(node));
 on("link-clicked", link => showDetails(link));
 on("pre-graph-ui-refresh", () => updateDynamicGraphPanes());
 on("background-click", () => hideDetails());
+on("clear-button-clicked", async () => {
+    resetState();
+    await refreshGraphUI();
+});
 
 on("search-expression-changed", (expression) => {
     const graph = getGraph();
@@ -46,10 +49,6 @@ on("search-expression-changed", (expression) => {
     state.selection.selectedNodeIds = result.nodeIds;
     updateSelectionInfo();
 });
-
-// export to window for easy access in devtools
-window.settings = settings;
-window.getGraph = getGraph;
 
 // --- initialize selection overlay & toolbar ---
 const { selectionCanvas, canvas } = initSelection();
