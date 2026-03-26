@@ -3,11 +3,12 @@ import { on, emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js'
-import * as util from './util.js';
-import { showContextMenu, hideContextMenu } from './context-menu.js';
+import { showContextMenu } from './context-menu.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
+
+const fontFamily = 'Ubuntu';
 
 // setup event handlers
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
@@ -47,6 +48,59 @@ function linkTargetId(link) {
     return (typeof link.target === 'object') ? link.target.id : link.target;
 }
 
+function colorWithAlpha(color, alpha) {
+    const col = d3.color(color);
+    col.opacity = alpha;
+    return col.toString();
+}
+
+function colorAdjustAlpha(color, factor) {
+    const col = d3.color(color);
+    col.opacity *= factor;
+    return col.toString();
+}
+
+function darkerColor(color) {
+    return d3.color(color).darker();
+}
+
+function drawCircle(ctx, x, y, r, strokeWidth, strokeStyle) {
+    ctx.save();
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = strokeStyle;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawText(ctx, text, x, y, fontSize, fillStyle) {
+    ctx.save();
+    ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
+    ctx.fillStyle = fillStyle;
+    ctx.fillText(text, x, y + fontSize / 2.8);
+    ctx.restore();
+}
+
+function drawTextWithStroke(ctx, text, x, y, fontSize, fillStyle, strokeStyle, strokeWidth, textAlign = 'center') {
+    ctx.save();
+    ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
+
+    ctx.textAlign = textAlign;
+    ctx.textBaseline = 'middle';
+
+    // outline
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = strokeStyle;
+    ctx.strokeText(text, x, y);
+
+    // fill
+    ctx.fillStyle = fillStyle;
+    ctx.fillText(text, x, y);
+
+    ctx.restore();
+}
+
 export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .nodeId('id')
     .graphData({ nodes: [], links: [] })
@@ -68,7 +122,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
                 alphaMultiplier = highlightAlphaMultipliers[edgeDistance];
             }
 
-            fillStyle = util.colorAdjustAlpha(fillStyle, alphaMultiplier);
+            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
 
         return fillStyle;
@@ -112,7 +166,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
                 alphaMultiplier = highlightAlphaMultipliers[nodeDistance];
             }
 
-            fillStyle = util.colorAdjustAlpha(fillStyle, alphaMultiplier);
+            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
 
         // draw the node as filled circle
@@ -124,9 +178,20 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         // bit darker outline
         ctx.beginPath();
         ctx.strokeWidth = 1;
-        ctx.strokeStyle = util.darkerColor(fillStyle);
+        ctx.strokeStyle = darkerColor(fillStyle);
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
         ctx.stroke();
+
+        // in case of adjacency filter mode show hidden count as visual hint
+        if (state.adjacencyFilter && state.adjacencyFilter.hiddenCounts.get(node.id, 0)) {
+            const hiddenCount = state.adjacencyFilter.hiddenCounts.get(node.id, 0);
+            drawTextWithStroke(
+                ctx, `+${hiddenCount}`, node.x + r, node.y - r, 9,
+                colorAdjustAlpha('rgba(17, 214, 27, 0.9)', alphaMultiplier),
+                colorAdjustAlpha('rgba(8, 168, 8, 0.91)', alphaMultiplier),
+                0.3, 'left',
+            );
+        }
 
         // draw outline for locked (pinned) nodes
         const locked = (node.fx !== undefined || node.fy !== undefined);
@@ -134,14 +199,14 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             // stroke width should scale inversely with zoom so it remains visible
             //const strokeWidth = Math.max(1.2, 2 / globalScale);
 
-            util.drawCircle(ctx, node.x, node.y, r + 1, 2, util.colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
-            util.drawCircle(ctx, node.x, node.y, r, 1, util.colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
+            drawCircle(ctx, node.x, node.y, r + 1, 2, colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
+            drawCircle(ctx, node.x, node.y, r, 1, colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
         }
 
         // draw red outline for selected nodes with pulsing radius
         if (state.selection.selectedNodeIds.has(node.id)) {
             const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            util.drawCircle(ctx, node.x, node.y, r + 3 + pulse, 4, 'rgba(255,0,0,1.0)');
+            drawCircle(ctx, node.x, node.y, r + 3 + pulse, 4, 'rgba(255,0,0,1.0)');
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)
@@ -149,10 +214,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
 
         //const fontSize = Math.max(3, 12 / globalScale);
-        const fontSize = 12;
-        ctx.font = `${fontSize}px Ubuntu, sans-serif`;
-        ctx.fillStyle = util.colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier);
-        ctx.fillText(label, node.x + r + 4, node.y + fontSize / 2.8);
+        drawText(ctx, label, node.x + r + 4, node.y, 12, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
     })
     // pointer area for interactions (keeps it reasonably large for hit testing)
     .nodePointerAreaPaint((node, color, ctx) => {
@@ -207,14 +269,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         items.push({
             label: 'Show adjacent only',
             action: () => {
-                const graph = getGraph();
-                const visibleNodeIds = new Set([node.id]);
-                const edges = graph.getAdjacentEdges(node.id);;
-                for (const edge of edges) {
-                    const adjacentNodeId = edge.source_id === node.id ? edge.target_id : edge.source_id;
-                    visibleNodeIds.add(adjacentNodeId);
-                }
-                state.adjacencyFilter = { visibleNodeIds };
+                updateAdjacenyFilter(node.id, false);
                 refreshGraphUI();
             }
         });
@@ -223,13 +278,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             items.push({
                 label: 'Show adjacent (extend)',
                 action: () => {
-                    const graph = getGraph();
-                    const edges = graph.getAdjacentEdges(node.id);
-                    state.adjacencyFilter.visibleNodeIds.add(node.id);
-                    for (const edge of edges) {
-                        const adjacentNodeId = edge.source_id === node.id ? edge.target_id : edge.source_id;
-                        state.adjacencyFilter.visibleNodeIds.add(adjacentNodeId);
-                    }
+                    updateAdjacenyFilter(node.id, true);
                     refreshGraphUI();
                 }
             });
@@ -237,7 +286,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             items.push({
                 label: 'Reset adjacency filter',
                 action: () => {
-                    state.adjacencyFilter = null;
+                    updateAdjacenyFilter(null);
                     refreshGraphUI();
                 }
             });
@@ -274,6 +323,52 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4))
     .d3Force('forceX', d3.forceX())
     .d3Force('forceY', d3.forceY());
+
+
+function updateAdjacenyFilter(nodeId, extendExisting = false) {
+    const graph = getGraph();
+
+    if (nodeId !== null )
+    {
+        const nodeIds = new Set([nodeId]);
+
+        const edges = graph.getAdjacentEdges(nodeId);;
+
+        for (const edge of edges) {
+            const adjacentNodeId = edge.source_id === nodeId ? edge.target_id : edge.source_id;
+            nodeIds.add(adjacentNodeId);
+        }
+
+        if (!extendExisting) {
+            state.adjacencyFilter = {
+                visibleNodeIds: nodeIds,
+                hiddenCounts: new Map(),
+            };
+        } else {
+            for (const nodeId of nodeIds) {
+                state.adjacencyFilter.visibleNodeIds.add(nodeId);
+            }
+        }
+
+        // iterate adjacency visible nodes and evaluate if there are nodes that are hidden
+        // due to adjacency filtering in its neighborhood
+        const hiddenCounts = new Map();
+        for (const nodeId of state.adjacencyFilter.visibleNodeIds) {
+            const adjacencyHiddenNodesIds = new Set();
+            for (const edge of graph.getAdjacentEdges(nodeId)) {
+                const adjacentNodeId = edge.source_id === nodeId ? edge.target_id : edge.source_id;
+                if (!state.adjacencyFilter.visibleNodeIds.has(adjacentNodeId)) {
+                    adjacencyHiddenNodesIds.add(adjacentNodeId);
+                }
+            }
+            hiddenCounts.set(nodeId, adjacencyHiddenNodesIds.size);
+        }
+        state.adjacencyFilter.hiddenCounts = hiddenCounts;
+    } else {
+        // reset the filter
+        state.adjacencyFilter = null;
+    }
+}
 
 
 export async function refreshGraphUI() {
