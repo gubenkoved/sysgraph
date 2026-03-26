@@ -16,6 +16,9 @@
       .muted { color: #666; }
       .toolbar-separator { width: 1px; height: 24px; background: rgba(0,0,0,0.1); }
       hr { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 6px 0; }
+      #contextMenu { display: none; position: fixed; z-index: 200; background: rgba(255,255,255,0.97); border: 1px solid rgba(0,0,0,0.12); border-radius: 6px; padding: 4px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; font-size: 13px; }
+      .context-menu-item { padding: 6px 14px; cursor: pointer; user-select: none; }
+      .context-menu-item:hover { background: rgba(0,0,0,0.06); }
     </style>
 
     <!-- style tweakpane light theme -->
@@ -93,6 +96,8 @@
     <div id="version-badge">0.0.1</div>
 
     <input type="file" id="importFile" accept=".json" style="display:none">
+
+    <div id="contextMenu"></div>
 
     <script src="./static/app.js" type="module"></script>
   </body>

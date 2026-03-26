@@ -4,6 +4,7 @@ import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js'
 import * as util from './util.js';
+import { showContextMenu, hideContextMenu } from './context-menu.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
@@ -199,6 +200,61 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             state.highlight = null;
         }
     })
+    .onNodeRightClick((node, event) => {
+        event.preventDefault();
+        const items = [];
+
+        items.push({
+            label: 'Show adjacent only',
+            action: () => {
+                const graph = getGraph();
+                const visibleNodeIds = new Set([node.id]);
+                const edges = graph.adjacency.get(node.id) || [];
+                for (const edge of edges) {
+                    visibleNodeIds.add(edge.source_id === node.id ? edge.target_id : edge.source_id);
+                }
+                state.adjacencyFilter = { centerNodeId: node.id, visibleNodeIds };
+                refreshGraphUI();
+            }
+        });
+
+        if (state.adjacencyFilter) {
+            items.push({
+                label: 'Show adjacent (extend)',
+                action: () => {
+                    const graph = getGraph();
+                    const edges = graph.adjacency.get(node.id) || [];
+                    state.adjacencyFilter.visibleNodeIds.add(node.id);
+                    for (const edge of edges) {
+                        state.adjacencyFilter.visibleNodeIds.add(edge.source_id === node.id ? edge.target_id : edge.source_id);
+                    }
+                    refreshGraphUI();
+                }
+            });
+
+            items.push({
+                label: 'Show all nodes',
+                action: () => {
+                    state.adjacencyFilter = null;
+                    refreshGraphUI();
+                }
+            });
+        }
+
+        showContextMenu(event.clientX, event.clientY, items);
+    })
+    .onBackgroundRightClick((event) => {
+        event.preventDefault();
+        if (state.adjacencyFilter) {
+            showContextMenu(event.clientX, event.clientY, [{
+                label: 'Show all nodes',
+                action: () => {
+                    state.adjacencyFilter = null;
+                    refreshGraphUI();
+                }
+            }]);
+        }
+    })
     .onBackgroundClick(() => {
         if (state.currentTool === 'pointer') {
             emit('background-click', null);
@@ -265,6 +321,13 @@ export async function refreshGraphUI() {
         if (!enabled) {
             processedData.edges = processedData.edges.filter(e => e.type !== type);
         }
+    }
+
+    // adjacency filter: show only the center node and its direct neighbors
+    if (state.adjacencyFilter) {
+        const visible = state.adjacencyFilter.visibleNodeIds;
+        processedData.nodes = processedData.nodes.filter(n => visible.has(n.id));
+        processedData.edges = processedData.edges.filter(e => visible.has(e.source) && visible.has(e.target));
     }
 
     // optionally filter out isolated nodes

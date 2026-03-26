@@ -3,6 +3,7 @@ import { Graph } from './graph.js';
 export const state = {
     highlight: null,
     currentTool: "pointer",
+    adjacencyFilter: null,
     selection: {
         selectedNodeIds: new Set(),
         isSelecting: false,
