@@ -407,7 +407,9 @@ def build_graph() -> Graph:
                     ensure_sockets_connected(local_socket, remote_socket)
         except Exception as err:
             LOGGER.warning(
-                "error processing connections for PID %d: %r", proc.pid, err,
+                "error processing connections for PID %d: %r",
+                proc.pid,
+                err,
             )
 
     # post-process all sockets which are NOT connected to any process -- these

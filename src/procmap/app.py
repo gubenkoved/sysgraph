@@ -1,9 +1,12 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 import logging
+import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import coloredlogs
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +16,16 @@ from procmap.discovery import build_graph
 
 LOGGER = logging.getLogger(__name__)
 
-app = FastAPI(title="procmap API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app):
+    coloredlogs.install()
+    logging.info(f"init for process with PID {os.getpid()}")
+    yield
+    logging.info(f"shutdown for process with PID {os.getpid()}")
+
+
+app = FastAPI(title="procmap API", version="0.1.0", lifespan=lifespan)
 
 # serve static assets from `src/procmap/static` under /static
 static_dir = str(Path(__file__).parent / "static")
@@ -56,7 +68,7 @@ def get_graph() -> GraphSchema:
     graph = build_graph()
     graph_dict = graph.as_dict()
 
-    LOGGER.info(graph_dict)
+    LOGGER.debug(graph_dict)
 
     return GraphSchema(
         nodes=[
@@ -82,4 +94,10 @@ def get_graph() -> GraphSchema:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("procmap.app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "procmap.app:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )
