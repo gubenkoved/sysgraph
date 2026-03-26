@@ -279,6 +279,10 @@ export async function refreshGraphUI() {
 
     const graph = getGraph();
 
+    // TODO: do the graph processing using the Graph object. Start by cloning
+    // existing Graph and gradually apply the filters, etc. This will allow to
+    // reuse Graph alogrithms
+
     let processedData = { nodes: [], edges: [] };
 
     // transform for graph format
