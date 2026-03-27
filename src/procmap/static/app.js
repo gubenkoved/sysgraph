@@ -9,9 +9,10 @@ import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection, setUpdateSelectionInfo } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 
-// --- details panel ---
+// --- cached DOM elements ---
 /** @type {HTMLElement} */
 const detailsContainer = document.getElementById('details');
+const searchMatchCountEl = document.getElementById('searchMatchCount');
 
 /**
  * Renders the properties of a node or link in the details panel.
@@ -58,8 +59,11 @@ on("search-expression-changed", (expression) => {
             matchesMap,
             matchColorsMap: computeMatchColors(matchesMap),
         }
+        searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
+        searchMatchCountEl.style.display = 'inline';
     } else {
         state.search = null;
+        searchMatchCountEl.style.display = 'none';
     }
 });
 

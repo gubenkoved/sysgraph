@@ -10,6 +10,7 @@ const deleteBtn = document.getElementById('deleteSelected');
 const unselectBtn = document.getElementById('unselectAll');
 const selectionInfoEl = document.getElementById('selectionInfo');
 const searchInput = document.getElementById('searchInput');
+const searchMatchCount = document.getElementById('searchMatchCount');
 
 /**
  * Activates the given tool and updates toolbar button states.
@@ -37,9 +38,12 @@ export function setTool(tool, selectionCanvas, canvas) {
         searchInput.focus();
         if (searchInput.value) {
             emit("search-expression-changed", searchInput.value);
+        } else {
+            searchMatchCount.style.display = 'none';
         }
     } else {
         searchInput.style.display = 'none';
+        searchMatchCount.style.display = 'none';
         emit("search-expression-changed", "");
     }
 
