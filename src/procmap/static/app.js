@@ -1,6 +1,6 @@
 import { state, getGraph, updateGraph, resetState } from './modules/state.js';
 import { Graph } from './modules/graph.js';
-import { refreshGraphUI } from './modules/graph-ui.js';
+import { refreshGraphUI, computeMatchColors } from './modules/graph-ui.js';
 import { on, emit } from './modules/event-bus.js';
 import { search } from './modules/search.js';
 import { loadDataFromApi } from './modules/data-io.js';
@@ -53,8 +53,10 @@ on("search-expression-changed", (expression) => {
     if (expression && expression.trim()) {
         const graph = getGraph();
         const matches = search(graph, expression);
+        const matchesMap = new Map(matches.map(x => [x.nodeId, x]));
         state.search = {
-            matchesMap: new Map(matches.map(x => [x.nodeId, x])),
+            matchesMap,
+            matchColorsMap: computeMatchColors(matchesMap),
         }
     } else {
         state.search = null;

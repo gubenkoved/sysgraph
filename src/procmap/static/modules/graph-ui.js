@@ -4,6 +4,7 @@ import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js'
 import { showContextMenu } from './context-menu.js';
+import { ColorScale } from './color-scale.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
@@ -24,6 +25,49 @@ on("d3-simulation-parameters-changed", applyD3Params);
 
 /** @type {number} */
 const searchNotMatchingBaseOpacity = 0.5;
+
+/** Color scale for search match scores: best match (0) → red, worst (1) → yellow. */
+const searchMatchColorScale = new ColorScale([
+    ['rgb(255, 0, 0)',   0],       // red – best match
+    ['rgb(255, 140, 0)', 0.5],     // orange – mid
+    ['rgb(195, 179, 41)', 1],     // dark yellow – worst match
+]);
+
+/**
+ * Computes a normalized color map for a set of search matches using a log
+ * transform of the Fuse.js scores.  Fuse scores are tiny (near 0 = best),
+ * so −log₁₀(score) spreads differences that linear mapping would hide.
+ *
+ * @param {Map<string, import('./search.js').Match>} matchesMap
+ * @returns {Map<string, string>} nodeId → CSS color
+ */
+export function computeMatchColors(matchesMap) {
+    const colors = new Map();
+    if (!matchesMap || matchesMap.size === 0) return colors;
+
+    const epsilon = 1e-12;
+    const logScores = [];
+
+    for (const [nodeId, match] of matchesMap) {
+        // −log₁₀: higher value = better match
+        logScores.push({ nodeId, logScore: -Math.log10(match.score + epsilon) });
+    }
+
+    let minLog = Infinity;
+    let maxLog = -Infinity;
+    for (const { logScore } of logScores) {
+        if (logScore < minLog) minLog = logScore;
+        if (logScore > maxLog) maxLog = logScore;
+    }
+
+    for (const { nodeId, logScore } of logScores) {
+        // normalize so best match → 0, worst → 1
+        const t = maxLog === minLog ? 0 : (maxLog - logScore) / (maxLog - minLog);
+        colors.set(nodeId, searchMatchColorScale.getColor(t));
+    }
+
+    return colors;
+}
 
 /**
  * Converts an RGBA color struct to a CSS rgba() string.
@@ -303,11 +347,11 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             drawCircle(ctx, node.x, node.y, r + 2, 2, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier));
         }
 
-        // show search matches via pulsing outline
-        // TODO: use color scale to show match score (log scale)
+        // show search matches via color-coded pulsing outline
         if (state.search && state.search.matchesMap.has(node.id)) {
+            const matchColor = state.search.matchColorsMap.get(node.id) || 'rgb(255, 0, 0)';
             const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            drawCircle(ctx, node.x, node.y, r + 5 + pulse, 3, 'rgba(255,0,0,1.0)');
+            drawCircle(ctx, node.x, node.y, r + 5 + pulse, 3, matchColor);
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)

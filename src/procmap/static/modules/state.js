@@ -25,6 +25,7 @@ import { Graph } from './graph.js';
 /**
  * @typedef {Object} SearchState
  * @property {Map<string, import('./search.js').Match>} matchesMap
+ * @property {Map<string, string>} matchColorsMap - nodeId → CSS color from the color scale.
  */
 
 // TODO: introduce IMMUTABLE source graph that is only modified via extra stored
