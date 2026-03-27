@@ -35,8 +35,12 @@ export function setTool(tool, selectionCanvas, canvas) {
     if (tool === 'search') {
         searchInput.style.display = 'inline-block';
         searchInput.focus();
+        if (searchInput.value) {
+            emit("search-expression-changed", searchInput.value);
+        }
     } else {
         searchInput.style.display = 'none';
+        emit("search-expression-changed", "");
     }
 
     updateSelectionInfo();
