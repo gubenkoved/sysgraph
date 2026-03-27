@@ -2,6 +2,7 @@ import logging
 import re
 import subprocess
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from socket import AddressFamily
 
 import psutil
@@ -23,24 +24,23 @@ LOGGER = logging.getLogger(__name__)
 def discover_processes() -> list[Process]:
     processes = []
 
-    # include 'name' so we can expose the executable name (e.g. 'python', 'bash')
-    for proc in psutil.process_iter(["pid", "username", "cmdline", "name"]):
-        p = Process(pid=proc.info["pid"])
-        p.parent_pid = proc.ppid()
-        p.user = proc.info["username"]
+    attrs = ["pid", "ppid", "username", "cmdline", "name", "cpu_times", "environ"]
+    for proc in psutil.process_iter(attrs):
+        info = proc.info
+        p = Process(pid=info["pid"])
+        p.parent_pid = info["ppid"]
+        p.user = info["username"]
         p.command = (
-            " ".join(proc.info["cmdline"]) if proc.info["cmdline"] else None
+            " ".join(info["cmdline"]) if info["cmdline"] else None
         )
-        p.name = proc.info.get("name")
+        p.name = info.get("name")
 
-        cpu_times = proc.cpu_times()
-        p.cpu_user = cpu_times.user
-        p.cpu_system = cpu_times.system
+        cpu_times = info.get("cpu_times")
+        if cpu_times:
+            p.cpu_user = cpu_times.user
+            p.cpu_system = cpu_times.system
 
-        try:
-            p.environment = proc.environ()
-        except (psutil.AccessDenied, psutil.ZombieProcess):
-            p.environment = None
+        p.environment = info.get("environ")
 
         processes.append(p)
 
@@ -212,12 +212,43 @@ def get_net_connections(pid: int) -> list[NetConnection]:
     return connections
 
 
+def get_all_net_connections() -> dict[int, list[NetConnection]]:
+    """Fetch all network connections system-wide in a single call."""
+    result: dict[int, list[NetConnection]] = defaultdict(list)
+    for pcon in psutil.net_connections(kind="inet"):
+        if pcon.pid is None:
+            continue
+        result[pcon.pid].append(
+            NetConnection(
+                pid=pcon.pid,
+                local_address=SocketAddress(pcon.laddr.ip, pcon.laddr.port),
+                remote_address=SocketAddress(pcon.raddr.ip, pcon.raddr.port)
+                if pcon.raddr
+                else None,
+                socket_type=pcon.type.name,
+                state=pcon.status,
+            )
+        )
+    return result
+
+
 def build_graph() -> Graph:
     graph = Graph()
 
     pid_to_node: dict[int, Node] = {}
 
-    processes = discover_processes()
+    # run independent discovery steps in parallel (all I/O-bound)
+    with ThreadPoolExecutor() as executor:
+        processes_future = executor.submit(discover_processes)
+        uds_future = executor.submit(discover_unix_sockets)
+        open_files_future = executor.submit(get_processes_open_files)
+        net_connections_future = executor.submit(get_all_net_connections)
+
+        processes = processes_future.result()
+        uds = uds_future.result()
+        open_files_map = open_files_future.result()
+        all_net_connections = net_connections_future.result()
+
     for proc in processes:
         proc_node_id = f"process::{proc.pid}"
         node = graph.add_node(
@@ -248,12 +279,15 @@ def build_graph() -> Graph:
                 rel_type="child_process",
             )
 
-    uds = discover_unix_sockets()
     for con in discover_connected_uds(uds):
         for p1_ref in con.socket1.processes:
             pid1 = p1_ref.pid
+            if pid1 not in pid_to_node:
+                continue
             for p2_ref in con.socket2.processes:
                 pid2 = p2_ref.pid
+                if pid2 not in pid_to_node:
+                    continue
                 _ = graph.add_edge(
                     source_id=pid_to_node[pid1].id,
                     target_id=pid_to_node[pid2].id,
@@ -270,9 +304,6 @@ def build_graph() -> Graph:
                         ),
                     },
                 )
-
-    # capture open file descriptors
-    open_files_map = get_processes_open_files()
 
     pipe_node_to_node = {}
 
@@ -373,30 +404,33 @@ def build_graph() -> Graph:
         )
 
     for proc in processes:
-        try:
-            net_connections = get_net_connections(proc.pid)
-            proc_node = pid_to_node[proc.pid]
+        net_connections = all_net_connections.get(proc.pid, [])
+        if not net_connections:
+            continue
+        proc_node = pid_to_node.get(proc.pid)
+        if proc_node is None:
+            continue
 
-            for net_con in net_connections:
-                socket_id = (net_con.local_address, net_con.socket_type)
+        for net_con in net_connections:
+            socket_id = (net_con.local_address, net_con.socket_type)
 
-                # ensure socket in graph
-                local_socket = ensure_socket(
-                    net_con.local_address,
-                    net_con.socket_type,
-                    net_con.state,
+            # ensure socket in graph
+            local_socket = ensure_socket(
+                net_con.local_address,
+                net_con.socket_type,
+                net_con.state,
+            )
+
+            # process connection
+            if proc.pid not in socket_to_pids.get(socket_id, []):
+                socket_to_pids[socket_id] = socket_to_pids.get(
+                    socket_id, []
+                ) + [proc.pid]
+                graph.add_edge(
+                    source_id=proc_node.id,
+                    target_id=local_socket.id,
+                    rel_type="socket",
                 )
-
-                # process connection
-                if pid not in socket_to_pids.get(socket_id, []):
-                    socket_to_pids[socket_id] = socket_to_pids.get(
-                        socket_id, []
-                    ) + [pid]
-                    graph.add_edge(
-                        source_id=proc_node.id,
-                        target_id=local_socket.id,
-                        rel_type="socket",
-                    )
 
                 if net_con.remote_address:
                     remote_socket = ensure_socket(
@@ -405,12 +439,6 @@ def build_graph() -> Graph:
                         net_con.state,
                     )
                     ensure_sockets_connected(local_socket, remote_socket)
-        except Exception as err:
-            LOGGER.warning(
-                "error processing connections for PID %d: %r",
-                proc.pid,
-                err,
-            )
 
     # post-process all sockets which are NOT connected to any process -- these
     # are remote endpoints, group the by IP address

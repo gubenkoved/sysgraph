@@ -8,6 +8,7 @@ from typing import Any
 
 import coloredlogs
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -26,6 +27,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="procmap API", version="0.1.0", lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # serve static assets from `src/procmap/static` under /static
 static_dir = str(Path(__file__).parent / "static")
