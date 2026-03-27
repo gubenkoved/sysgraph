@@ -1,8 +1,10 @@
 import logging
+import os
 import re
 import subprocess
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from socket import AddressFamily
 
 import psutil
@@ -141,53 +143,53 @@ def discover_connected_uds(
 
 
 def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
-    result = subprocess.run(
-        [
-            "lsof",
-            "-nP",
-            "-Ki",  # suppress duplicates per each thread
-            "-Fpfnita",  # use machine parsable output
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
+    """Read open file descriptors directly from /proc instead of spawning lsof."""
     result_map: dict[int, list[ProcessOpenFile]] = defaultdict(list)
+    proc_path = Path("/proc")
 
-    pid = None
-    file_tags: dict[str, str] = {}
+    for pid_dir in proc_path.iterdir():
+        if not pid_dir.name.isdigit():
+            continue
+        pid = int(pid_dir.name)
+        fd_dir = pid_dir / "fd"
+        try:
+            fd_entries = list(fd_dir.iterdir())
+        except (PermissionError, OSError):
+            continue
 
-    fd_re = re.compile(r"^[0-9]+$")
+        for fd_entry in fd_entries:
+            if not fd_entry.name.isdigit():
+                continue
+            try:
+                target = os.readlink(fd_entry)
+            except (PermissionError, OSError):
+                continue
 
-    def handle_buffer():
-        if not fd_re.match(file_tags["f"]):
-            return
-        open_file = ProcessOpenFile(
-            int(file_tags["f"]), file_tags["t"], file_tags.get("n")
-        )
-        open_file.mode = file_tags.get("a")
-        open_file.node = file_tags.get("i")
-        result_map[pid].append(open_file)
-        file_tags.clear()
+            # only collect pipes (the only type used downstream)
+            if not target.startswith("pipe:"):
+                continue
 
-    for line in result.stdout.splitlines():
-        # LOGGER.debug(f"parsing lsof line: {line}")
+            fd_num = int(fd_entry.name)
+            # extract inode from "pipe:[12345]"
+            inode = target[6:-1]
 
-        tag = line[0]
-        value = line[1:]
+            # read mode from /proc/[pid]/fdinfo/[fd]
+            mode = None
+            try:
+                fdinfo = (pid_dir / "fdinfo" / fd_entry.name).read_text()
+                for line in fdinfo.splitlines():
+                    if line.startswith("flags:"):
+                        flags = int(line.split(":", 1)[1].strip(), 8)
+                        access = flags & 0o3
+                        mode = "r" if access == 0o0 else "w"
+                        break
+            except (PermissionError, OSError):
+                pass
 
-        if tag == "p":
-            # NOTE: these are for previous process (if any)
-            if file_tags:
-                handle_buffer()
-            pid = int(value)
-        elif tag == "f":
-            if file_tags:
-                handle_buffer()
-            file_tags["f"] = value
-        else:
-            file_tags[tag] = value
+            open_file = ProcessOpenFile(fd_num, "FIFO", target)
+            open_file.node = inode
+            open_file.mode = mode
+            result_map[pid].append(open_file)
 
     return result_map
 
