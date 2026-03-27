@@ -1,0 +1,37 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "type": "foo",
+            "properties": {
+                "label": "foo-1"
+            }
+        },
+        {
+            "id": "2",
+            "type": "foo",
+            "properties": {
+                "label": "foo-2"
+            }
+        },
+        {
+            "id": "3",
+            "type": "bar",
+            "properties": {
+                "label": "bar"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "source_id": "1",
+            "target_id": "2",
+            "type": "A"
+        },
+        {
+            "source_id": "1",
+            "target_id": "3",
+            "type": "B"
+        }
+    ]
+}

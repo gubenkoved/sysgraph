@@ -14,6 +14,8 @@ const fontFamily = 'Ubuntu';
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
 on("d3-simulation-parameters-changed", applyD3Params);
 
+const searchNotMatchingBaseOpacity = 0.5;
+
 function toCssColor({ r, g, b, a }) {
     return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
 }
@@ -117,6 +119,11 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         let fillStyle = edgeColorFor(l);
         let alphaMultiplier = 1.0;
 
+        // decrease opacity by default if in search mode to make matches stand out mode
+        if (!state.highlight && state.search) {
+            alphaMultiplier = searchNotMatchingBaseOpacity;
+        }
+
         if (state.highlight) {
             alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1];
             const edgeDistance = state.highlight.edgeDistancesMap.get(l.id);
@@ -157,9 +164,12 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         //const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
         const r = baseSize;
 
-        // regular fill style
-        let fillStyle = nodeColorFor(node);
         let alphaMultiplier = 1.0;
+
+        // decrease opacity by default if in search mode to make matches stand out mode
+        if (!state.highlight && state.search && !state.search.matchesMap.has(node.id)) {
+            alphaMultiplier = searchNotMatchingBaseOpacity;
+        }
 
         if (state.highlight) {
             alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1];
@@ -168,9 +178,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             if (nodeDistance < highlightAlphaMultipliers.length - 1) {
                 alphaMultiplier = highlightAlphaMultipliers[nodeDistance];
             }
-
-            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
         }
+
+        let fillStyle = colorAdjustAlpha(nodeColorFor(node), alphaMultiplier);
 
         // draw the node as filled circle
         ctx.beginPath();
@@ -206,10 +216,16 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             drawCircle(ctx, node.x, node.y, r, 1, colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
         }
 
-        // draw red outline for selected nodes with pulsing radius
+        // draw red outline for selected nodes
         if (state.selection.selectedNodeIds.has(node.id)) {
+            drawCircle(ctx, node.x, node.y, r + 2, 2, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier));
+        }
+
+        // show search matches via pulsing outline
+        // TODO: use color scale to show match score (log scale)
+        if (state.search && state.search.matchesMap.has(node.id)) {
             const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            drawCircle(ctx, node.x, node.y, r + 3 + pulse, 4, 'rgba(255,0,0,1.0)');
+            drawCircle(ctx, node.x, node.y, r + 5 + pulse, 3, 'rgba(255,0,0,1.0)');
         }
 
         // generic label (use properties.name/label if available, otherwise type + id)

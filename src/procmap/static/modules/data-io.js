@@ -33,6 +33,9 @@ export function serializeGraph(graph) {
 export function parseGraphData(text) {
     const data = JSON.parse(text);
     // initialize edge ID if missing
-    data.edges.forEach(e => e.id ??= "auto:" + crypto.randomUUID());
+    data.edges.forEach(e => {
+        e.id ??= "auto:" + crypto.randomUUID();
+        e.type ??= "unknown";
+    });
     return data;
 }

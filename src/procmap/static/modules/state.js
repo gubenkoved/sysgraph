@@ -8,10 +8,14 @@ import { Graph } from './graph.js';
 // should be calculate on ALREADY filtered graph
 export const state = {
     graph: initializeEmptyGraph(),
+
+    // highlight represents the state to implement feature of highliting
+    // neighbor nodes while hovering the node on the graph
     highlight: null,
     currentTool: "pointer",
     adjacencyFilter: null,
     selection: initializeSelectionState(),
+    search: null,
 }
 
 function initializeSelectionState() {
@@ -30,6 +34,7 @@ export function resetState() {
     state.selection = initializeSelectionState();
     state.adjacencyFilter = null;
     state.highlight = null;
+    state.search = null;
 }
 
 /**

@@ -44,10 +44,15 @@ on("clear-button-clicked", async () => {
 });
 
 on("search-expression-changed", (expression) => {
-    const graph = getGraph();
-    const result = search(graph, expression);
-    state.selection.selectedNodeIds = result.nodeIds;
-    updateSelectionInfo();
+    if (expression && expression.trim()) {
+        const graph = getGraph();
+        const matches = search(graph, expression);
+        state.search = {
+            matchesMap: new Map(matches.map(x => [x.nodeId, x])),
+        }
+    } else {
+        state.search = null;
+    }
 });
 
 // --- initialize selection overlay & toolbar ---

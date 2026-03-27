@@ -21,10 +21,18 @@ function extractKeys(object, maxDepth = 1) {
     return fields;
 }
 
+export class Match {
+    constructor(nodeId, score) {
+        this.nodeId = nodeId;
+        this.score = score;
+    }
+}
+
 
 /**
  @param {import('./graph.js').Graph} graph
  @param {String} expression
+ @returns {Match[]} matches
 */
 export function search(graph, expression) {
     const allKeys = new Set();
@@ -58,7 +66,7 @@ export function search(graph, expression) {
 
     const fuse = new Fuse(graph.getNodes(), fuseOptions);
 
-    let matchedNodeIds = null;
+    let matchesMap = null;
 
     for (const term of expression.split(" ").map(x => x.trim())) {
         if (!term) {
@@ -70,20 +78,29 @@ export function search(graph, expression) {
 
         console.log(`search results for term ${term}:`, searchResults);
 
-        const termMatchedNodeIds = new Set();
+        const termMatchesMap = new Map();
 
-        for (const searchResultItem of searchResults) {
-            termMatchedNodeIds.add(searchResultItem.item.id);
+        for (const termSearchResultItem of searchResults) {
+            const nodeId = termSearchResultItem.item.id;
+            termMatchesMap.set(nodeId, new Match(nodeId, termSearchResultItem.score));
         }
 
-        if (matchedNodeIds === null) {
-            matchedNodeIds = termMatchedNodeIds;
+        if (matchesMap === null) {
+            matchesMap = termMatchesMap;
         } else {
-            matchedNodeIds = new Set([...matchedNodeIds].filter(x => termMatchedNodeIds.has(x)));
+            for (const nodeId of matchesMap.keys()) {
+                const termMatch = termMatchesMap.get(nodeId);
+                if (!termMatch) {
+                    matchesMap.delete(nodeId);
+                    continue;
+                }
+                const currentMatch = matchesMap.get(nodeId);
+                currentMatch.score += termMatch.score;
+            }
         }
     }
 
-    return {
-        nodeIds: matchedNodeIds,
-    }
+    console.log('search matches', matchesMap);
+
+    return [...matchesMap.values()];
 }
