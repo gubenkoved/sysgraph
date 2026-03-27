@@ -9,12 +9,13 @@ function extractKeys(object, maxDepth = 1) {
     }
 
     for (const key in object) {
-        fields.add(key);
         const value = object[key]
         if (value && typeof value == 'object') {
             for (const subKey of extractKeys(value, maxDepth - 1)) {
                 fields.add(`${key}.${subKey}`);
             }
+        } else {
+            fields.add(key);
         }
     }
     return fields;
@@ -23,6 +24,7 @@ function extractKeys(object, maxDepth = 1) {
 
 /**
  @param {import('./graph.js').Graph} graph
+ @param {String} expression
 */
 export function search(graph, expression) {
     const allKeys = new Set();
@@ -42,13 +44,13 @@ export function search(graph, expression) {
         // ignoreDiacritics: false,
         // shouldSort: true,
         includeMatches: true,
-        // findAllMatches: false,
+        findAllMatches: true,
         // minMatchCharLength: 1,
         // location: 0,
-        // threshold: 0.6,
+        threshold: 0,
         // distance: 100,
         useExtendedSearch: true,
-        // ignoreLocation: false,
+        ignoreLocation: true,
         // ignoreFieldNorm: false,
         // fieldNormWeight: 1,
         keys: [...allKeys],
@@ -56,14 +58,29 @@ export function search(graph, expression) {
 
     const fuse = new Fuse(graph.getNodes(), fuseOptions);
 
-    const searchResults = fuse.search(expression);
+    let matchedNodeIds = null;
 
-    console.log("search results", searchResults);
+    for (const term of expression.split(" ").map(x => x.trim())) {
+        if (!term) {
+            // skip empty
+            continue;
+        }
 
-    const matchedNodeIds = new Set();
+        const searchResults = fuse.search(term);
 
-    for (const searchResultItem of searchResults) {
-        matchedNodeIds.add(searchResultItem.item.id);
+        console.log(`search results for term ${term}:`, searchResults);
+
+        const termMatchedNodeIds = new Set();
+
+        for (const searchResultItem of searchResults) {
+            termMatchedNodeIds.add(searchResultItem.item.id);
+        }
+
+        if (matchedNodeIds === null) {
+            matchedNodeIds = termMatchedNodeIds;
+        } else {
+            matchedNodeIds = new Set([...matchedNodeIds].filter(x => termMatchedNodeIds.has(x)));
+        }
     }
 
     return {
