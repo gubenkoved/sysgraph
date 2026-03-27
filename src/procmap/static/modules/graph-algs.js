@@ -1,6 +1,10 @@
 /**
- @param {import('./graph.js').Graph} graph
-*/
+ * Breadth-first search from a starting node up to a maximum distance.
+ * @param {import('./graph.js').Graph} graph
+ * @param {string} startNodeId
+ * @param {number} maxDistance
+ * @returns {{ nodeDistancesMap: Map<string, number>, edgeDistancesMap: Map<string, number> }}
+ */
 export function bfs(graph, startNodeId, maxDistance) {
     const nodeDistancesMap = new Map();
     const edgeDistancesMap = new Map();

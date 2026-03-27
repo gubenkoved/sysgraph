@@ -8,18 +8,37 @@ import { showContextMenu } from './context-menu.js';
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
 
+/**
+ * @typedef {Object} RgbaColor
+ * @property {number} r
+ * @property {number} g
+ * @property {number} b
+ * @property {number} a
+ */
+
 const fontFamily = 'Ubuntu';
 
 // setup event handlers
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
 on("d3-simulation-parameters-changed", applyD3Params);
 
+/** @type {number} */
 const searchNotMatchingBaseOpacity = 0.5;
 
+/**
+ * Converts an RGBA color struct to a CSS rgba() string.
+ * @param {RgbaColor} color
+ * @returns {string}
+ */
 function toCssColor({ r, g, b, a }) {
     return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
 }
 
+/**
+ * Returns the CSS color for a node based on its type.
+ * @param {{ type: string }} node
+ * @returns {string}
+ */
 function nodeColorFor(node) {
     let colorStruct = getDefaultNodeColor(node.type);
 
@@ -30,6 +49,11 @@ function nodeColorFor(node) {
     return toCssColor(colorStruct);
 }
 
+/**
+ * Returns the CSS color for an edge based on its type.
+ * @param {{ type: string }} edge
+ * @returns {string}
+ */
 function edgeColorFor(edge) {
     let colorStruct = getDefaultEdgeColor(edge.type);
 
@@ -40,32 +64,66 @@ function edgeColorFor(edge) {
     return toCssColor(colorStruct);
 }
 
-// NOTE: sometimes source/target are not resolved if graph engine not run yet
-// this method will work for both cases (resolved will have link.source as object)
+/**
+ * Returns the source node ID of a force-graph link (handles both resolved and unresolved forms).
+ * @param {Object} link
+ * @returns {string}
+ */
 function linkSourceId(link) {
     return (typeof link.source === 'object') ? link.source.id : link.source;
 }
 
+/**
+ * Returns the target node ID of a force-graph link (handles both resolved and unresolved forms).
+ * @param {Object} link
+ * @returns {string}
+ */
 function linkTargetId(link) {
     return (typeof link.target === 'object') ? link.target.id : link.target;
 }
 
+/**
+ * Returns a CSS color string with the given alpha.
+ * @param {string} color - CSS color string.
+ * @param {number} alpha - Opacity value (0–1).
+ * @returns {string}
+ */
 function colorWithAlpha(color, alpha) {
     const col = d3.color(color);
     col.opacity = alpha;
     return col.toString();
 }
 
+/**
+ * Multiplies the opacity of a CSS color by a factor.
+ * @param {string} color - CSS color string.
+ * @param {number} factor - Multiplier applied to the existing opacity.
+ * @returns {string}
+ */
 function colorAdjustAlpha(color, factor) {
     const col = d3.color(color);
     col.opacity *= factor;
     return col.toString();
 }
 
+/**
+ * Returns a darker variant of the given CSS color.
+ * @param {string} color
+ * @returns {Object} d3 color — darker variant.
+ */
 function darkerColor(color) {
     return d3.color(color).darker();
 }
 
+/**
+ * Draws a circle outline on a canvas context.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x
+ * @param {number} y
+ * @param {number} r
+ * @param {number} strokeWidth
+ * @param {string} strokeStyle
+ */
 function drawCircle(ctx, x, y, r, strokeWidth, strokeStyle) {
     ctx.save();
     ctx.lineWidth = strokeWidth;
@@ -76,6 +134,17 @@ function drawCircle(ctx, x, y, r, strokeWidth, strokeStyle) {
     ctx.restore();
 }
 
+/**
+ * Draws plain text on a canvas context.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} fontSize
+ * @param {string} fillStyle
+ * @param {CanvasTextBaseline} [textBaseline='middle']
+ * @param {CanvasTextAlign} [textAlign='left']
+ */
 function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle', textAlign = 'left') {
     ctx.save();
     ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
@@ -87,6 +156,19 @@ function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle',
     ctx.restore();
 }
 
+/**
+ * Draws text with a stroke outline on a canvas context.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} fontSize
+ * @param {string} fillStyle
+ * @param {string} strokeStyle
+ * @param {number} strokeWidth
+ * @param {CanvasTextBaseline} [textBaseline='middle']
+ * @param {CanvasTextAlign} [textAlign='center']
+ */
 function drawTextWithStroke(ctx, text, x, y, fontSize, fillStyle, strokeStyle, strokeWidth, textBaseline = 'middle', textAlign = 'center') {
     ctx.save();
     ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
@@ -344,6 +426,13 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .d3Force('forceY', d3.forceY());
 
 
+/**
+ * Updates or resets the adjacency filter to show only the given node and its
+ * direct neighbours.
+ * @param {string | null} nodeId - Centre node, or `null` to clear the filter.
+ * @param {boolean} [extendExisting=false] - When true, extends the current filter
+ *   rather than replacing it.
+ */
 function updateAdjacenyFilter(nodeId, extendExisting = false) {
     const graph = getGraph();
 
@@ -395,6 +484,11 @@ function updateAdjacenyFilter(nodeId, extendExisting = false) {
 }
 
 
+/**
+ * Re-processes the current graph through all active filters and updates the
+ * force-graph visualisation.
+ * @returns {Promise<void>}
+ */
 export async function refreshGraphUI() {
     emit('pre-graph-ui-refresh', null);
 
@@ -482,8 +576,11 @@ export async function refreshGraphUI() {
     mergeGraphData(processedData);
 }
 
-// merge is needed so that we do not recreate nodes/edges which already exist so that they
-// are kept intact between updates
+/**
+ * Merges new processed graph data into the force-graph instance, reusing
+ * existing node/link objects for smoother updates.
+ * @param {{ nodes: Object[], edges: Object[] }} data
+ */
 function mergeGraphData(data) {
     console.log('updating graph data:', data.nodes.length, 'nodes,', data.edges.length, 'links');
 
@@ -528,6 +625,10 @@ function mergeGraphData(data) {
     autoAdjustCurvature();
 }
 
+/**
+ * Distributes curvature values for links that share the same pair of nodes so
+ * that parallel edges fan out symmetrically.
+ */
 function autoAdjustCurvature() {
     // (key for pair of nodes) -> links between them (graph wrapped objects)
     let sameNodesLinks = new Map();
@@ -575,6 +676,10 @@ function autoAdjustCurvature() {
     }
 }
 
+/**
+ * Applies the current d3 simulation parameters from `settings` to the
+ * force-graph instance.
+ */
 function applyD3Params() {
     const chargeForce = ForceGraphInstance.d3Force('charge');
     if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(settings.d3Charge);

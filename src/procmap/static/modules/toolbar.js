@@ -11,6 +11,12 @@ const unselectBtn = document.getElementById('unselectAll');
 const selectionInfoEl = document.getElementById('selectionInfo');
 const searchInput = document.getElementById('searchInput');
 
+/**
+ * Activates the given tool and updates toolbar button states.
+ * @param {'pointer' | 'rect-select' | 'search'} tool
+ * @param {HTMLCanvasElement} selectionCanvas
+ * @param {HTMLCanvasElement} canvas
+ */
 export function setTool(tool, selectionCanvas, canvas) {
     state.currentTool = tool;
 
@@ -36,6 +42,7 @@ export function setTool(tool, selectionCanvas, canvas) {
     updateSelectionInfo();
 }
 
+/** Updates the selection info label and button visibility based on current state. */
 export function updateSelectionInfo() {
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
@@ -58,6 +65,11 @@ export function updateSelectionInfo() {
     }
 }
 
+/**
+ * Wires up toolbar buttons, search input, and keyboard shortcuts.
+ * @param {HTMLCanvasElement} selectionCanvas
+ * @param {HTMLCanvasElement} canvas
+ */
 export function initToolbar(selectionCanvas, canvas) {
     // search input
     searchInput.addEventListener('sl-input', (event) => {

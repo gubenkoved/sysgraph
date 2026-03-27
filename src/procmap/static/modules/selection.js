@@ -2,12 +2,22 @@ import { state, getGraph, updateGraph } from './state.js';
 import { Graph } from './graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
 
+/** @type {() => void} */
 let _updateSelectionInfo = () => {};
 
+/**
+ * Injects the toolbar's `updateSelectionInfo` callback.
+ * @param {() => void} fn
+ */
 export function setUpdateSelectionInfo(fn) {
     _updateSelectionInfo = fn;
 }
 
+/**
+ * Removes all currently selected nodes (and their connected edges) from the
+ * graph and refreshes the UI.
+ * @returns {Promise<void>}
+ */
 export async function deleteSelectedNodes() {
     const graph = getGraph();
 
@@ -30,6 +40,12 @@ export async function deleteSelectedNodes() {
     _updateSelectionInfo();
 }
 
+/**
+ * Tests whether a node's circle intersects a selection rectangle.
+ * @param {{ x: number, y: number, val?: number }} node
+ * @param {{ x1: number, y1: number, x2: number, y2: number }} rect
+ * @returns {boolean}
+ */
 function isNodeInRect(node, rect) {
     const minX = Math.min(rect.x1, rect.x2);
     const maxX = Math.max(rect.x1, rect.x2);
@@ -40,6 +56,11 @@ function isNodeInRect(node, rect) {
     return node.x + r > minX && node.x - r < maxX && node.y + r > minY && node.y - r < maxY;
 }
 
+/**
+ * Creates the selection overlay canvas, wires mouse events for rectangular
+ * selection, and sets up viewport resizing.
+ * @returns {{ selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement }}
+ */
 export function initSelection() {
     const graphContainer = document.getElementById('graph');
 

@@ -1,6 +1,12 @@
 import Fuse from 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.mjs';
 
 
+/**
+ * Recursively extracts dot-separated key paths from an object.
+ * @param {Object} object
+ * @param {number} [maxDepth=1]
+ * @returns {Set<string>}
+ */
 function extractKeys(object, maxDepth = 1) {
     const fields = new Set();
 
@@ -21,7 +27,12 @@ function extractKeys(object, maxDepth = 1) {
     return fields;
 }
 
+/** Represents a single search match for a node. */
 export class Match {
+    /**
+     * @param {string} nodeId
+     * @param {number} score - Lower is better (0 = exact match).
+     */
     constructor(nodeId, score) {
         this.nodeId = nodeId;
         this.score = score;
@@ -30,10 +41,12 @@ export class Match {
 
 
 /**
- @param {import('./graph.js').Graph} graph
- @param {String} expression
- @returns {Match[]} matches
-*/
+ * Performs a fuzzy search across all graph nodes using Fuse.js.
+ * Multiple space-separated terms are AND-ed together.
+ * @param {import('./graph.js').Graph} graph
+ * @param {string} expression
+ * @returns {Match[]}
+ */
 export function search(graph, expression) {
     const allKeys = new Set();
 

@@ -114,6 +114,10 @@ let edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: false 
 let nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: true });
 let edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: true });
 
+/**
+ * Rebuilds the dynamic filter and colour panes in the settings UI based on the
+ * current graph's node/edge types.
+ */
 export function updateDynamicGraphPanes() {
     const nfExpanded = nodeFiltersFolder.expanded;
     const efExpanded = edgeFiltersFolder.expanded;

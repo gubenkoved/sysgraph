@@ -1,3 +1,7 @@
+/**
+ * Fetches graph data from the backend API.
+ * @returns {Promise<{ nodes: Object[], edges: Object[] }>}
+ */
 export async function loadDataFromApi() {
     const res = await fetch('/api/graph');
 
@@ -26,10 +30,21 @@ export async function loadDataFromApi() {
     };
 }
 
+/**
+ * Serialises a Graph instance to a pretty-printed JSON string.
+ * @param {import('./graph.js').Graph} graph
+ * @returns {string}
+ */
 export function serializeGraph(graph) {
     return JSON.stringify(graph.toData(), null, 2);
 }
 
+/**
+ * Parses a JSON string into graph data, assigning auto-generated edge IDs
+ * and types when missing.
+ * @param {string} text
+ * @returns {{ nodes: Object[], edges: Object[] }}
+ */
 export function parseGraphData(text) {
     const data = JSON.parse(text);
     // initialize edge ID if missing

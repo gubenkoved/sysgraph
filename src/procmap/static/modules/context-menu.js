@@ -1,5 +1,17 @@
+/**
+ * @typedef {Object} ContextMenuItem
+ * @property {string} label
+ * @property {() => void} action
+ */
+
 const menu = document.getElementById('contextMenu');
 
+/**
+ * Shows a context menu at the given screen coordinates.
+ * @param {number} x - Viewport X position.
+ * @param {number} y - Viewport Y position.
+ * @param {ContextMenuItem[]} items
+ */
 export function showContextMenu(x, y, items) {
     menu.innerHTML = '';
 
@@ -31,6 +43,7 @@ export function showContextMenu(x, y, items) {
     });
 }
 
+/** Hides the currently visible context menu. */
 export function hideContextMenu() {
     menu.style.display = 'none';
 }

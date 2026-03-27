@@ -1,5 +1,14 @@
 import { fnv1a } from './util.js'
 
+/**
+ * @typedef {Object} RgbaColor
+ * @property {number} r
+ * @property {number} g
+ * @property {number} b
+ * @property {number} a
+ */
+
+/** Application-wide settings for d3 simulation, display, and colours. */
 export const settings = {
     d3Charge: -400,
     d3LinkDistance: 140,
@@ -22,9 +31,10 @@ export const settings = {
     edgeFilters: {},
 };
 
+/** @type {number} Default link opacity. */
 export const defaultLinkOpacity = 0.5;
 
-// alpha multipler for distances 0, 1, 2, 3 (and more)
+/** @type {number[]} Alpha multipliers for highlight distances 0, 1, 2, 3+. */
 export const highlightAlphaMultipliers = [1.0, 1.0, 0.5, 0.1]
 
 const overrideNodeColors = {
@@ -81,6 +91,12 @@ const palette = [
     { r: 127, g: 140, b: 141 }   // gray
 ];
 
+/**
+ * Returns the default RGBA colour for a node type, using overrides or a
+ * palette hash.
+ * @param {string} node_type
+ * @returns {RgbaColor}
+ */
 export function getDefaultNodeColor(node_type) {
     if (node_type in overrideNodeColors) {
         return overrideNodeColors[node_type]
@@ -96,6 +112,11 @@ export function getDefaultNodeColor(node_type) {
     }
 }
 
+/**
+ * Derives an RGBA colour from a hash value by extracting byte channels.
+ * @param {number} hash
+ * @returns {RgbaColor}
+ */
 function colorByHash(hash) {
     return {
         r: (hash >> 0) & 0xFF,
@@ -105,6 +126,12 @@ function colorByHash(hash) {
     }
 }
 
+/**
+ * Returns the default RGBA colour for an edge type, using overrides or a
+ * palette hash.
+ * @param {string} edge_type
+ * @returns {RgbaColor}
+ */
 export function getDefaultEdgeColor(edge_type) {
     if (edge_type in overrideEdgeColors) {
         return overrideEdgeColors[edge_type]

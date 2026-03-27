@@ -10,8 +10,13 @@ import { initSelection, setUpdateSelectionInfo } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 
 // --- details panel ---
+/** @type {HTMLElement} */
 const detailsContainer = document.getElementById('details');
 
+/**
+ * Renders the properties of a node or link in the details panel.
+ * @param {{ id: string, type: string, kind: string, properties?: Object }} nodeOrLink
+ */
 function showDetails(nodeOrLink) {
     const data = {
         id: nodeOrLink.id,
@@ -29,6 +34,7 @@ function showDetails(nodeOrLink) {
     detailsContainer.hidden = false;
 }
 
+/** Hides the details panel. */
 function hideDetails() {
     detailsContainer.hidden = true;
 }
