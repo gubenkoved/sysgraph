@@ -13,13 +13,15 @@ const pane = new Pane({
 });
 
 // --- refresh button ---
-pane.addButton({ title: 'refresh data' }).on('click', async () => {
+pane.addButton({ title: 'reload procmap graph' }).on('click', async () => {
     const loadedData = await loadDataFromApi();
     updateGraph(new Graph(loadedData.nodes, loadedData.edges));
     refreshGraphUI();
 });
 
 // --- d3 simulation parameters (data-driven) ---
+const d3RenderingSettingsFolder = pane.addFolder({ title: "d3 forces settings", expanded: false });
+
 const d3Params = [
     { key: 'd3Charge',              min: -800, max: 100,  step: 10   },
     { key: 'd3LinkDistance',         min: 40,   max: 300,  step: 5    },
@@ -31,28 +33,30 @@ const d3Params = [
 ];
 
 for (const p of d3Params) {
-    pane.addBinding(settings, p.key, p).on('change', () => {
+    d3RenderingSettingsFolder.addBinding(settings, p.key, p).on('change', () => {
         emit("d3-simulation-parameters-changed", null);
     });
 }
 
-pane.addBinding(settings, 'd3CenterForce').on('change', () => {
+d3RenderingSettingsFolder.addBinding(settings, 'd3CenterForce').on('change', () => {
     emit("d3-simulation-parameters-changed", null);
 });
 
-pane.addBlade({ view: 'separator' });
-
 // --- graph display settings ---
-pane.addBinding(settings, 'showIsolated').on('change', () => {
+const displayOptionsFolder = pane.addFolder({ title: "display options", expanded: false });
+
+displayOptionsFolder.addBinding(settings, 'showIsolated').on('change', () => {
     refreshGraphUI();
 });
 
-pane.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
+displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
     emit("graph-ui-links-curvature-updated", null);
 });
 
+const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
+
 // --- pin / unpin ---
-pane.addButton({ title: 'pin all' }).on('click', () => {
+actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
     graphData.nodes.forEach(node => {
         node.fx = node.x;
@@ -60,7 +64,7 @@ pane.addButton({ title: 'pin all' }).on('click', () => {
     });
 });
 
-pane.addButton({ title: 'unpin all' }).on('click', () => {
+actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
     graphData.nodes.forEach(node => {
         node.fx = undefined;
@@ -68,14 +72,14 @@ pane.addButton({ title: 'unpin all' }).on('click', () => {
     });
 });
 
-pane.addBlade({ view: 'separator' });
+actionsFolder.addBlade({ view: 'separator' });
 
 // --- clear / export / import ---
-pane.addButton({ title: 'clear' }).on('click', async () => {
+actionsFolder.addButton({ title: 'clear' }).on('click', async () => {
     emit("clear-button-clicked", null);
 });
 
-pane.addButton({ title: 'export data' }).on('click', () => {
+actionsFolder.addButton({ title: 'export data' }).on('click', () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const graph = getGraph();
     const blob = new Blob([serializeGraph(graph)], { type: 'application/json' });
@@ -87,7 +91,7 @@ pane.addButton({ title: 'export data' }).on('click', () => {
     URL.revokeObjectURL(url);
 });
 
-pane.addButton({ title: 'import data' }).on('click', () => {
+actionsFolder.addButton({ title: 'import data' }).on('click', () => {
     document.getElementById('importFile').click();
 });
 

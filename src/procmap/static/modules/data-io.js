@@ -1,6 +1,6 @@
 /**
  * Fetches graph data from the backend API.
- * @returns {Promise<{ nodes: Object[], edges: Object[] }>}
+ * @returns {Promise<{ nodes: import('./graph.js').GraphNode[], edges: import('./graph.js').GraphEdge[] }>}
  */
 export async function loadDataFromApi() {
     const res = await fetch('/api/graph');
