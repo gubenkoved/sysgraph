@@ -13,6 +13,7 @@ import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 /** @type {HTMLElement} */
 const detailsContainer = document.getElementById('details');
 const searchMatchCountEl = document.getElementById('searchMatchCount');
+const addToSelectionBtn = document.getElementById('addToSelection');
 
 /**
  * Renders the properties of a node or link in the details panel.
@@ -61,9 +62,11 @@ on("search-expression-changed", (expression) => {
         }
         searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
         searchMatchCountEl.style.display = 'inline';
+        addToSelectionBtn.disabled = matchesMap.size === 0;
     } else {
         state.search = null;
         searchMatchCountEl.style.display = 'none';
+        addToSelectionBtn.disabled = true;
     }
 });
 

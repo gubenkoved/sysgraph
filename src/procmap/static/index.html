@@ -78,8 +78,12 @@
       <sl-button id="unselectAll" variant="default" size="small" title="Clear Selection" style="display: none;">
         <sl-icon name="x-circle" slot="prefix"></sl-icon> Unselect
       </sl-button>
+      <div class="toolbar-separator"></div>
       <sl-input id="searchInput" size="small" placeholder="Search nodes..." clearable style="display: none; width: 240px;"></sl-input>
       <span id="searchMatchCount" style="display: none; font-size: 12px; color: #666; margin-left: 4px;"></span>
+      <sl-button id="addToSelection" variant="default" size="small" title="Add matches to selection" style="display: none;" disabled>
+        <sl-icon name="plus-circle" slot="prefix"></sl-icon> Add to Selection
+      </sl-button>
       <span id="selectionInfo" style="font-size: 12px; color: #666; margin-left: auto;"></span>
     </div>
 

@@ -11,6 +11,7 @@ const unselectBtn = document.getElementById('unselectAll');
 const selectionInfoEl = document.getElementById('selectionInfo');
 const searchInput = document.getElementById('searchInput');
 const searchMatchCount = document.getElementById('searchMatchCount');
+const addToSelectionBtn = document.getElementById('addToSelection');
 
 /**
  * Activates the given tool and updates toolbar button states.
@@ -35,15 +36,18 @@ export function setTool(tool, selectionCanvas, canvas) {
 
     if (tool === 'search') {
         searchInput.style.display = 'inline-block';
+        addToSelectionBtn.style.display = 'inline-block';
         searchInput.focus();
         if (searchInput.value) {
             emit("search-expression-changed", searchInput.value);
         } else {
             searchMatchCount.style.display = 'none';
+            addToSelectionBtn.disabled = true;
         }
     } else {
         searchInput.style.display = 'none';
         searchMatchCount.style.display = 'none';
+        addToSelectionBtn.style.display = 'none';
         emit("search-expression-changed", "");
     }
 
@@ -105,6 +109,15 @@ export function initToolbar(selectionCanvas, canvas) {
     unselectBtn.addEventListener('click', () => {
         state.selection.selectedNodeIds.clear();
         updateSelectionInfo();
+    });
+
+    addToSelectionBtn.addEventListener('click', () => {
+        if (state.search && state.search.matchesMap.size > 0) {
+            for (const nodeId of state.search.matchesMap.keys()) {
+                state.selection.selectedNodeIds.add(nodeId);
+            }
+            updateSelectionInfo();
+        }
     });
 
     // keyboard shortcuts
