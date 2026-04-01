@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { emit } from './event-bus.js';
+import { emit, on } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
 
 // cached DOM elements
@@ -76,6 +76,8 @@ export function updateSelectionInfo() {
         unselectBtn.style.display = 'none';
     }
 }
+
+on("selection-changed", () => updateSelectionInfo());
 
 /**
  * Wires up toolbar buttons, search input, and keyboard shortcuts.

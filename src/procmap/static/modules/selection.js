@@ -1,17 +1,7 @@
 import { state, getGraph, updateGraph } from './state.js';
 import { Graph } from './graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
-
-/** @type {() => void} */
-let _updateSelectionInfo = () => {};
-
-/**
- * Injects the toolbar's `updateSelectionInfo` callback.
- * @param {() => void} fn
- */
-export function setUpdateSelectionInfo(fn) {
-    _updateSelectionInfo = fn;
-}
+import { emit } from './event-bus.js';
 
 /**
  * Removes all currently selected nodes (and their connected edges) from the
@@ -37,7 +27,7 @@ export async function deleteSelectedNodes() {
     await refreshGraphUI();
 
     state.selection.selectedNodeIds.clear();
-    _updateSelectionInfo();
+    emit("selection-changed", null);
 }
 
 /**
@@ -114,9 +104,57 @@ export function initSelection() {
         }
     }
 
+    // get the force-graph canvas for event forwarding
+    const canvas = document.querySelector('#graph canvas');
+
+    // forward wheel events to the force-graph canvas for zoom
+    selectionCanvas.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        canvas.dispatchEvent(new WheelEvent(event.type, event));
+    }, { passive: false });
+
+    // --- middle-click panning (works in ALL tool modes) ---
+    let middleDrag = null;
+    let savedCursor = null;
+
+    graphContainer.addEventListener('mousedown', (event) => {
+        if (event.button === 1) {
+            event.preventDefault();
+            event.stopPropagation();
+            const target = state.currentTool === 'rect-select' ? selectionCanvas : canvas;
+            savedCursor = target.style.cursor;
+            target.style.cursor = 'grabbing';
+            middleDrag = { lastX: event.clientX, lastY: event.clientY };
+        }
+    }, true);
+
+    window.addEventListener('mousemove', (event) => {
+        if (middleDrag) {
+            const dx = event.clientX - middleDrag.lastX;
+            const dy = event.clientY - middleDrag.lastY;
+            middleDrag.lastX = event.clientX;
+            middleDrag.lastY = event.clientY;
+            const k = ForceGraphInstance.zoom();
+            const center = ForceGraphInstance.centerAt();
+            ForceGraphInstance.centerAt(center.x - dx / k, center.y - dy / k);
+        }
+    });
+
+    window.addEventListener('mouseup', (event) => {
+        if (middleDrag && event.button === 1) {
+            const target = state.currentTool === 'rect-select' ? selectionCanvas : canvas;
+            target.style.cursor = savedCursor || '';
+            middleDrag = null;
+            savedCursor = null;
+        }
+    });
+
     // mouse event handlers
     selectionCanvas.addEventListener('mousedown', (event) => {
         if (state.currentTool === 'rect-select') {
+            // only left-click starts rectangle selection
+            if (event.button !== 0) return;
+
             const graphRect = graphContainer.getBoundingClientRect();
             const localX = event.clientX - graphRect.left;
             const localY = event.clientY - graphRect.top;
@@ -173,14 +211,12 @@ export function initSelection() {
                 }
             });
 
-            _updateSelectionInfo();
+            emit("selection-changed", null);
             state.selection.selectionStartCanvas = null;
             state.selection.selectionEndCanvas = null;
             drawSelectionRectangle();
         }
     });
 
-    // return references needed by toolbar
-    const canvas = document.querySelector('#graph canvas');
     return { selectionCanvas, canvas };
 }

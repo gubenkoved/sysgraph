@@ -5,8 +5,8 @@ import { on, emit } from './modules/event-bus.js';
 import { search } from './modules/search.js';
 import { loadDataFromApi } from './modules/data-io.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
-import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
-import { initSelection, setUpdateSelectionInfo } from './modules/selection.js';
+import { initToolbar } from './modules/toolbar.js';
+import { initSelection } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 
 // --- cached DOM elements ---
@@ -72,7 +72,6 @@ on("search-expression-changed", (expression) => {
 
 // --- initialize selection overlay & toolbar ---
 const { selectionCanvas, canvas } = initSelection();
-setUpdateSelectionInfo(updateSelectionInfo);
 initToolbar(selectionCanvas, canvas);
 
 // --- initial load ---
