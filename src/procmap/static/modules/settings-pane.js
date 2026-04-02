@@ -12,13 +12,6 @@ const pane = new Pane({
     container: document.getElementById("settingsPane"),
 });
 
-// --- refresh button ---
-pane.addButton({ title: 'reload procmap graph' }).on('click', async () => {
-    const loadedData = await loadDataFromApi();
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    refreshGraphUI();
-});
-
 // --- d3 simulation parameters (data-driven) ---
 const d3RenderingSettingsFolder = pane.addFolder({ title: "d3 forces settings", expanded: false });
 
@@ -87,6 +80,15 @@ nodeLabelExpressionBinding.on('change', () => {
 });
 
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
+
+// --- refresh button ---
+actionsFolder.addButton({ title: 'reload procmap graph' }).on('click', async () => {
+    const loadedData = await loadDataFromApi();
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+    refreshGraphUI();
+});
+
+actionsFolder.addBlade({ view: 'separator' });
 
 // --- pin / unpin ---
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
