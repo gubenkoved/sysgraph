@@ -179,6 +179,36 @@ function drawCircle(ctx, x, y, r, strokeWidth, strokeStyle) {
 }
 
 /**
+ * Draws a dashed circle outline on a canvas context with equally spaced dashes.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x
+ * @param {number} y
+ * @param {number} r
+ * @param {number} strokeWidth
+ * @param {string} strokeStyle
+* @param {number[]} dashSegments - Array of numbers specifying the lengths of dashes and gaps (e.g. [4, 4] for equal dashes and gaps).
+ * @param {number} [angle=0] - Rotation angle in radians
+ */
+function drawDashedCircle(ctx, x, y, r, strokeWidth, strokeStyle, dashSegments, angle = 0) {
+    ctx.save();
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = strokeStyle;
+
+    // Set dash pattern with equal dash and gap lengths for even spacing
+    ctx.setLineDash(dashSegments);
+
+    // Move to center and rotate
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, 2 * Math.PI, false);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+/**
  * Draws plain text on a canvas context.
  * @param {CanvasRenderingContext2D} ctx
  * @param {string} text
@@ -344,7 +374,8 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // draw red outline for selected nodes
         if (state.selection.selectedNodeIds.has(node.id)) {
-            drawCircle(ctx, node.x, node.y, r + 2, 2, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier));
+            const rotation = (Date.now() / 1000) % (2 * Math.PI);
+            drawDashedCircle(ctx, node.x, node.y, r + 2, 2, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier), [3, 2], rotation);
         }
 
         // show search matches via color-coded pulsing outline
