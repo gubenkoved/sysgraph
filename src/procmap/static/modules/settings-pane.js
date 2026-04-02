@@ -53,6 +53,39 @@ displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.20
     emit("graph-ui-links-curvature-updated", null);
 });
 
+// --- label settings ---
+const labelSettingsFolder = pane.addFolder({ title: "label settings", expanded: false });
+
+const nodeLabelModeBinding = labelSettingsFolder.addBinding(settings, 'nodeLabelMode', {
+    label: 'node label',
+    view: 'list',
+    options: [
+        { text: 'default', value: 'default' },
+        { text: 'type', value: 'type' },
+        { text: 'id', value: 'id' },
+        { text: 'expression', value: 'expression' },
+    ],
+});
+
+const nodeLabelExpressionBinding = labelSettingsFolder.addBinding(settings, 'nodeLabelExpression', {
+    label: 'expression',
+});
+
+// show/hide expression input based on mode
+function updateExpressionVisibility() {
+    nodeLabelExpressionBinding.hidden = settings.nodeLabelMode !== 'expression';
+}
+updateExpressionVisibility();
+
+nodeLabelModeBinding.on('change', () => {
+    updateExpressionVisibility();
+    refreshGraphUI();
+});
+
+nodeLabelExpressionBinding.on('change', () => {
+    refreshGraphUI();
+});
+
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
 
 // --- pin / unpin ---

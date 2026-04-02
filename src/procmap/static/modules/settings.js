@@ -24,6 +24,11 @@ export const settings = {
     // curvature interval per each link when there are multiple
     curvatureStep: 0.005,
 
+    // node label mode: 'default' | 'type' | 'id' | 'expression'
+    nodeLabelMode: 'default',
+    // expression template used when nodeLabelMode === 'expression'
+    nodeLabelExpression: '(properties.name || properties.label) || (type + " " + id)',
+
     nodeColors: {},
     edgeColors: {},
 

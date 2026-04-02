@@ -10,6 +10,31 @@ import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
 
 /**
+ * Computes the display label for a node based on the current label mode.
+ * @param {Object} node
+ * @returns {string}
+ */
+function getNodeLabel(node) {
+    switch (settings.nodeLabelMode) {
+        case 'type':
+            return node.type || node.id;
+        case 'id':
+            return String(node.id);
+        case 'expression':
+            try {
+                const fn = new Function('node', `with(node){return String(${settings.nodeLabelExpression})}`);
+                return fn(node);
+            } catch {
+                return `<expr error>`;
+            }
+        default: {
+            const name = node.properties && (node.properties.name || node.properties.label);
+            return name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
+        }
+    }
+}
+
+/**
  * @typedef {Object} RgbaColor
  * @property {number} r
  * @property {number} g
@@ -226,7 +251,13 @@ function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle',
     ctx.textBaseline = textBaseline;
 
     ctx.fillStyle = fillStyle;
-    ctx.fillText(text, x, y);
+
+    const lines = text.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], x, y + i * fontSize * 1.2);
+    }
+
     ctx.restore();
 }
 
@@ -266,8 +297,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .nodeId('id')
     .graphData({ nodes: [], links: [] })
     .nodeLabel(n => {
-        const name = n.properties && (n.properties.name || n.properties.label);
-        const label = name ? name : (n.type ? `${n.type} ${n.id}` : n.id);
+        const label = getNodeLabel(n);
         return label + (n.type ? `\n(${n.type})` : '');
     })
     .linkCurvature(l => l.curvature || 0)
@@ -385,9 +415,8 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             drawCircle(ctx, node.x, node.y, r + 5 + pulse, 3, matchColor);
         }
 
-        // generic label (use properties.name/label if available, otherwise type + id)
-        const name = node.properties && (node.properties.name || node.properties.label);
-        const label = name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
+        // generic label based on current label mode
+        const label = getNodeLabel(node);
 
         //const fontSize = Math.max(3, 12 / globalScale);
         drawText(ctx, label, node.x + r + 4, node.y, 12, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
