@@ -348,6 +348,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         //const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
         const r = baseSize;
 
+        // scale up selection/search indicators when zoomed out (up to 3x)
+        const zoomBoost = Math.min(3, Math.max(1, 1 / globalScale));
+
         let alphaMultiplier = 1.0;
 
         // decrease opacity by default if in search mode to make matches stand out mode
@@ -403,14 +406,14 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         // draw red outline for selected nodes
         if (state.selection.selectedNodeIds.has(node.id)) {
             const rotation = (Date.now() / 1000) % (2 * Math.PI);
-            drawDashedCircle(ctx, node.x, node.y, r + 2, 2, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier), [3, 2], rotation);
+            drawDashedCircle(ctx, node.x, node.y, r + 2 * zoomBoost, 2 * zoomBoost, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier), [3 * zoomBoost, 2 * zoomBoost], rotation);
         }
 
         // show search matches via color-coded pulsing outline
         if (state.search && state.search.matchesMap.has(node.id)) {
             const matchColor = state.search.matchColorsMap.get(node.id) || 'rgb(255, 0, 0)';
             const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            drawCircle(ctx, node.x, node.y, r + 5 + pulse, 3, matchColor);
+            drawCircle(ctx, node.x, node.y, r + (5 + pulse) * zoomBoost, 3 * zoomBoost, matchColor);
         }
 
         // generic label based on current label mode
