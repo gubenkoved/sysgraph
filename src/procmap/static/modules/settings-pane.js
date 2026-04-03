@@ -1,4 +1,4 @@
-import { settings, getDefaultNodeColor, getDefaultEdgeColor, getDefaultEdgeWidth } from './settings.js';
+import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
 import { getGraph, resetState, updateGraph } from './state.js';
 import { Graph } from './graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
@@ -211,21 +211,21 @@ export function updateDynamicGraphPanes() {
 
     for (const key of nodeTypes) {
         if (!(key in settings.nodeColors)) {
-            settings.nodeColors[key] = structuredClone(getDefaultNodeColor(key));
+            settings.nodeColors[key] = structuredClone(getNodeColor(key));
         }
         nodeColorsFolder.addBinding(settings.nodeColors, key);
     }
 
     for (const key of edgeTypes) {
         if (!(key in settings.edgeColors)) {
-            settings.edgeColors[key] = structuredClone(getDefaultEdgeColor(key));
+            settings.edgeColors[key] = structuredClone(getEdgeColor(key));
         }
         edgeColorsFolder.addBinding(settings.edgeColors, key);
     }
 
     for (const key of edgeTypes) {
         if (!(key in settings.edgeWidths)) {
-            settings.edgeWidths[key] = getDefaultEdgeWidth(key);
+            settings.edgeWidths[key] = getEdgeWidth(key);
         }
         edgeWidthsFolder.addBinding(settings.edgeWidths, key, {
             min: 0.5, max: 5, step: 0.5,

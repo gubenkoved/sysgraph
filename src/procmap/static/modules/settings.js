@@ -46,7 +46,7 @@ export const defaultEdgeWidth = 1;
 /** @type {number[]} Alpha multipliers for highlight distances 0, 1, 2, 3+. */
 export const highlightAlphaMultipliers = [1.0, 1.0, 0.5, 0.1]
 
-const overrideNodeColors = {
+const defaultNodeColors = {
     process: { r: 21, g: 127, b: 200, a: 1.0 },
     socket: { r: 220, g: 75, b: 47, a: 1.0 },
     uds: { r: 31, g: 120, b: 180, a: 1.0 },
@@ -54,7 +54,7 @@ const overrideNodeColors = {
     external_ip: { r: 255, g: 103, b: 0, a: 1.0 },
 }
 
-const overrideEdgeColors = {
+const defaultEdgeColors = {
     uds: { r: 31, g: 120, b: 180, a: defaultLinkOpacity },
     uds_connection: { r: 31, g: 120, b: 180, a: defaultLinkOpacity },
     pipe: { r: 207, g: 110, b: 255, a: defaultLinkOpacity },
@@ -63,7 +63,7 @@ const overrideEdgeColors = {
     child_process: { r: 40, g: 40, b: 40, a: defaultLinkOpacity },
 }
 
-const overrideEdgeWidths = {
+const defaultEdgeWidths = {
     child_process: 1,
     pipe: 1,
     socket: 1,
@@ -112,24 +112,20 @@ const palette = [
 ];
 
 /**
- * Returns the default RGBA colour for a node type, using overrides or a
- * palette hash.
+ * Returns the RGBA colour for a node type — checks user settings first,
+ * then curated defaults, then palette hash.
  * @param {string} node_type
  * @returns {RgbaColor}
  */
-export function getDefaultNodeColor(node_type) {
-    if (node_type in overrideNodeColors) {
-        return overrideNodeColors[node_type]
+export function getNodeColor(node_type) {
+    if (node_type in settings.nodeColors) {
+        return settings.nodeColors[node_type];
     }
-
+    if (node_type in defaultNodeColors) {
+        return defaultNodeColors[node_type];
+    }
     const hash = fnv1a(node_type);
-
-    const paletteColor = palette[hash % palette.length];
-
-    return {
-        ...paletteColor,
-        a: 1.0,
-    }
+    return { ...palette[hash % palette.length], a: 1.0 };
 }
 
 /**
@@ -147,35 +143,34 @@ function colorByHash(hash) {
 }
 
 /**
- * Returns the default RGBA colour for an edge type, using overrides or a
- * palette hash.
+ * Returns the RGBA colour for an edge type — checks user settings first,
+ * then curated defaults, then palette hash.
  * @param {string} edge_type
  * @returns {RgbaColor}
  */
-export function getDefaultEdgeColor(edge_type) {
-    if (edge_type in overrideEdgeColors) {
-        return overrideEdgeColors[edge_type]
+export function getEdgeColor(edge_type) {
+    if (edge_type in settings.edgeColors) {
+        return settings.edgeColors[edge_type];
     }
-
+    if (edge_type in defaultEdgeColors) {
+        return defaultEdgeColors[edge_type];
+    }
     const hash = fnv1a(edge_type);
-
-    const paletteColor = palette[hash % palette.length];
-
-    return {
-        ...paletteColor,
-        a: defaultLinkOpacity,
-    }
+    return { ...palette[hash % palette.length], a: defaultLinkOpacity };
 }
 
 /**
- * Returns the default width for an edge type, using overrides or the global
- * default.
+ * Returns the width for an edge type — checks user settings first,
+ * then curated defaults, then global default.
  * @param {string} edge_type
  * @returns {number}
  */
-export function getDefaultEdgeWidth(edge_type) {
-    if (edge_type in overrideEdgeWidths) {
-        return overrideEdgeWidths[edge_type]
+export function getEdgeWidth(edge_type) {
+    if (edge_type in settings.edgeWidths) {
+        return settings.edgeWidths[edge_type];
+    }
+    if (edge_type in defaultEdgeWidths) {
+        return defaultEdgeWidths[edge_type];
     }
     return defaultEdgeWidth;
 }

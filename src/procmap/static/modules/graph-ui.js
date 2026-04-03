@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { on, emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
-import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor, getDefaultEdgeWidth } from './settings.js'
+import { settings, highlightAlphaMultipliers, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js'
 import { showContextMenu } from './context-menu.js';
 import { ColorScale } from './color-scale.js';
 
@@ -109,13 +109,7 @@ function toCssColor({ r, g, b, a }) {
  * @returns {string}
  */
 function nodeColorFor(node) {
-    let colorStruct = getDefaultNodeColor(node.type);
-
-    if (node.type in settings.nodeColors) {
-        colorStruct = settings.nodeColors[node.type]
-    }
-
-    return toCssColor(colorStruct);
+    return toCssColor(getNodeColor(node.type));
 }
 
 /**
@@ -124,13 +118,7 @@ function nodeColorFor(node) {
  * @returns {string}
  */
 function edgeColorFor(edge) {
-    let colorStruct = getDefaultEdgeColor(edge.type);
-
-    if (edge.type in settings.edgeColors) {
-        colorStruct = settings.edgeColors[edge.type];
-    }
-
-    return toCssColor(colorStruct);
+    return toCssColor(getEdgeColor(edge.type));
 }
 
 /**
@@ -139,10 +127,7 @@ function edgeColorFor(edge) {
  * @returns {number}
  */
 function edgeWidthFor(edge) {
-    if (edge.type in settings.edgeWidths) {
-        return settings.edgeWidths[edge.type];
-    }
-    return getDefaultEdgeWidth(edge.type);
+    return getEdgeWidth(edge.type);
 }
 
 /**
