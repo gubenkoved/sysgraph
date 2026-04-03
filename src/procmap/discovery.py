@@ -285,12 +285,23 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
 
     def ensure_uds_node(uds_socket: UnixDomainSocket) -> Node:
         inode = uds_socket.local_inode
+
         if inode in uds_node_map:
             return uds_node_map[inode]
+
         node_id = f"uds::{inode}"
-        label = uds_socket.local_path or f"uds:[{inode}]"
-        if label == "*":
+
+        if uds_socket.local_path:
+            if uds_socket.local_path == "*":
+                label = f"uds:[{inode}]"
+            else:
+                label = uds_socket.local_path
+
+            # strip trailing @ if present (abstract unix socket)
+            label = label.rstrip("@")
+        else:  # no local path
             label = f"uds:[{inode}]"
+
         node = graph.add_node(
             node_id,
             "uds",
