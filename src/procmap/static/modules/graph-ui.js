@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { on, emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
-import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js'
+import { settings, highlightAlphaMultipliers, getDefaultNodeColor, getDefaultEdgeColor, getDefaultEdgeWidth } from './settings.js'
 import { showContextMenu } from './context-menu.js';
 import { ColorScale } from './color-scale.js';
 
@@ -131,6 +131,18 @@ function edgeColorFor(edge) {
     }
 
     return toCssColor(colorStruct);
+}
+
+/**
+ * Returns the width for an edge based on its type.
+ * @param {{ type: string }} edge
+ * @returns {number}
+ */
+function edgeWidthFor(edge) {
+    if (edge.type in settings.edgeWidths) {
+        return settings.edgeWidths[edge.type];
+    }
+    return getDefaultEdgeWidth(edge.type);
 }
 
 /**
@@ -301,6 +313,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         return label + (n.type ? `\n(${n.type})` : '');
     })
     .linkCurvature(l => l.curvature || 0)
+    .linkWidth(l => edgeWidthFor(l))
     .linkColor(l => {
         let fillStyle = edgeColorFor(l);
         let alphaMultiplier = 1.0;
@@ -334,7 +347,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         if (link.properties && link.properties.directional === false) {
             return 0;
         }
-        return 6;
+        return 6 * edgeWidthFor(link);
     })
     .linkDirectionalArrowRelPos(0.55)
     .linkLineDash(link => {

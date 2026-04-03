@@ -1,4 +1,4 @@
-import { settings, getDefaultNodeColor, getDefaultEdgeColor } from './settings.js';
+import { settings, getDefaultNodeColor, getDefaultEdgeColor, getDefaultEdgeWidth } from './settings.js';
 import { getGraph, resetState, updateGraph } from './state.js';
 import { Graph } from './graph.js';
 import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
@@ -153,6 +153,9 @@ let edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: false 
 let nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: true });
 let edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: true });
 
+// --- edge width pane ---
+let edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: false });
+
 /**
  * Rebuilds the dynamic filter and colour panes in the settings UI based on the
  * current graph's node/edge types.
@@ -162,16 +165,19 @@ export function updateDynamicGraphPanes() {
     const efExpanded = edgeFiltersFolder.expanded;
     const ncExpanded = nodeColorsFolder.expanded;
     const ecExpanded = edgeColorsFolder.expanded;
+    const ewExpanded = edgeWidthsFolder.expanded;
 
     nodeFiltersFolder.dispose();
     edgeFiltersFolder.dispose();
     nodeColorsFolder.dispose();
     edgeColorsFolder.dispose();
+    edgeWidthsFolder.dispose();
 
     nodeFiltersFolder = pane.addFolder({ title: "node filters", expanded: nfExpanded });
     edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: efExpanded });
     nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: ncExpanded });
     edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: ecExpanded });
+    edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: ewExpanded });
 
     const graph = getGraph();
 
@@ -215,5 +221,14 @@ export function updateDynamicGraphPanes() {
             settings.edgeColors[key] = structuredClone(getDefaultEdgeColor(key));
         }
         edgeColorsFolder.addBinding(settings.edgeColors, key);
+    }
+
+    for (const key of edgeTypes) {
+        if (!(key in settings.edgeWidths)) {
+            settings.edgeWidths[key] = getDefaultEdgeWidth(key);
+        }
+        edgeWidthsFolder.addBinding(settings.edgeWidths, key, {
+            min: 0.5, max: 5, step: 0.5,
+        });
     }
 }

@@ -31,6 +31,7 @@ export const settings = {
 
     nodeColors: {},
     edgeColors: {},
+    edgeWidths: {},
 
     nodeFilters: {},
     edgeFilters: {},
@@ -38,6 +39,9 @@ export const settings = {
 
 /** @type {number} Default link opacity. */
 export const defaultLinkOpacity = 0.5;
+
+/** @type {number} Default link width. */
+export const defaultEdgeWidth = 1;
 
 /** @type {number[]} Alpha multipliers for highlight distances 0, 1, 2, 3+. */
 export const highlightAlphaMultipliers = [1.0, 1.0, 0.5, 0.1]
@@ -57,6 +61,15 @@ const overrideEdgeColors = {
     socket_connection: { r: 255, g: 76, b: 40, a: defaultLinkOpacity },
     socket: { r: 255, g: 76, b: 40, a: defaultLinkOpacity },
     child_process: { r: 40, g: 40, b: 40, a: defaultLinkOpacity },
+}
+
+const overrideEdgeWidths = {
+    child_process: 1,
+    pipe: 1,
+    socket: 1,
+    socket_connection: 1,
+    uds: 1,
+    uds_connection: 1,
 }
 
 const palette = [
@@ -152,4 +165,17 @@ export function getDefaultEdgeColor(edge_type) {
         ...paletteColor,
         a: defaultLinkOpacity,
     }
+}
+
+/**
+ * Returns the default width for an edge type, using overrides or the global
+ * default.
+ * @param {string} edge_type
+ * @returns {number}
+ */
+export function getDefaultEdgeWidth(edge_type) {
+    if (edge_type in overrideEdgeWidths) {
+        return overrideEdgeWidths[edge_type]
+    }
+    return defaultEdgeWidth;
 }
