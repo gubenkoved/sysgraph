@@ -92,14 +92,28 @@ def get_graph() -> GraphSchema:
     )
 
 
-# Run the app with: python -m procmap.api or `uvicorn procmap.api:app --reload`
-if __name__ == "__main__":
+def main():
+    import argparse
+
     import uvicorn
+
+    parser = argparse.ArgumentParser(description="proc-map server")
+    parser.add_argument(
+        "-p", "--port",
+        type=int,
+        default=int(os.environ.get("PORT", 8000)),
+        help="port to listen on (default: 8000, or PORT env var)",
+    )
+    args = parser.parse_args()
 
     uvicorn.run(
         "procmap.app:app",
         host="0.0.0.0",
-        port=8000,
+        port=args.port,
         reload=True,
         log_level="info",
     )
+
+
+if __name__ == "__main__":
+    main()
