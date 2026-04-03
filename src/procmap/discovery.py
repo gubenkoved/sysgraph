@@ -234,7 +234,7 @@ def get_all_net_connections() -> dict[int, list[NetConnection]]:
     return result
 
 
-def build_graph() -> Graph:
+def build_graph(discover_uds_connectivity: bool = True) -> Graph:
     graph = Graph()
 
     pid_to_node: dict[int, Node] = {}
@@ -281,31 +281,68 @@ def build_graph() -> Graph:
                 rel_type="child_process",
             )
 
-    for con in discover_connected_uds(uds):
-        for p1_ref in con.socket1.processes:
-            pid1 = p1_ref.pid
-            if pid1 not in pid_to_node:
-                continue
-            for p2_ref in con.socket2.processes:
-                pid2 = p2_ref.pid
-                if pid2 not in pid_to_node:
-                    continue
-                _ = graph.add_edge(
-                    source_id=pid_to_node[pid1].id,
-                    target_id=pid_to_node[pid2].id,
-                    rel_type="unix_domain_socket",
+    uds_node_map: dict[int, Node] = {}
+
+    def ensure_uds_node(uds_socket: UnixDomainSocket) -> Node:
+        inode = uds_socket.local_inode
+        if inode in uds_node_map:
+            return uds_node_map[inode]
+        node_id = f"uds::{inode}"
+        label = uds_socket.local_path or f"uds:[{inode}]"
+        if label == "*":
+            label = f"uds:[{inode}]"
+        node = graph.add_node(
+            node_id,
+            "uds",
+            properties={
+                "label": label,
+                "local_inode": uds_socket.local_inode,
+                "local_address": uds_socket.local_path,
+                "peer_inode": uds_socket.peer_inode,
+                "peer_address": uds_socket.peer_path,
+                "state": uds_socket.state,
+                "uds_type": uds_socket.uds_type,
+            },
+        )
+        uds_node_map[inode] = node
+        return node
+
+    # track which process→uds edges have been added to avoid duplicates
+    uds_process_edges: set[tuple[int, int]] = set()
+
+    # create UDS nodes for ALL discovered sockets and connect them
+    # to their processes
+    for uds_socket in uds:
+        uds_node = ensure_uds_node(uds_socket)
+        for p_ref in uds_socket.processes:
+            edge_key = (p_ref.pid, uds_socket.local_inode)
+            if p_ref.pid in pid_to_node and edge_key not in uds_process_edges:
+                uds_process_edges.add(edge_key)
+                graph.add_edge(
+                    source_id=pid_to_node[p_ref.pid].id,
+                    target_id=uds_node.id,
+                    rel_type="uds",
                     properties={
-                        "directional": False,
-                        "inodes": (
-                            con.socket1.local_inode,
-                            con.socket1.peer_inode,
-                        ),
-                        "paths": (
-                            con.socket1.local_path,
-                            con.socket2.peer_path,
-                        ),
+                        "label": f"uds (fd={p_ref.fd})",
+                        "fd": p_ref.fd,
                     },
                 )
+
+    # optionally discover connected UDS pairs and add connection edges
+    if discover_uds_connectivity:
+        for con in discover_connected_uds(uds):
+            uds_node1 = ensure_uds_node(con.socket1)
+            uds_node2 = ensure_uds_node(con.socket2)
+
+            graph.add_edge(
+                uds_node1.id,
+                uds_node2.id,
+                "uds_connection",
+                properties={
+                    "directional": False,
+                    "dashed": True,
+                },
+            )
 
     pipe_node_to_node = {}
 
