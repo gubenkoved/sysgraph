@@ -8,7 +8,7 @@ import { ColorScale } from './color-scale.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
-import { filterGraph } from './graph.js';
+import { filterGraph, computeNodeDegrees } from './graph.js';
 
 /**
  * Computes the display label for a node based on the current label mode.
@@ -624,18 +624,11 @@ export async function refreshGraphUI() {
         nodes = nodes.filter(n => connected.has(n.id));
     }
 
-    // compute size by degree
-    const deg = new Map();
-
+    // size the nodes based on their degree
+    const nodeDegreesMap = computeNodeDegrees(graph);
     nodes.forEach(n => {
-        deg.set(n.id, 0);
-    });
-    edges.forEach(l => {
-        deg.set(l.source_id, (deg.get(l.source_id) || 0) + 1);
-        deg.set(l.target_id, (deg.get(l.target_id) || 0) + 1);
-    });
-    nodes.forEach(n => {
-        n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0)));
+        const degree = nodeDegreesMap.get(n.id) || 0;
+        n.val = Math.sqrt(Math.max(1, degree));
     });
 
     mergeGraphDataIntoForceGraph(nodes, edges);
@@ -662,7 +655,6 @@ function mergeGraphDataIntoForceGraph(nodes, edges) {
     const mergedLinks = [];
 
     nodes.forEach(node => {
-        node = structuredClone(node); // avoid mutating original node objects from graph
         node.kind = 'node';
 
         const existing = existingNodesById.get(node.id);
@@ -675,7 +667,6 @@ function mergeGraphDataIntoForceGraph(nodes, edges) {
     });
 
     edges.forEach(edge => {
-        edge = structuredClone(edge); // avoid mutating original edge objects from graph
         edge.kind = 'edge';
 
         // update the format of source/target references
@@ -725,10 +716,9 @@ function autoAdjustCurvature() {
         sameNodesLinks.get(pairKey).push(l)
     })
 
-    // console.log(sameNodesLinks);
 
     // update curvature for multiple links between same nodes
-    for (const [nodesKey, links] of sameNodesLinks) {
+    for (const links of sameNodesLinks.values()) {
         if (links.length <= 1) {
             links.forEach(l => l.curvature = 0);
             continue;

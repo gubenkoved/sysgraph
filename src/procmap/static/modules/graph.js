@@ -15,7 +15,7 @@
  */
 
 /**
- * Undirected graph with pre-computed adjacency lists.
+ * Directed graph with pre-computed adjacency lists.
  */
 export class Graph {
     /**
@@ -113,4 +113,24 @@ export function filterGraph(graph, nodeShouldBeIncludedFn, edgeShouldBeIncludedF
     }
 
     return new Graph(Array.from(filteredNodesMap.values()), filteredEdges);
+}
+
+/**
+ * Computes the degree of each node in the graph.
+ * @param {Graph} graph
+ * @returns {Map<string, number>}
+ */
+export function computeNodeDegrees(graph) {
+    const degrees = new Map();
+
+    for (const node of graph.getNodes()) {
+        degrees.set(node.id, 0);
+    }
+
+    for (const edge of graph.getEdges()) {
+        degrees.set(edge.source_id, degrees.get(edge.source_id) + 1);
+        degrees.set(edge.target_id, degrees.get(edge.target_id) + 1);
+    }
+
+    return degrees;
 }
