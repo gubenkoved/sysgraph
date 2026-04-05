@@ -77,8 +77,6 @@ export function updateSelectionInfo() {
     }
 }
 
-on("selection-changed", () => updateSelectionInfo());
-
 /**
  * Wires up toolbar buttons, search input, and keyboard shortcuts.
  * @param {HTMLCanvasElement} selectionCanvas

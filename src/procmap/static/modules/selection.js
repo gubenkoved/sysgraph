@@ -1,6 +1,6 @@
 import { state, getGraph, updateGraph } from './state.js';
-import { Graph } from './graph.js';
-import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
+import { filterGraph, } from './graph.js';
+import { ForceGraphInstance } from './graph-ui.js';
 import { emit } from './event-bus.js';
 
 /**
@@ -11,20 +11,23 @@ import { emit } from './event-bus.js';
 export async function deleteSelectedNodes() {
     const graph = getGraph();
 
-    // drop selected nodes
-    const remainingNodes = graph.getNodes().filter(
-        node => !state.selection.selectedNodeIds.has(node.id));
+    function nodeShouldBeIncludedFn(node) {
+        return !state.selection.selectedNodeIds.has(node.id);
+    }
 
-    // filter out edges that connect to/from deleted nodes
-    const remainingEdges = graph.getEdges().filter(edge =>
-        !state.selection.selectedNodeIds.has(edge.source_id) &&
-        !state.selection.selectedNodeIds.has(edge.target_id)
-    );
+    function edgeShouldBeIncludedFn(edge) {
+        return (!state.selection.selectedNodeIds.has(edge.source_id) &&
+            !state.selection.selectedNodeIds.has(edge.target_id));
+    }
 
-    const filteredGraph = new Graph(remainingNodes, remainingEdges);
+    const filteredGraph = filterGraph(
+        graph,
+        nodeShouldBeIncludedFn,
+        edgeShouldBeIncludedFn
+    )
+
     updateGraph(filteredGraph);
-
-    await refreshGraphUI();
+    emit("graph-updated", null);
 
     state.selection.selectedNodeIds.clear();
     emit("selection-changed", null);

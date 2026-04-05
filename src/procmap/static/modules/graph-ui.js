@@ -45,10 +45,6 @@ function getNodeLabel(node) {
 
 const fontFamily = 'Ubuntu';
 
-// setup event handlers
-on("graph-ui-links-curvature-updated", autoAdjustCurvature);
-on("d3-simulation-parameters-changed", applyD3Params);
-
 /** @type {number} */
 const searchNotMatchingBaseOpacity = 0.5;
 
@@ -595,8 +591,6 @@ function updateAdjacencyFilter(nodeId, extendExisting = false) {
  * @returns {Promise<void>}
  */
 export async function refreshGraphUI() {
-    emit('pre-graph-ui-refresh', null);
-
     // apply type filters
     const graph = filterGraph(
         getGraph(),
@@ -694,7 +688,7 @@ function mergeGraphDataIntoForceGraph(nodes, edges) {
  * Distributes curvature values for links that share the same pair of nodes so
  * that parallel edges fan out symmetrically.
  */
-function autoAdjustCurvature() {
+export function autoAdjustCurvature() {
     // (key for pair of nodes) -> links between them (graph wrapped objects)
     let sameNodesLinks = new Map();
     let seenLinks = new Set();
@@ -744,7 +738,7 @@ function autoAdjustCurvature() {
  * Applies the current d3 simulation parameters from `settings` to the
  * force-graph instance.
  */
-function applyD3Params() {
+export function applyD3Params() {
     const chargeForce = ForceGraphInstance.d3Force('charge');
     if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(settings.d3Charge);
 

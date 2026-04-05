@@ -207,8 +207,9 @@ Key events:
 - `"node-clicked"`, `"link-clicked"`, `"background-click"` — UI interactions
 - `"search-expression-changed"` — Search input updates
 - `"d3-simulation-parameters-changed"` — Force simulation parameter updates
-- `"pre-graph-ui-refresh"` — Fires before graph re-render
 - `"clear-button-clicked"` — Reset state
+- `"graph-updated"` — Emitted after loading a new graph (e.g., from API or file import)
+- `"graph-filters-updated"` — Emitted after changing type filters in settings
 
 **Rendering (`graph-ui.js`):** Uses the `force-graph` library (canvas-based) with d3 physics simulation. This is the largest module (~600 lines). Key features:
 - Custom canvas drawing for nodes (circles with labels, selection indicators, search highlights)

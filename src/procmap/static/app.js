@@ -1,11 +1,11 @@
 import { state, getGraph, updateGraph, resetState } from './modules/state.js';
 import { Graph } from './modules/graph.js';
-import { refreshGraphUI, computeMatchColors } from './modules/graph-ui.js';
+import { refreshGraphUI, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
 import { on, emit } from './modules/event-bus.js';
 import { search } from './modules/search.js';
 import { loadDataFromApi } from './modules/data-io.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
-import { initToolbar } from './modules/toolbar.js';
+import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
 
@@ -44,12 +44,18 @@ function hideDetails() {
 // --- event wiring ---
 on("node-clicked", node => showDetails(node));
 on("link-clicked", link => showDetails(link));
-on("pre-graph-ui-refresh", () => updateDynamicGraphPanes());
+on("graph-updated", async () => {
+    updateDynamicGraphPanes();
+    await refreshGraphUI();
+});
 on("background-click", () => hideDetails());
 on("clear-button-clicked", async () => {
     resetState();
-    await refreshGraphUI();
+    emit("graph-updated", null);
 });
+on("graph-filters-updated", async () => {
+    await refreshGraphUI();
+})
 
 on("search-expression-changed", (expression) => {
     if (expression && expression.trim()) {
@@ -70,6 +76,12 @@ on("search-expression-changed", (expression) => {
     }
 });
 
+on("selection-changed", () => updateSelectionInfo());
+
+// graph ui related handlers
+on("graph-ui-links-curvature-updated", autoAdjustCurvature);
+on("d3-simulation-parameters-changed", applyD3Params);
+
 // --- initialize selection overlay & toolbar ---
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
@@ -81,5 +93,5 @@ window.addEventListener('load', async () => {
     const loadedData = await loadDataFromApi();
     const graph = new Graph(loadedData.nodes, loadedData.edges);
     updateGraph(graph);
-    refreshGraphUI();
+    emit("graph-updated", null);
 });

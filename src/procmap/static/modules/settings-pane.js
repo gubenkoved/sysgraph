@@ -16,13 +16,13 @@ const pane = new Pane({
 const d3RenderingSettingsFolder = pane.addFolder({ title: "d3 forces settings", expanded: false });
 
 const d3Params = [
-    { key: 'd3Charge',              min: -800, max: 100,  step: 10   },
-    { key: 'd3LinkDistance',         min: 40,   max: 300,  step: 5    },
-    { key: 'd3LinkStrength',        min: 0.0,  max: 1.0,  step: 0.01 },
-    { key: 'd3CollisionMultiplier', min: 0.5,  max: 2.0,  step: 0.05 },
-    { key: 'd3AlphaTarget',         min: 0.0,  max: 0.5,  step: 0.01 },
-    { key: 'd3VelocityDecay',       min: 0.01, max: 0.99, step: 0.01 },
-    { key: 'd3ForceXYStrength',     min: 0.00, max: 0.99, step: 0.01 },
+    { key: 'd3Charge', min: -800, max: 100, step: 10 },
+    { key: 'd3LinkDistance', min: 40, max: 300, step: 5 },
+    { key: 'd3LinkStrength', min: 0.0, max: 1.0, step: 0.01 },
+    { key: 'd3CollisionMultiplier', min: 0.5, max: 2.0, step: 0.05 },
+    { key: 'd3AlphaTarget', min: 0.0, max: 0.5, step: 0.01 },
+    { key: 'd3VelocityDecay', min: 0.01, max: 0.99, step: 0.01 },
+    { key: 'd3ForceXYStrength', min: 0.00, max: 0.99, step: 0.01 },
 ];
 
 for (const p of d3Params) {
@@ -85,7 +85,7 @@ const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
 actionsFolder.addButton({ title: 'reload procmap graph' }).on('click', async () => {
     const loadedData = await loadDataFromApi();
     updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    refreshGraphUI();
+    emit("graph-updated", null);
 });
 
 actionsFolder.addBlade({ view: 'separator' });
@@ -139,8 +139,7 @@ document.getElementById('importFile').addEventListener('change', async (event) =
 
     resetState();
     updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-
-    await refreshGraphUI();
+    emit("graph-updated", null);
 
     event.target.value = '';
 });
@@ -196,7 +195,7 @@ export function updateDynamicGraphPanes() {
             settings.nodeFilters[key] = true;
         }
         nodeFiltersFolder.addBinding(settings.nodeFilters, key).on('change', () => {
-            refreshGraphUI();
+            emit("graph-filters-updated", null);
         });
     }
 
@@ -205,10 +204,11 @@ export function updateDynamicGraphPanes() {
             settings.edgeFilters[key] = true;
         }
         edgeFiltersFolder.addBinding(settings.edgeFilters, key).on('change', () => {
-            refreshGraphUI();
+            emit("graph-filters-updated", null);
         });
     }
 
+    // initialize colors and edge widths in settings
     for (const key of nodeTypes) {
         if (!(key in settings.nodeColors)) {
             settings.nodeColors[key] = structuredClone(getNodeColor(key));
