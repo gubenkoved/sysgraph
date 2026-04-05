@@ -476,7 +476,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         items.push({
             label: 'Show adjacent only',
             action: () => {
-                updateAdjacenyFilter(node.id, false);
+                updateAdjacencyFilter(node.id, false);
                 refreshGraphUI();
             }
         });
@@ -485,7 +485,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             items.push({
                 label: 'Show adjacent (extend)',
                 action: () => {
-                    updateAdjacenyFilter(node.id, true);
+                    updateAdjacencyFilter(node.id, true);
                     refreshGraphUI();
                 }
             });
@@ -493,7 +493,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             items.push({
                 label: 'Reset adjacency filter',
                 action: () => {
-                    updateAdjacenyFilter(null);
+                    updateAdjacencyFilter(null);
                     refreshGraphUI();
                 }
             });
@@ -539,7 +539,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
  * @param {boolean} [extendExisting=false] - When true, extends the current filter
  *   rather than replacing it.
  */
-function updateAdjacenyFilter(nodeId, extendExisting = false) {
+function updateAdjacencyFilter(nodeId, extendExisting = false) {
     const graph = getGraph();
 
     if (nodeId !== null) {
