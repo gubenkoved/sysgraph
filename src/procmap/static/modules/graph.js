@@ -79,3 +79,38 @@ export class Graph {
         }
     }
 }
+
+/**
+ * Filters a graph based on inclusion functions for nodes and edges.
+ * @param {Graph} graph
+ * @param {Function} nodeShouldBeIncludedFn
+ * @param {Function} edgeShouldBeIncludedFn
+ * @returns {Graph}
+ */
+export function filterGraph(graph, nodeShouldBeIncludedFn, edgeShouldBeIncludedFn) {
+    const filteredNodesMap = new Map();
+
+    for (const node of graph.getNodes()) {
+        if (!nodeShouldBeIncludedFn(node)) {
+            continue;
+        }
+
+        filteredNodesMap.set(node.id, node);
+    }
+
+    const filteredEdges = new Array();
+
+    for (const edge of graph.getEdges()) {
+        if (!filteredNodesMap.has(edge.source_id) || !filteredNodesMap.has(edge.target_id)) {
+            continue;
+        }
+
+        if (!edgeShouldBeIncludedFn(edge)) {
+            continue;
+        }
+
+        filteredEdges.push(edge);
+    }
+
+    return new Graph(Array.from(filteredNodesMap.values()), filteredEdges);
+}

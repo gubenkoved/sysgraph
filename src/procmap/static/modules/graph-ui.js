@@ -8,6 +8,7 @@ import { ColorScale } from './color-scale.js';
 
 import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
+import { filterGraph } from './graph.js';
 
 /**
  * Computes the display label for a node based on the current label mode.
@@ -53,7 +54,7 @@ const searchNotMatchingBaseOpacity = 0.5;
 
 /** Color scale for search match scores: best match (0) → red, worst (1) → yellow. */
 const searchMatchColorScale = new ColorScale([
-    ['rgb(255, 0, 0)',   0],       // red – best match
+    ['rgb(255, 0, 0)', 0],       // red – best match
     ['rgb(255, 140, 0)', 0.5],     // orange – mid
     ['rgb(195, 179, 41)', 1],     // dark yellow – worst match
 ]);
@@ -541,8 +542,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 function updateAdjacenyFilter(nodeId, extendExisting = false) {
     const graph = getGraph();
 
-    if (nodeId !== null )
-    {
+    if (nodeId !== null) {
         const nodeIds = new Set([nodeId]);
 
         const edges = graph.getAdjacentEdges(nodeId);;
@@ -597,97 +597,58 @@ function updateAdjacenyFilter(nodeId, extendExisting = false) {
 export async function refreshGraphUI() {
     emit('pre-graph-ui-refresh', null);
 
-    const graph = getGraph();
+    // apply type filters
+    const graph = filterGraph(
+        getGraph(),
+        node => settings.nodeFilters[node.type] !== false,
+        edge => settings.edgeFilters[edge.type] !== false,
+    )
 
-    // TODO: do the graph processing using the Graph object. Start by cloning
-    // existing Graph and gradually apply the filters, etc. This will allow to
-    // reuse Graph alogrithms
+    let nodes = graph.getNodes().map(n => ({ ...n }));
+    let edges = graph.getEdges().map(e => ({ ...e }));
 
-    let processedData = { nodes: [], edges: [] };
-
-    // transform for graph format
-    for (const node of graph.getNodes()) {
-        processedData.nodes.push({
-            id: node.id,
-            type: node.type,
-            kind: "node",
-            properties: node.properties || {},
-        })
-    }
-
-    for (const edge of graph.getEdges()) {
-        processedData.edges.push({
-            id: edge.id,
-            type: edge.type,
-            kind: "edge",
-            source: edge.source_id,
-            target: edge.target_id,
-            properties: edge.properties || {},
-        })
-    }
-
-    // filter out excluded node types and their connected edges
-    const filteredNodeIds = new Set();
-    for (const [type, enabled] of Object.entries(settings.nodeFilters)) {
-        if (!enabled) {
-            for (const n of processedData.nodes) {
-                if (n.type === type) filteredNodeIds.add(n.id);
-            }
-        }
-    }
-    if (filteredNodeIds.size > 0) {
-        processedData.nodes = processedData.nodes.filter(n => !filteredNodeIds.has(n.id));
-        processedData.edges = processedData.edges.filter(e => !filteredNodeIds.has(e.source) && !filteredNodeIds.has(e.target));
-    }
-
-    // filter out excluded edge types
-    for (const [type, enabled] of Object.entries(settings.edgeFilters)) {
-        if (!enabled) {
-            processedData.edges = processedData.edges.filter(e => e.type !== type);
-        }
-    }
-
-    // adjacency filter: show only the center node and its direct neighbors
+    // apply adjacency filters (show only the center node and its direct neighbors)
     if (state.adjacencyFilter) {
         const visible = state.adjacencyFilter.visibleNodeIds;
-        processedData.nodes = processedData.nodes.filter(n => visible.has(n.id));
-        processedData.edges = processedData.edges.filter(e => visible.has(e.source) && visible.has(e.target));
+        nodes = nodes.filter(n => visible.has(n.id));
+        edges = edges.filter(e => visible.has(e.source_id) && visible.has(e.target_id));
     }
 
     // optionally filter out isolated nodes
     if (!settings.showIsolated) {
         const connected = new Set();
-        processedData.edges.forEach(l => {
-            connected.add(l.source);
-            connected.add(l.target);
+        edges.forEach(l => {
+            connected.add(l.source_id);
+            connected.add(l.target_id);
         });
-        processedData.nodes = graph.getNodes().filter(n => connected.has(n.id));
+        nodes = nodes.filter(n => connected.has(n.id));
     }
 
     // compute size by degree
     const deg = new Map();
 
-    processedData.nodes.forEach(n => {
+    nodes.forEach(n => {
         deg.set(n.id, 0);
     });
-    processedData.edges.forEach(l => {
-        deg.set(l.source, (deg.get(l.source) || 0) + 1);
-        deg.set(l.target, (deg.get(l.target) || 0) + 1);
+    edges.forEach(l => {
+        deg.set(l.source_id, (deg.get(l.source_id) || 0) + 1);
+        deg.set(l.target_id, (deg.get(l.target_id) || 0) + 1);
     });
-    processedData.nodes.forEach(n => {
+    nodes.forEach(n => {
         n.val = Math.sqrt(Math.max(1, (deg.get(n.id) || 0)));
     });
 
-    mergeGraphData(processedData);
+    mergeGraphDataIntoForceGraph(nodes, edges);
 }
 
 /**
  * Merges new processed graph data into the force-graph instance, reusing
  * existing node/link objects for smoother updates.
- * @param {{ nodes: Object[], edges: Object[] }} data
+ * @param {GraphNode[]} nodes
+ * @param {GraphEdge[]} edges
  */
-function mergeGraphData(data) {
-    console.log('updating graph data:', data.nodes.length, 'nodes,', data.edges.length, 'links');
+function mergeGraphDataIntoForceGraph(nodes, edges) {
+    console.log('updating graph data:', nodes.length, 'nodes,', edges.length, 'links');
 
     // merge new data with existing nodes for smoother updates.
     const current = ForceGraphInstance.graphData() || { nodes: [], links: [] };
@@ -700,28 +661,36 @@ function mergeGraphData(data) {
     const mergedNodes = [];
     const mergedLinks = [];
 
-    data.nodes.forEach(n => {
-        const ex = existingNodesById.get(n.id);
-        if (ex) {
-            Object.assign(ex, n);
-            mergedNodes.push(ex);
+    nodes.forEach(node => {
+        node = structuredClone(node); // avoid mutating original node objects from graph
+        node.kind = 'node';
+
+        const existing = existingNodesById.get(node.id);
+        if (existing) {
+            Object.assign(existing, node);
+            mergedNodes.push(existing);
         } else {
-            //console.log('new node', n);
-            mergedNodes.push(n);
+            mergedNodes.push(node);
         }
     });
 
-    data.edges.forEach(l => {
-        const key = l.id;
+    edges.forEach(edge => {
+        edge = structuredClone(edge); // avoid mutating original edge objects from graph
+        edge.kind = 'edge';
+
+        // update the format of source/target references
+        edge.source = edge.source_id;
+        edge.target = edge.target_id;
+
+        const key = edge.id;
         const existing = existingLinksById.get(key);
         if (existing) {
             // NOTE: in existing data source/targets are objects, while in the
             //  new data they are IDs, so we cannot do full Object.assign here;
-            existing.properties = l.properties;
+            existing.properties = edge.properties;
             mergedLinks.push(existing);
         } else {
-            //console.log('new link', l);
-            mergedLinks.push(l);
+            mergedLinks.push(edge);
         }
     });
 
