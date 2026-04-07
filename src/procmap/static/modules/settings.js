@@ -20,6 +20,7 @@ export const settings = {
     d3CenterForce: true,
 
     showIsolated: true,
+    showGrid: true,
 
     // curvature interval per each link when there are multiple
     curvatureStep: 0.005,

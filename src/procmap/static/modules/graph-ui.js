@@ -520,6 +520,60 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         }
     })
     .autoPauseRedraw(false)
+    .onRenderFramePre((ctx, globalScale) => {
+        if (!settings.showGrid) return;
+
+        // figure out visible area in graph coordinates
+        const topLeft = ForceGraphInstance.screen2GraphCoords(0, 0);
+        const bottomRight = ForceGraphInstance.screen2GraphCoords(ctx.canvas.width, ctx.canvas.height);
+
+        const spacing = 100;
+        const halfSmall = 5;   // regular crosses: 10 graph-units
+        const halfBig = 10;    // center cross: 20 graph-units
+        const lw = 1 / globalScale;
+
+        // snap visible range to grid
+        const xMin = Math.floor(topLeft.x / spacing) * spacing;
+        const xMax = Math.ceil(bottomRight.x / spacing) * spacing;
+        const yMin = Math.floor(topLeft.y / spacing) * spacing;
+        const yMax = Math.ceil(bottomRight.y / spacing) * spacing;
+
+        const maxCrossesPerAxis = 100;
+        const xCount = (xMax - xMin) / spacing;
+        const yCount = (yMax - yMin) / spacing;
+        const drawGrid = xCount <= maxCrossesPerAxis && yCount <= maxCrossesPerAxis;
+
+        ctx.save();
+        ctx.lineWidth = lw;
+
+        // draw regular grid crosses (skip if zoomed out too far)
+        if (drawGrid) {
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            for (let gx = xMin; gx <= xMax; gx += spacing) {
+                for (let gy = yMin; gy <= yMax; gy += spacing) {
+                    if (gx === 0 && gy === 0) continue; // skip center
+                    ctx.moveTo(gx - halfSmall, gy);
+                    ctx.lineTo(gx + halfSmall, gy);
+                    ctx.moveTo(gx, gy - halfSmall);
+                    ctx.lineTo(gx, gy + halfSmall);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // draw center cross — bigger and more prominent
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)';
+        ctx.lineWidth = lw * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-halfBig, 0);
+        ctx.lineTo(halfBig, 0);
+        ctx.moveTo(0, -halfBig);
+        ctx.lineTo(0, halfBig);
+        ctx.stroke();
+
+        ctx.restore();
+    })
     // tune d3 forces to reduce overlaps
     .d3Force('charge', d3.forceManyBody().strength(-450))
     .d3Force('link', d3.forceLink().distance(140).strength(0.8))

@@ -42,6 +42,10 @@ displayOptionsFolder.addBinding(settings, 'showIsolated').on('change', () => {
     refreshGraphUI();
 });
 
+displayOptionsFolder.addBinding(settings, 'showGrid').on('change', () => {
+    refreshGraphUI();
+});
+
 displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
     emit("graph-ui-links-curvature-updated", null);
 });
