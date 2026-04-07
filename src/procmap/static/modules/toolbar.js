@@ -10,6 +10,7 @@ const deleteBtn = document.getElementById('deleteSelected');
 const unselectBtn = document.getElementById('unselectAll');
 const selectionInfoEl = document.getElementById('selectionInfo');
 const searchInput = document.getElementById('searchInput');
+const searchHelpTooltip = document.getElementById('searchHelpTooltip');
 const searchMatchCount = document.getElementById('searchMatchCount');
 const addToSelectionBtn = document.getElementById('addToSelection');
 
@@ -36,6 +37,7 @@ export function setTool(tool, selectionCanvas, canvas) {
 
     if (tool === 'search') {
         searchInput.style.display = 'inline-block';
+        searchHelpTooltip.style.display = 'inline-block';
         addToSelectionBtn.style.display = 'inline-block';
         searchInput.focus();
         if (searchInput.value) {
@@ -46,6 +48,7 @@ export function setTool(tool, selectionCanvas, canvas) {
         }
     } else {
         searchInput.style.display = 'none';
+        searchHelpTooltip.style.display = 'none';
         searchMatchCount.style.display = 'none';
         addToSelectionBtn.style.display = 'none';
         emit("search-expression-changed", "");
