@@ -1,9 +1,9 @@
 import { state, getGraph, updateGraph, resetState } from './modules/state.js';
 import { Graph } from './modules/graph.js';
 import { refreshGraphUI, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
-import { on, emit } from './modules/event-bus.js';
+import { on, emit, registerHandler } from './modules/event-bus.js';
 import { search } from './modules/search.js';
-import { loadDataFromApi } from './modules/data-io.js';
+import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-io.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
@@ -84,6 +84,25 @@ on("graph-ui-settings-updated", async () => {
 });
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
 on("d3-simulation-parameters-changed", applyD3Params);
+
+// --- command handlers ---
+registerHandler("export-graph", () => {
+    const graph = getGraph();
+    return new Blob([serializeGraph(graph)], { type: 'application/json' });
+});
+
+registerHandler("import-graph", (text) => {
+    const loadedData = parseGraphData(text);
+    resetState();
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+    emit("graph-updated", null);
+});
+
+registerHandler("reload-graph", async () => {
+    const loadedData = await loadDataFromApi();
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+    emit("graph-updated", null);
+});
 
 // --- initialize selection overlay & toolbar ---
 const { selectionCanvas, canvas } = initSelection();

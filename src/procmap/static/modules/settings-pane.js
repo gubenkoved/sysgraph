@@ -1,9 +1,7 @@
 import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
-import { getGraph, resetState, updateGraph } from './state.js';
-import { Graph } from './graph.js';
+import { getGraph } from './state.js';
 import { ForceGraphInstance } from './graph-ui.js';
-import { emit } from './event-bus.js';
-import { loadDataFromApi, serializeGraph, parseGraphData } from './data-io.js';
+import { emit, handle } from './event-bus.js';
 
 import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
@@ -87,9 +85,7 @@ const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
 
 // --- refresh button ---
 actionsFolder.addButton({ title: 'reload procmap graph' }).on('click', async () => {
-    const loadedData = await loadDataFromApi();
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    emit("graph-updated", null);
+    await handle("reload-graph");
 });
 
 actionsFolder.addBlade({ view: 'separator' });
@@ -119,9 +115,8 @@ actionsFolder.addButton({ title: 'clear' }).on('click', async () => {
 });
 
 actionsFolder.addButton({ title: 'export data' }).on('click', () => {
+    const blob = handle("export-graph");
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const graph = getGraph();
-    const blob = new Blob([serializeGraph(graph)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -139,11 +134,7 @@ document.getElementById('importFile').addEventListener('change', async (event) =
     if (!file) return;
 
     const text = await file.text();
-    const loadedData = parseGraphData(text);
-
-    resetState();
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    emit("graph-updated", null);
+    await handle("import-graph", text);
 
     event.target.value = '';
 });
