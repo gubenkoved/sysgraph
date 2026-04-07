@@ -459,8 +459,6 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
                 nodeDistancesMap,
                 edgeDistancesMap
             }
-
-            console.log(state.highlight);
         } else {
             state.highlight = null;
         }

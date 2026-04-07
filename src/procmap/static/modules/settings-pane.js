@@ -1,7 +1,7 @@
 import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
 import { getGraph, resetState, updateGraph } from './state.js';
 import { Graph } from './graph.js';
-import { ForceGraphInstance, refreshGraphUI } from './graph-ui.js';
+import { ForceGraphInstance } from './graph-ui.js';
 import { emit } from './event-bus.js';
 import { loadDataFromApi, serializeGraph, parseGraphData } from './data-io.js';
 
@@ -39,11 +39,11 @@ d3RenderingSettingsFolder.addBinding(settings, 'd3CenterForce').on('change', () 
 const displayOptionsFolder = pane.addFolder({ title: "display options", expanded: false });
 
 displayOptionsFolder.addBinding(settings, 'showIsolated').on('change', () => {
-    refreshGraphUI();
+    emit("graph-ui-settings-updated", null);
 });
 
 displayOptionsFolder.addBinding(settings, 'showGrid').on('change', () => {
-    refreshGraphUI();
+    emit("graph-ui-settings-updated", null);
 });
 
 displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
@@ -76,11 +76,11 @@ updateExpressionVisibility();
 
 nodeLabelModeBinding.on('change', () => {
     updateExpressionVisibility();
-    refreshGraphUI();
+    // emit("graph-ui-settings-updated", null);
 });
 
 nodeLabelExpressionBinding.on('change', () => {
-    refreshGraphUI();
+    // emit("graph-ui-settings-updated", null);
 });
 
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });

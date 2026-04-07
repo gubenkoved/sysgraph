@@ -79,6 +79,9 @@ on("search-expression-changed", (expression) => {
 on("selection-changed", () => updateSelectionInfo());
 
 // graph ui related handlers
+on("graph-ui-settings-updated", async () => {
+    await refreshGraphUI();
+});
 on("graph-ui-links-curvature-updated", autoAdjustCurvature);
 on("d3-simulation-parameters-changed", applyD3Params);
 
