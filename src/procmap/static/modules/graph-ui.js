@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { on, emit } from './event-bus.js';
+import { emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js'
@@ -546,7 +546,14 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // draw regular grid crosses (skip if zoomed out too far)
         if (drawGrid) {
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+
+            // in highlight more make it less prominent
+            if (!state.highlight) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+            } else {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            }
+
             ctx.beginPath();
             for (let gx = xMin; gx <= xMax; gx += spacing) {
                 for (let gy = yMin; gy <= yMax; gy += spacing) {
@@ -560,8 +567,14 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             ctx.stroke();
         }
 
-        // draw center cross — bigger and more prominent
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)';
+        // draw center cross — bigger and more prominent than rest of the grid
+        if (!state.highlight) {
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)';
+        }
+        else {
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
+        }
+
         ctx.lineWidth = lw * 1.5;
         ctx.beginPath();
         ctx.moveTo(-halfBig, 0);
