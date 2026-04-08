@@ -10,7 +10,9 @@ const deleteBtn = document.getElementById('deleteSelected');
 const unselectBtn = document.getElementById('unselectAll');
 const selectionInfoEl = document.getElementById('selectionInfo');
 const searchInput = document.getElementById('searchInput');
-const searchHelpTooltip = document.getElementById('searchHelpTooltip');
+const searchHelpTrigger = document.getElementById('searchHelpTrigger');
+const searchHelpAnchor = document.getElementById('searchHelpAnchor');
+const searchHelpPopover = document.getElementById('searchHelp');
 const searchMatchCount = document.getElementById('searchMatchCount');
 const addToSelectionBtn = document.getElementById('addToSelection');
 
@@ -23,9 +25,9 @@ const addToSelectionBtn = document.getElementById('addToSelection');
 export function setTool(tool, selectionCanvas, canvas) {
     state.currentTool = tool;
 
-    toolPointerBtn.variant = tool === 'pointer' ? 'primary' : 'default';
-    toolRectSelectBtn.variant = tool === 'rect-select' ? 'primary' : 'default';
-    toolSearchBtn.variant = tool === 'search' ? 'primary' : 'default';
+    toolPointerBtn.classList.toggle('active', tool === 'pointer');
+    toolRectSelectBtn.classList.toggle('active', tool === 'rect-select');
+    toolSearchBtn.classList.toggle('active', tool === 'search');
 
     if (tool === 'rect-select') {
         selectionCanvas.style.pointerEvents = 'auto';
@@ -37,7 +39,7 @@ export function setTool(tool, selectionCanvas, canvas) {
 
     if (tool === 'search') {
         searchInput.style.display = 'inline-block';
-        searchHelpTooltip.style.display = 'inline-block';
+        searchHelpAnchor.style.display = 'inline-flex';
         addToSelectionBtn.style.display = 'inline-block';
         searchInput.focus();
         if (searchInput.value) {
@@ -48,7 +50,8 @@ export function setTool(tool, selectionCanvas, canvas) {
         }
     } else {
         searchInput.style.display = 'none';
-        searchHelpTooltip.style.display = 'none';
+        searchHelpAnchor.style.display = 'none';
+        searchHelpPopover.classList.remove('open');
         searchMatchCount.style.display = 'none';
         addToSelectionBtn.style.display = 'none';
         emit("search-expression-changed", "");
@@ -87,9 +90,22 @@ export function updateSelectionInfo() {
  */
 export function initToolbar(selectionCanvas, canvas) {
     // search input
-    searchInput.addEventListener('sl-input', (event) => {
+    searchInput.addEventListener('input', (event) => {
         event.stopPropagation();
         emit("search-expression-changed", event.target.value);
+    });
+
+    // search help popover toggle
+    searchHelpTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        searchHelpPopover.classList.toggle('open');
+    });
+
+    // dismiss on outside click
+    document.addEventListener('click', (e) => {
+        if (!searchHelpAnchor.contains(e.target)) {
+            searchHelpPopover.classList.remove('open');
+        }
     });
 
     // toolbar button handlers
@@ -129,7 +145,7 @@ export function initToolbar(selectionCanvas, canvas) {
 
         const isTyping =
             el.tagName === 'INPUT' ||
-            el.tagName === 'SL-INPUT' ||
+            el.tagName === 'MD-OUTLINED-TEXT-FIELD' ||
             el.tagName === 'TEXTAREA' ||
             el.isContentEditable;
 

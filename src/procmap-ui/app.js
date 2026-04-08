@@ -10,15 +10,12 @@ import { initSelection } from './modules/selection.js';
 import JSONFormatter from 'json-formatter-js';
 import WinBox from 'winbox/src/js/winbox.js';
 import 'winbox/dist/css/winbox.min.css';
-import '@shoelace-style/shoelace/dist/themes/light.css';
-import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
-import '@shoelace-style/shoelace/dist/components/button/button.js';
-import '@shoelace-style/shoelace/dist/components/icon/icon.js';
-import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
-import '@shoelace-style/shoelace/dist/components/input/input.js';
-import '@shoelace-style/shoelace/dist/components/dropdown/dropdown.js';
-
-setBasePath('/shoelace');
+import '@material/web/button/outlined-button.js';
+import '@material/web/button/filled-tonal-button.js';
+import '@material/web/button/text-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/textfield/outlined-text-field.js';
 
 // --- cached DOM elements ---
 const searchMatchCountEl = document.getElementById('searchMatchCount');

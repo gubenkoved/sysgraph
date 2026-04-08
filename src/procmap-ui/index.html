@@ -4,9 +4,50 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>procmap | Process graph</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
     <style>
       html, body { height: 100%; margin: 0; overflow: hidden; font-family: 'Ubuntu', 'Segoe UI', 'Arial'; }
-      #toolbar { position: fixed; top: 0; left: 0; right: 0; height: 48px; z-index: 100; background: rgba(255,255,255,0.95); border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; padding: 0 16px; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+      #toolbar { position: fixed; top: 0; left: 0; right: 0; height: 48px; z-index: 100; background: rgba(255,255,255,0.95); border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; padding: 0 16px; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+      #toolbar md-outlined-button {
+        --md-outlined-button-container-height: 28px;
+        --md-outlined-button-label-text-size: 12px;
+        --md-outlined-button-label-text-weight: 500;
+        --md-outlined-button-icon-size: 16px;
+        --md-outlined-button-leading-space: 10px;
+        --md-outlined-button-trailing-space: 12px;
+        --md-outlined-button-icon-offset: -2px;
+        --md-outlined-button-container-shape: 4px;
+      }
+      md-outlined-button.active {
+        --md-outlined-button-container-color: #d0e1ff;
+        --md-outlined-button-label-text-color: #1a56db;
+        --md-outlined-button-outline-color: #1a56db;
+        --md-outlined-button-icon-color: #1a56db;
+      }
+      md-outlined-button.danger {
+        --md-outlined-button-label-text-color: #dc2626;
+        --md-outlined-button-outline-color: #dc2626;
+        --md-outlined-button-icon-color: #dc2626;
+      }
+      #searchInput {
+        width: 240px;
+        --md-outlined-text-field-container-shape: 4px;
+        --md-outlined-text-field-top-space: 4px;
+        --md-outlined-text-field-bottom-space: 4px;
+        --md-outlined-text-field-input-text-size: 12px;
+        --md-outlined-text-field-label-text-size: 12px;
+        height: 28px;
+      }
+      #searchHelpTrigger {
+        --md-icon-button-icon-size: 18px;
+        --md-icon-button-state-layer-height: 28px;
+        --md-icon-button-state-layer-width: 28px;
+        height: 28px; width: 28px;
+      }
+      .search-help-anchor { position: relative; display: inline-flex; }
+      #searchHelp { display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; z-index: 150; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 12px; line-height: 1.5; background: #1e293b; color: #fff; }
+      #searchHelp.open { display: block; }
+      #searchHelp code { background: rgba(255,255,255,0.12); padding: 1px 4px; border-radius: 3px; }
       #content { position: fixed; top: 48px; left: 0; right: 0; bottom: 0; }
       #graph { width: 100%; height: 100%; position: relative; }
       .winbox.details-window { background: rgba(80,80,80,0.85); border-radius: 6px; }
@@ -62,44 +103,46 @@
   </head>
   <body>
     <div id="toolbar">
-      <sl-button id="toolPointer" variant="primary" size="small" title="Pointer Tool (P)">
-        <sl-icon name="cursor-fill" slot="prefix"></sl-icon> Pointer
-      </sl-button>
-      <sl-button id="toolRectSelect" variant="default" size="small" title="Rectangular Selection (R)">
-        <sl-icon name="bounding-box-circles" slot="prefix"></sl-icon> Select
-      </sl-button>
-      <sl-button id="toolSearch" variant="default" size="small" title="Search">
-        <sl-icon name="search" slot="prefix"></sl-icon> Search
-      </sl-button>
+      <md-outlined-button id="toolPointer" class="active" title="Pointer Tool (P)">
+        <md-icon slot="icon">near_me</md-icon> Pointer
+      </md-outlined-button>
+      <md-outlined-button id="toolRectSelect" title="Rectangular Selection (R)">
+        <md-icon slot="icon">select_all</md-icon> Select
+      </md-outlined-button>
+      <md-outlined-button id="toolSearch" title="Search">
+        <md-icon slot="icon">search</md-icon> Search
+      </md-outlined-button>
       <div class="toolbar-separator"></div>
-      <sl-button id="deleteSelected" variant="danger" size="small" title="Delete Selected Nodes (Del)" style="display: none;">
-        <sl-icon name="trash" slot="prefix"></sl-icon> Delete
-      </sl-button>
-      <sl-button id="unselectAll" variant="default" size="small" title="Clear Selection" style="display: none;">
-        <sl-icon name="x-circle" slot="prefix"></sl-icon> Unselect
-      </sl-button>
+      <md-outlined-button id="deleteSelected" class="danger" title="Delete Selected Nodes (Del)" style="display: none;">
+        <md-icon slot="icon">delete</md-icon> Delete
+      </md-outlined-button>
+      <md-outlined-button id="unselectAll" title="Clear Selection" style="display: none;">
+        <md-icon slot="icon">deselect</md-icon> Unselect
+      </md-outlined-button>
       <div class="toolbar-separator"></div>
-      <sl-input id="searchInput" size="small" placeholder="Search nodes..." clearable style="display: none; width: 240px;"></sl-input>
-      <sl-dropdown id="searchHelpTooltip" placement="bottom" hoist style="display: none;">
-        <sl-icon-button slot="trigger" name="question-circle" label="Search help" style="font-size: 16px; vertical-align: middle;"></sl-icon-button>
-        <div style="font-size: 12px; line-height: 1.5; padding: 8px 12px; background: var(--sl-tooltip-background-color, #1e293b); color: var(--sl-tooltip-color, #fff); border-radius: var(--sl-tooltip-border-radius, 4px); white-space: nowrap;">
-          <strong>Fuse.js Extended Search</strong><br>
-          <code>term</code> — fuzzy match<br>
-          <code>=exact</code> — exact match<br>
-          <code>'include</code> — include match<br>
-          <code>!exclude</code> — inverse (not include)<br>
-          <code>^prefix</code> — starts with<br>
-          <code>.suffix$</code> — ends with<br>
-          <code>!^notprefix</code> — does not start with<br>
-          <code>!.suffix$</code> — does not end with<br>
-          <strong>Space</strong> = AND, <strong>|</strong> = OR<br>
-          <a href="https://www.fusejs.io/extended-search.html" target="_blank" rel="noopener" style="color: #58a6ff;">Fuse.js docs &rarr;</a>
+      <md-outlined-text-field id="searchInput" placeholder="Search nodes..." type="search" style="display: none;"></md-outlined-text-field>
+      <span class="search-help-anchor" id="searchHelpAnchor" style="display: none;">
+        <md-icon-button id="searchHelpTrigger">
+          <md-icon>help</md-icon>
+        </md-icon-button>
+        <div id="searchHelp" style="white-space: nowrap;">
+        <strong>Fuse.js Extended Search</strong><br>
+        <code>term</code> — fuzzy match<br>
+        <code>=exact</code> — exact match<br>
+        <code>'include</code> — include match<br>
+        <code>!exclude</code> — inverse (not include)<br>
+        <code>^prefix</code> — starts with<br>
+        <code>.suffix$</code> — ends with<br>
+        <code>!^notprefix</code> — does not start with<br>
+        <code>!.suffix$</code> — does not end with<br>
+        <strong>Space</strong> = AND, <strong>|</strong> = OR<br>
+        <a href="https://www.fusejs.io/extended-search.html" target="_blank" rel="noopener" style="color: #58a6ff;">Fuse.js docs &rarr;</a>
         </div>
-      </sl-dropdown>
+      </span>
       <span id="searchMatchCount" style="display: none; font-size: 12px; color: #666; margin-left: 4px;"></span>
-      <sl-button id="addToSelection" variant="default" size="small" title="Add matches to selection" style="display: none;" disabled>
-        <sl-icon name="plus-circle" slot="prefix"></sl-icon> Add to Selection
-      </sl-button>
+      <md-outlined-button id="addToSelection" title="Add matches to selection" style="display: none;" disabled>
+        <md-icon slot="icon">add_circle</md-icon> Add to Selection
+      </md-outlined-button>
       <span id="selectionInfo" style="font-size: 12px; color: #666; margin-left: auto;"></span>
     </div>
 

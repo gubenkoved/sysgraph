@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@shoelace-style/shoelace": "^2.20.1",
+    "@material/web": "^2.4.1",
     "d3": "^6.7.0",
     "force-graph": "^1.47.0",
     "fuse.js": "^7.1.0",

@@ -7,6 +7,7 @@
 - **Author:** Eugene Gubenkov (`gubenkoved@gmail.com`)
 - **License:** MIT
 - **Python:** ≥ 3.12 (strict)
+- **Node.js:** 22 (used for frontend build via Vite)
 - **Package name:** `proc-map` (importable as `procmap`)
 
 ## Architecture
@@ -14,18 +15,18 @@
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  Browser (SPA)                                           │
-│  index.html + app.js + modules/*.js                      │
-│  Libraries: force-graph, d3@6, tweakpane, fuse.js,       │
-│             Shoelace (web components), json-formatter-js  │
-│  All loaded from CDN — no build step for frontend        │
+│  Built by Vite from src/procmap-ui/ → src/procmap/dist/  │
+│  Libraries (npm): force-graph, d3@6, tweakpane,          │
+│    fuse.js, @material/web, json-formatter-js, winbox     │
+│  Icons: Material Symbols Outlined (Google Fonts CDN)     │
 └──────────────┬───────────────────────────────────────────┘
                │  HTTP (fetch)
                ▼
 ┌──────────────────────────────────────────────────────────┐
 │  FastAPI backend (app.py)                                │
 │  Endpoints:                                              │
-│    GET /            → serves index.html (SPA)            │
-│    GET /static/...  → static file serving                │
+│    GET /            → serves index.html from dist/       │
+│    GET /*           → static files from dist/ (catch-all)│
 │    GET /api/health  → health check                       │
 │    GET /api/graph   → builds & returns process graph     │
 └──────────────┬───────────────────────────────────────────┘
@@ -46,44 +47,52 @@ proc-map/
 ├── setup.py                # Package metadata, dependencies
 ├── requirements.txt        # Locked deps (pip-compile output)
 ├── requirements-dev.in     # Dev dependencies (pytest, ruff, httpx, etc.)
-├── Dockerfile              # Production container image
+├── package.json            # Node.js deps & scripts (Vite build)
+├── package-lock.json       # Locked npm deps
+├── vite.config.js          # Vite build config (root: src/procmap-ui)
+├── Dockerfile              # Multi-stage: Node.js build + Python runtime
+├── MANIFEST.in             # Includes dist/ in Python package
 ├── jsconfig.json           # JS/TS IDE config (checkJs enabled)
 ├── data/
 │   └── simplest-graph.json # Sample graph for import/testing
 ├── scripts/
 │   ├── build-image.sh      # Build Docker image
+│   ├── build-ui.sh         # Build frontend via Docker (no host Node.js needed)
+│   ├── dev-ui.sh           # Start Vite dev server via Docker
 │   ├── publish-image.sh    # Tag & push to Docker Hub (gubenkoved/procmap)
 │   ├── compile-requirements.sh  # pip-compile to lock deps
 │   ├── docker-entrypoint.sh     # Container entrypoint (uvicorn)
 │   └── lint.sh             # Run ruff + isort
-└── src/procmap/
-    ├── __init__.py          # Only exports __version__
-    ├── app.py               # FastAPI application & API schemas
-    ├── discovery.py         # OS process/connection discovery + graph building
-    ├── graph.py             # Graph data structure (Node, Relationship, Graph)
-    ├── model.py             # Domain models (Process, NetConnection, UDS, etc.)
-    ├── main.py              # CLI entry point for debug/exploration
-    ├── static/
-    │   ├── index.html       # SPA shell (toolbar, detail panel, settings pane)
-    │   ├── app.js           # Frontend entry point
-    │   ├── cdn-module-types.d.ts  # TS type stubs for CDN libraries
-    │   └── modules/
-    │       ├── state.js          # Centralized app state
-    │       ├── event-bus.js      # Pub-sub event system
-    │       ├── graph.js          # Frontend Graph class (adjacency index)
-    │       ├── graph-ui.js       # force-graph rendering (~600 LOC, largest module)
-    │       ├── graph-algs.js     # BFS algorithm for highlights
-    │       ├── data-io.js        # API fetch, JSON serialization/parsing
-    │       ├── search.js         # Fuzzy search via Fuse.js
-    │       ├── selection.js      # Rectangle selection overlay
-    │       ├── toolbar.js        # Toolbar buttons & keyboard shortcuts
-    │       ├── settings-pane.js  # Tweakpane settings UI (filters, colors, forces)
-    │       ├── settings.js       # Default settings, color palettes
-    │       ├── context-menu.js   # Right-click context menu
-    │       ├── color-scale.js    # Color interpolation for search heatmap
-    │       └── util.js           # FNV-1a hash helper
-    └── tests/
-        └── test_discovery.py    # Smoke tests for discovery & graph building
+├── src/
+│   └── procmap/                 # Python backend package
+│       ├── __init__.py          # Exports __version__ (single source of truth)
+│       ├── __main__.py          # Allows `python -m procmap`
+│       ├── app.py               # FastAPI application & API schemas
+│       ├── discovery.py         # OS process/connection discovery + graph building
+│       ├── graph.py             # Graph data structure (Node, Relationship, Graph)
+│       ├── model.py             # Domain models (Process, NetConnection, UDS, etc.)
+│       ├── main.py              # CLI entry point for debug/exploration
+│       ├── dist/                # Vite build output (generated, gitignored)
+│       └── tests/
+│           └── test_discovery.py
+│   └── procmap-ui/             # Frontend source (Vite project root)
+│       ├── index.html           # SPA shell (toolbar, detail panel, settings pane)
+│       ├── app.js               # Frontend entry point
+│       └── modules/
+│           ├── state.js          # Centralized app state
+│           ├── event-bus.js      # Pub-sub event system
+│           ├── graph.js          # Frontend Graph class (adjacency index)
+│           ├── graph-ui.js       # force-graph rendering (largest module)
+│           ├── graph-algs.js     # BFS algorithm for highlights
+│           ├── data-io.js        # API fetch, JSON serialization/parsing
+│           ├── search.js         # Fuzzy search via Fuse.js
+│           ├── selection.js      # Rectangle selection overlay
+│           ├── toolbar.js        # Toolbar buttons & keyboard shortcuts
+│           ├── settings-pane.js  # Tweakpane settings UI (filters, colors, forces)
+│           ├── settings.js       # Default settings, color palettes
+│           ├── context-menu.js   # Right-click context menu
+│           ├── color-scale.js    # Color interpolation for search heatmap
+│           └── util.js           # FNV-1a hash helper
 ```
 
 ## Development Setup
@@ -91,9 +100,10 @@ proc-map/
 ### Prerequisites
 - Python ≥ 3.12
 - Linux (the discovery layer reads `/proc` and runs `ss`)
+- Docker (for frontend builds — no host Node.js installation required)
 - Virtual environment recommended
 
-### Install & Run
+### Install & Run (Backend)
 
 ```bash
 # Create and activate virtualenv
@@ -104,12 +114,36 @@ source .venv/bin/activate
 pip install -e .
 pip install -r requirements-dev.in
 
-# Run the app (auto-reload enabled)
+# Run the backend (auto-reload enabled)
 python src/procmap/app.py
 # → serves at http://localhost:8000
+# Alternative: python -m procmap
 
-# Alternative: run via uvicorn directly
+# Or via uvicorn directly
 uvicorn procmap.app:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Frontend Build
+
+The frontend is built with **Vite** and outputs to `src/procmap/dist/`. Build scripts use Docker so no host Node.js is needed:
+
+```bash
+# Production build (via Docker)
+./scripts/build-ui.sh
+# → outputs to src/procmap/dist/
+
+# Development server with HMR (via Docker)
+./scripts/dev-ui.sh
+# → Vite dev server on http://localhost:5173
+# → Proxies /api requests to http://localhost:8000
+# → Run the FastAPI backend separately
+```
+
+If you have Node.js installed locally, you can also run directly:
+```bash
+npm ci
+npm run dev      # Vite dev server
+npm run build    # Production build
 ```
 
 ### Running Tests
@@ -136,7 +170,7 @@ Ruff is configured in `pyproject.toml` with line-length=79, target Python 3.12.
 ./scripts/publish-image.sh [tag]  # builds, tags as gubenkoved/procmap, pushes
 ```
 
-The container runs uvicorn on `$PORT` (default 8000).
+The Dockerfile is a **multi-stage build**: stage 1 builds the frontend with Node.js 22, stage 2 copies the Vite output into the Python runtime image. The container runs uvicorn on `$PORT` (default 8000).
 
 ## Backend Details
 
@@ -144,11 +178,21 @@ The container runs uvicorn on `$PORT` (default 8000).
 
 | Module | Purpose |
 |--------|---------|
-| `app.py` | FastAPI app, Pydantic schemas (`GraphSchema`, `GraphNodeSchema`, `GraphEdgeSchema`), static file serving, `/api/graph` endpoint |
+| `app.py` | FastAPI app, Pydantic schemas (`GraphSchema`, `GraphNodeSchema`, `GraphEdgeSchema`), serves Vite build output from `dist/`, `/api/graph` endpoint |
 | `discovery.py` | OS introspection: `discover_processes()`, `discover_unix_sockets()`, `get_processes_open_files()`, `get_all_net_connections()`, `build_graph()` |
 | `graph.py` | Backend graph data structure: `Node`, `Relationship`, `Graph` with `add_node()`, `add_edge()`, `as_dict()` |
 | `model.py` | Domain models: `Process`, `ProcessOpenFile`, `UnixDomainSocket`, `UnixDomainSocketConnection`, `NetConnection`, `SocketAddress`, etc. |
 | `main.py` | CLI debug script — runs discovery and logs results |
+| `__main__.py` | Allows running as `python -m procmap` (calls `app.main()`) |
+
+### Static File Serving
+
+The backend serves the Vite-built frontend from `src/procmap/dist/`:
+- `GET /` → `dist/index.html`
+- `GET /*` → catch-all `StaticFiles` mount on `dist/` (after all `/api/*` routes)
+- If `dist/` is missing, a warning is logged and the frontend is not served
+
+The `dist/` directory is included in the Python package via `MANIFEST.in` and `setup.py` `package_data`.
 
 ### Graph Node Types (generated by backend)
 - `process` — OS process (properties: pid, command, user, name, cpu_user, cpu_system, environment)
@@ -188,8 +232,26 @@ The container runs uvicorn on `$PORT` (default 8000).
 
 ## Frontend Details
 
-### No Build Step
-The frontend is vanilla ES modules served directly from `src/procmap/static/`. All external libraries are loaded from CDN via ES module imports. There is no bundler, transpiler, or npm involved.
+### Build Tooling
+
+The frontend uses **Vite** as the build tool. Source lives in `src/procmap-ui/` and builds to `src/procmap/dist/`.
+
+**Vite config highlights** (`vite.config.js`):
+- `root`: `src/procmap-ui`
+- `build.outDir`: `src/procmap/dist` (inside the Python package)
+- Injects `__APP_VERSION__` into `index.html` from `__init__.py` `__version__`
+- Dev server proxies `/api` to `http://localhost:8000` (the FastAPI backend)
+
+**npm dependencies** (`package.json`):
+- `force-graph` — Canvas-based force-directed graph
+- `d3@6` — Physics simulation, color utilities
+- `@material/web` — Material Design 3 web components (buttons, icons, text fields)
+- `tweakpane@4` — Settings panel UI
+- `fuse.js@7` — Fuzzy search engine
+- `json-formatter-js` — Collapsible JSON display in details panel
+- `winbox` — Draggable/resizable detail window
+
+**Dev dependencies**: `vite@6`, `@types/d3`
 
 ### Module Architecture
 
@@ -211,12 +273,14 @@ Key events:
 - `"graph-updated"` — Emitted after loading a new graph (e.g., from API or file import)
 - `"graph-filters-updated"` — Emitted after changing type filters in settings
 
-**Rendering (`graph-ui.js`):** Uses the `force-graph` library (canvas-based) with d3 physics simulation. This is the largest module (~600 lines). Key features:
+**Rendering (`graph-ui.js`):** Uses the `force-graph` library (canvas-based) with d3 physics simulation. This is the largest module. Key features:
 - Custom canvas drawing for nodes (circles with labels, selection indicators, search highlights)
 - BFS-based hover highlighting with distance-based opacity
 - Adjacency filtering (right-click → show only neighbors)
 - Auto-curvature for parallel edges
 - Configurable d3 forces (charge, link distance/strength, collision, center, velocity decay)
+
+**Details Panel:** Uses WinBox for a draggable/resizable window with JSONFormatter for collapsible JSON display of node/link properties.
 
 **Settings (`settings.js` + `settings-pane.js`):** Tweakpane-based UI panel with:
 - D3 force parameters (tunable in real-time)
@@ -233,13 +297,15 @@ Key events:
 - Alternate edge keys: `"relationships"`, `"links"`
 - Auto-generates missing edge IDs
 
-### External CDN Libraries
-- `force-graph` — Canvas-based force-directed graph
-- `d3@6` — Physics simulation, color utilities
-- `tweakpane@4.0.5` — Settings panel UI
-- `fuse.js@7.1.0` — Fuzzy search engine
-- `Shoelace@2` — Web component UI (buttons, inputs, icons)
-- `json-formatter-js` — Collapsible JSON display in details panel
+### UI Components
+
+The toolbar and form elements use **Material Web** (`@material/web`) components:
+- `<md-outlined-button>`, `<md-filled-tonal-button>`, `<md-text-button>` — Toolbar buttons
+- `<md-icon>` — Material Symbols icons
+- `<md-icon-button>` — Icon-only buttons
+- `<md-outlined-text-field>` — Search input
+
+Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 
 ## Coding Conventions
 
@@ -253,12 +319,12 @@ Key events:
 - No `__all__` exports convention
 
 ### JavaScript
-- Vanilla ES modules (no framework, no bundler)
+- ES modules bundled by Vite (no framework)
 - JSDoc type annotations with `@typedef` and `@param` (checkJs enabled in jsconfig.json)
-- Type stubs for CDN libraries in `cdn-module-types.d.ts`
 - DOM elements cached at module level
 - Arrow functions preferred for short callbacks
 - `const` by default, `let` when mutation needed
+- npm packages imported by bare specifier (e.g., `import ForceGraph from 'force-graph'`)
 
 ## Common Development Tasks
 
@@ -274,10 +340,15 @@ Key events:
 4. Optionally add hardcoded color overrides in `settings.js` (`overrideNodeColors`/`overrideEdgeColors`)
 
 ### Adding a new frontend module
-1. Create `src/procmap/static/modules/your-module.js`
+1. Create `src/procmap-ui/modules/your-module.js`
 2. Use ES module exports; import from other modules as needed
 3. Wire into the app via `event-bus.js` events or direct imports in `app.js`
-4. Add type declarations in `cdn-module-types.d.ts` if importing new CDN libraries
+4. Install new npm packages with `npm install <package>` if needed
+
+### Adding a new npm dependency
+1. `npm install <package>` (or add to `package.json` and `npm ci`)
+2. Import in your JS module with a bare specifier: `import X from 'package'`
+3. Vite will bundle it automatically
 
 ### Modifying the graph visualization
 - Node rendering: `graph-ui.js` → `nodeCanvasObject` callback
@@ -299,7 +370,8 @@ Key events:
 
 - **Linux only:** The discovery layer depends on `/proc` filesystem and the `ss` command. It will not work on macOS or Windows.
 - **Privileges:** Some process info (e.g., other users' `/proc/[pid]/fd`) requires root or appropriate capabilities. Run with `sudo` for full visibility.
-- **No frontend build:** Do not introduce npm, webpack, or any bundler. All JS is vanilla ES modules loaded directly.
-- **CDN dependencies:** External JS libraries are loaded from CDN at runtime. The app requires internet access unless the CDN URLs are replaced with local copies.
+- **Frontend build required:** The backend serves pre-built Vite output from `src/procmap/dist/`. You must run `./scripts/build-ui.sh` (or `npm run build`) before the backend can serve the frontend. During development, use the Vite dev server (`./scripts/dev-ui.sh` or `npm run dev`) for HMR.
+- **No host Node.js needed:** The `build-ui.sh` and `dev-ui.sh` scripts run Node.js inside Docker, so no local Node.js installation is required.
+- **Version single source of truth:** The app version is defined in `src/procmap/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
 - **Graph size:** On busy systems the graph can have thousands of nodes. The force simulation may be slow; tune d3 parameters via the settings pane.
 - **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"external_ip::{ip}"`. Edge IDs are UUIDs.
