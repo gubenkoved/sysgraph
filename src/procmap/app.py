@@ -97,9 +97,10 @@ def main():
 
     import uvicorn
 
-    parser = argparse.ArgumentParser(description="proc-map server")
+    parser = argparse.ArgumentParser(description="procmap server")
     parser.add_argument(
-        "-p", "--port",
+        "-p",
+        "--port",
         type=int,
         default=int(os.environ.get("PORT", 8000)),
         help="port to listen on (default: 8000, or PORT env var)",

@@ -26,15 +26,21 @@ LOGGER = logging.getLogger(__name__)
 def discover_processes() -> list[Process]:
     processes = []
 
-    attrs = ["pid", "ppid", "username", "cmdline", "name", "cpu_times", "environ"]
+    attrs = [
+        "pid",
+        "ppid",
+        "username",
+        "cmdline",
+        "name",
+        "cpu_times",
+        "environ",
+    ]
     for proc in psutil.process_iter(attrs):
         info = proc.info
         p = Process(pid=info["pid"])
         p.parent_pid = info["ppid"]
         p.user = info["username"]
-        p.command = (
-            " ".join(info["cmdline"]) if info["cmdline"] else None
-        )
+        p.command = " ".join(info["cmdline"]) if info["cmdline"] else None
         p.name = info.get("name")
 
         cpu_times = info.get("cpu_times")
