@@ -3,7 +3,7 @@ import { getGraph } from './state.js';
 import { ForceGraphInstance } from './graph-ui.js';
 import { emit, handle } from './event-bus.js';
 
-import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+import { Pane } from 'tweakpane';
 
 const pane = new Pane({
     title: 'parameters',

@@ -13,8 +13,10 @@
         }
     },
     "include": [
-        "src/procmap/static/**/*",
-        "src/procmap/static/modules/**/*",
-        "src/procmap/static/cdn-module-types.d.ts"
+        "src/procmap-ui/**/*",
+        "src/procmap-ui/modules/**/*"
+    ],
+    "exclude": [
+        "node_modules"
     ]
 }

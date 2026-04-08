@@ -1,2 +1,2 @@
-# Include all files under package static directories
-recursive-include src/procmap/static *
+# Include the Vite build output
+recursive-include src/procmap/dist *

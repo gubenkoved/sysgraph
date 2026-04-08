@@ -1,4 +1,14 @@
-# Lightweight image for running procmap
+# --- Stage 1: build frontend with Node.js ---
+FROM node:22-slim AS ui-build
+
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY vite.config.js ./
+COPY src/procmap-ui/ ./src/procmap-ui/
+RUN npm run build
+
+# --- Stage 2: Python runtime ---
 FROM python:3.12
 
 ENV PYTHONUNBUFFERED=1
@@ -18,6 +28,10 @@ COPY pyproject.toml setup.py /app/
 
 # Install the package in the image
 COPY . /app
+
+# Copy the Vite build output from stage 1
+COPY --from=ui-build /build/src/procmap/dist/ /app/src/procmap/dist/
+
 RUN pip install --no-cache-dir .
 
 # Copy entrypoint that will read $PORT and exec uvicorn (validated)

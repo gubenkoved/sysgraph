@@ -6,3 +6,6 @@ __pycache__/
 *temp*
 .python-version
 dist/
+node_modules/
+src/procmap/dist/
+src/procmap-ui/public/

@@ -46,7 +46,7 @@ setup(
     packages=packages,
     package_dir={"": "src"},
     include_package_data=True,
-    package_data={"procmap": ["static/*", "static/**/*"]},
+    package_data={"procmap": ["dist/*", "dist/**/*"]},
     zip_safe=False,
     python_requires=">=3.12",
     install_requires=[

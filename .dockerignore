@@ -1,0 +1,9 @@
+node_modules/
+src/procmap/dist/
+src/procmap-ui/public/
+.venv/
+.idea/
+*.egg-info
+__pycache__/
+dist/
+.git/

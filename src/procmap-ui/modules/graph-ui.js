@@ -6,8 +6,8 @@ import { settings, highlightAlphaMultipliers, getNodeColor, getEdgeColor, getEdg
 import { showContextMenu } from './context-menu.js';
 import { ColorScale } from './color-scale.js';
 
-import ForceGraph from "https://cdn.jsdelivr.net/npm/force-graph/+esm";
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@6/+esm";
+import ForceGraph from 'force-graph';
+import * as d3 from 'd3';
 import { filterGraph, computeNodeDegrees } from './graph.js';
 
 /**

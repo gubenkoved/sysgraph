@@ -7,8 +7,18 @@ import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
-import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
-import WinBox from "https://unpkg.com/winbox@0.2.82/src/js/winbox.js";
+import JSONFormatter from 'json-formatter-js';
+import WinBox from 'winbox/src/js/winbox.js';
+import 'winbox/dist/css/winbox.min.css';
+import '@shoelace-style/shoelace/dist/themes/light.css';
+import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
+import '@shoelace-style/shoelace/dist/components/button/button.js';
+import '@shoelace-style/shoelace/dist/components/icon/icon.js';
+import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
+import '@shoelace-style/shoelace/dist/components/input/input.js';
+import '@shoelace-style/shoelace/dist/components/dropdown/dropdown.js';
+
+setBasePath('/shoelace');
 
 // --- cached DOM elements ---
 const searchMatchCountEl = document.getElementById('searchMatchCount');

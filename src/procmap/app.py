@@ -29,15 +29,20 @@ async def lifespan(app):
 app = FastAPI(title="procmap API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# serve static assets from `src/procmap/static` under /static
-static_dir = str(Path(__file__).parent / "static")
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Vite build output — run scripts/build-ui.sh to produce it.
+_dist_dir = Path(__file__).parent / "dist"
+
+if not _dist_dir.is_dir():
+    LOGGER.warning(
+        "dist/ not found — frontend will not be served. "
+        "Run scripts/build-ui.sh to produce a production build."
+    )
 
 
-# Root route serves the SPA index
+# Root route serves the SPA index — defined before the catch-all mount.
 @app.get("/", include_in_schema=False)
 def index():
-    index_path = Path(__file__).parent / "static" / "index.html"
+    index_path = _dist_dir / "index.html"
     return FileResponse(index_path)
 
 
@@ -89,6 +94,15 @@ def get_graph() -> GraphSchema:
             )
             for edge in graph_dict["edges"]
         ],
+    )
+
+
+# Serve built assets (JS/CSS bundles, Shoelace icons, etc.) from the same
+# directory that provides index.html.  This catch-all mount MUST come after
+# all explicit routes so that /api/* and / are matched first.
+if _dist_dir.is_dir():
+    app.mount(
+        "/", StaticFiles(directory=str(_dist_dir)), name="static"
     )
 
 
