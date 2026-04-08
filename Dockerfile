@@ -6,6 +6,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY vite.config.js ./
 COPY src/procmap-ui/ ./src/procmap-ui/
+COPY src/procmap/__init__.py ./src/procmap/__init__.py
 RUN npm run build
 
 # --- Stage 2: Python runtime ---
