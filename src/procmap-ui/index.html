@@ -50,12 +50,14 @@
       #searchHelp code { background: rgba(255,255,255,0.12); padding: 1px 4px; border-radius: 3px; }
       #content { position: fixed; top: 48px; left: 0; right: 0; bottom: 0; }
       #graph { width: 100%; height: 100%; position: relative; }
-      #detailsPanel { position: absolute; top: 8px; left: 8px; width: 420px; height: 350px; min-width: 200px; min-height: 120px; max-height: calc(100% - 16px); z-index: 50; background: rgba(255,255,255,0.97); box-shadow: 0 2px 12px rgba(0,0,0,0.14); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; display: none; flex-direction: column; overflow: hidden; resize: both; }
-      #detailsPanel.open { display: flex; }
-      #detailsPanel .panel-header { display: flex; align-items: center; height: 40px; padding: 0 4px 0 16px; border-bottom: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; cursor: grab; user-select: none; }
-      #detailsPanel .panel-header:active { cursor: grabbing; }
-      #detailsPanel .panel-title { font-size: 13px; font-weight: 500; color: #333; flex: 1; }
-      #detailsPanel .panel-body { flex: 1; overflow-y: auto; padding: 12px; font-family: 'Ubuntu', 'Segoe UI', 'Arial'; }
+      .details-panel { position: absolute; top: 8px; left: 8px; width: 420px; height: 350px; min-width: 200px; min-height: 120px; max-height: calc(100% - 16px); z-index: 50; background: rgba(255,255,255,0.97); box-shadow: 0 2px 12px rgba(0,0,0,0.14); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; display: none; flex-direction: column; overflow: hidden; resize: both; }
+      .details-panel.open { display: flex; }
+      .details-panel .panel-header { display: flex; align-items: center; height: 40px; padding: 0 4px 0 16px; border-bottom: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; cursor: grab; user-select: none; }
+      .details-panel .panel-header:active { cursor: grabbing; }
+      .details-panel .panel-title { font-size: 13px; font-weight: 500; color: #333; flex: 1; }
+      .details-panel .panel-body { flex: 1; overflow-y: auto; padding: 12px; font-family: 'Ubuntu', 'Segoe UI', 'Arial'; }
+      #detailsPanel { border-left: 3px solid #1a73e8; }
+      #detailsPanel .panel-header { background: rgba(26, 115, 232, 0.06); }
       #version-badge { position: fixed; bottom: 6px; left: 8px; font-size: 11px; color: rgba(0,0,0,0.3); pointer-events: none; z-index: 10; font-family: 'Ubuntu', 'Segoe UI', 'Arial', sans-serif; }
       .muted { color: #666; }
       .toolbar-separator { width: 1px; height: 24px; background: rgba(0,0,0,0.1); }
@@ -153,7 +155,7 @@
 
       <div id="graph"></div>
 
-      <div id="detailsPanel">
+      <div id="detailsPanel" class="details-panel">
         <div class="panel-header">
           <span class="panel-title">Details</span>
           <md-icon-button id="detailsPanelClose">

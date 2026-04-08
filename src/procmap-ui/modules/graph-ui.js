@@ -429,15 +429,15 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     })
     .onNodeClick((node, event) => {
         if (state.currentTool === 'pointer') {
-            if (event && (event.shiftKey || event.altKey)) {
+            if (event && event.altKey) {
                 node.fx = undefined;
                 node.fy = undefined;
             }
         }
-        emit("node-clicked", node);
+        emit("node-clicked", { data: node, shiftKey: event?.shiftKey ?? false });
     })
     .onLinkClick((link, event) => {
-        emit("link-clicked", link);
+        emit("link-clicked", { data: link, shiftKey: event?.shiftKey ?? false });
     })
     .onNodeDrag(node => {
         // keep node pinned while dragging
