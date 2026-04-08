@@ -1,5 +1,14 @@
 # Copilot Instructions for proc-map
 
+## IMPORTANT: Build System
+
+**NEVER run node, npm, or npx commands directly on the host.**
+All frontend build/dev tasks MUST use the dockerized scripts in `scripts/`:
+- `./scripts/build-ui.sh` — production build (outputs to `src/procmap/dist/`)
+- `./scripts/dev-ui.sh` — dev server with HMR (Vite on port 5173)
+
+Only use local `npm` if the user explicitly confirms they have Node.js installed and want to use it.
+
 ## Project Overview
 
 **proc-map** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
