@@ -9,6 +9,8 @@ All frontend build/dev tasks MUST use the dockerized scripts in `scripts/`:
 
 Only use local `npm` if the user explicitly confirms they have Node.js installed and want to use it.
 
+**After any frontend/UI changes** (HTML, CSS, JS in `src/procmap-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/procmap/dist/`.
+
 ## Project Overview
 
 **proc-map** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
