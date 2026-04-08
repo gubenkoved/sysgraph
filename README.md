@@ -1,4 +1,4 @@
-# proc-map
+# procmap
 
 Real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
 

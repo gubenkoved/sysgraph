@@ -1,4 +1,4 @@
-# Copilot Instructions for proc-map
+# Copilot Instructions for procmap
 
 ## IMPORTANT: Build System
 
@@ -13,13 +13,13 @@ Only use local `npm` if the user explicitly confirms they have Node.js installed
 
 ## Project Overview
 
-**proc-map** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
+**procmap** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
 
 - **Author:** Eugene Gubenkov (`gubenkoved@gmail.com`)
 - **License:** MIT
 - **Python:** ≥ 3.12 (strict)
 - **Node.js:** 22 (used for frontend build via Vite)
-- **Package name:** `proc-map` (importable as `procmap`)
+- **Package name:** `procmap` (importable as `procmap`)
 
 ## Architecture
 
@@ -53,7 +53,7 @@ Only use local `npm` if the user explicitly confirms they have Node.js installed
 ## Directory Layout
 
 ```
-proc-map/
+procmap/
 ├── pyproject.toml          # Ruff + isort config
 ├── setup.py                # Package metadata, dependencies
 ├── requirements.txt        # Locked deps (pip-compile output)

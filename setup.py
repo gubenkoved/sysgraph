@@ -35,14 +35,14 @@ if not packages:
         packages = []
 
 setup(
-    name="proc-map",
+    name="procmap",
     version=read_version(),
     description="Visualizer for processes and their interconnections",
     long_description=README,
     long_description_content_type="text/markdown",
     author="Eugene Gubenkov",
     author_email="gubenkoved@gmail.com",
-    url="https://github.com/gubenkoved/proc-map",
+    url="https://github.com/gubenkoved/procmap",
     packages=packages,
     package_dir={"": "src"},
     include_package_data=True,
@@ -85,7 +85,7 @@ setup(
     },
     license="MIT",
     project_urls={
-        "Source": "https://github.com/gubenkoved/proc-map",
-        "Issues": "https://github.com/gubenkoved/proc-map/issues",
+        "Source": "https://github.com/gubenkoved/procmap",
+        "Issues": "https://github.com/gubenkoved/procmap/issues",
     },
 )
