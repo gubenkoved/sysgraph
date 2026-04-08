@@ -8,8 +8,6 @@ import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
 import JSONFormatter from 'json-formatter-js';
-import WinBox from 'winbox/src/js/winbox.js';
-import 'winbox/dist/css/winbox.min.css';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/filled-tonal-button.js';
 import '@material/web/button/text-button.js';
@@ -20,9 +18,9 @@ import '@material/web/textfield/outlined-text-field.js';
 // --- cached DOM elements ---
 const searchMatchCountEl = document.getElementById('searchMatchCount');
 const addToSelectionBtn = document.getElementById('addToSelection');
-
-/** @type {WinBox|null} */
-let detailsWinBox = null;
+const detailsPanel = document.getElementById('detailsPanel');
+const detailsPanelBody = document.getElementById('detailsPanelBody');
+const detailsPanelClose = document.getElementById('detailsPanelClose');
 
 /**
  * Renders the properties of a node or link in the details panel.
@@ -37,51 +35,44 @@ function showDetails(nodeOrLink) {
     };
 
     const formatter = new JSONFormatter(data, 2);
-
-    if (detailsWinBox) {
-        detailsWinBox.body.innerHTML = '';
-        detailsWinBox.body.appendChild(formatter.render());
-        detailsWinBox.show();
-    } else {
-        detailsWinBox = new WinBox({
-            title: 'Details',
-            class: ['no-full', 'no-max', 'no-min', 'details-window'],
-            html: '',
-            x: 8,
-            y: 56,
-            width: 460,
-            height: 350,
-            minwidth: 200,
-            minheight: 80,
-            top: 48,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            onclose: function () {
-                detailsWinBox = null;
-                return false;
-            },
-        });
-        detailsWinBox.body.appendChild(formatter.render());
-    }
+    detailsPanelBody.innerHTML = '';
+    detailsPanelBody.appendChild(formatter.render());
+    detailsPanel.classList.add('open');
 }
 
 /** Hides the details panel. */
 function hideDetails() {
-    if (detailsWinBox) {
-        detailsWinBox.close(true);
-        detailsWinBox = null;
-    }
+    detailsPanel.classList.remove('open');
 }
 
-window.addEventListener('resize', () => {
-    if (!detailsWinBox) return;
-    const maxX = window.innerWidth - detailsWinBox.width;
-    const maxY = window.innerHeight - detailsWinBox.height;
-    const x = Math.max(0, Math.min(detailsWinBox.x, maxX));
-    const y = Math.max(48, Math.min(detailsWinBox.y, maxY));
-    detailsWinBox.move(x, y);
-});
+detailsPanelClose.addEventListener('click', () => hideDetails());
+
+// --- drag support for details panel ---
+{
+    const header = detailsPanel.querySelector('.panel-header');
+    let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+    header.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('md-icon-button')) return;
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = detailsPanel.offsetLeft;
+        startTop = detailsPanel.offsetTop;
+        header.setPointerCapture(e.pointerId);
+    });
+
+    header.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const parent = detailsPanel.parentElement;
+        const x = Math.max(0, Math.min(startLeft + e.clientX - startX, parent.clientWidth - detailsPanel.offsetWidth));
+        const y = Math.max(0, Math.min(startTop + e.clientY - startY, parent.clientHeight - detailsPanel.offsetHeight));
+        detailsPanel.style.left = x + 'px';
+        detailsPanel.style.top = y + 'px';
+    });
+
+    header.addEventListener('pointerup', () => { dragging = false; });
+}
 
 // --- event wiring ---
 on("node-clicked", node => showDetails(node));
