@@ -1,6 +1,18 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { copyFileSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, statSync } from 'fs';
+
+/**
+ * Read the package version from src/procmap/__init__.py (single source of truth).
+ */
+function readPythonVersion() {
+  const initPy = readFileSync(
+    resolve(__dirname, 'src/procmap/__init__.py'), 'utf-8',
+  );
+  const match = initPy.match(/__version__\s*=\s*["']([^"']+)["']/);
+  if (!match) throw new Error('Could not parse __version__ from __init__.py');
+  return match[1];
+}
 
 /**
  * Simple recursive copy (avoids pulling in a Vite plugin for one task).
@@ -37,7 +49,15 @@ export default defineConfig({
     outDir: resolve(__dirname, 'src/procmap/dist'),
     emptyOutDir: true,
   },
-  plugins: [copyShoelaceAssets()],
+  plugins: [
+    copyShoelaceAssets(),
+    {
+      name: 'inject-python-version',
+      transformIndexHtml(html) {
+        return html.replace('__APP_VERSION__', readPythonVersion());
+      },
+    },
+  ],
   server: {
     proxy: {
       '/api': 'http://localhost:8000',
