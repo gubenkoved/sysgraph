@@ -8,12 +8,14 @@ import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
 import JSONFormatter from "https://cdn.jsdelivr.net/npm/json-formatter-js/+esm";
+import WinBox from "https://unpkg.com/winbox@0.2.82/src/js/winbox.js";
 
 // --- cached DOM elements ---
-/** @type {HTMLElement} */
-const detailsContainer = document.getElementById('details');
 const searchMatchCountEl = document.getElementById('searchMatchCount');
 const addToSelectionBtn = document.getElementById('addToSelection');
+
+/** @type {WinBox|null} */
+let detailsWinBox = null;
 
 /**
  * Renders the properties of a node or link in the details panel.
@@ -29,17 +31,50 @@ function showDetails(nodeOrLink) {
 
     const formatter = new JSONFormatter(data, 2);
 
-    while (detailsContainer.firstChild) {
-        detailsContainer.removeChild(detailsContainer.firstChild);
+    if (detailsWinBox) {
+        detailsWinBox.body.innerHTML = '';
+        detailsWinBox.body.appendChild(formatter.render());
+        detailsWinBox.show();
+    } else {
+        detailsWinBox = new WinBox({
+            title: 'Details',
+            class: ['no-full', 'no-max', 'no-min', 'details-window'],
+            html: '',
+            x: 8,
+            y: 56,
+            width: 460,
+            height: 350,
+            minwidth: 200,
+            minheight: 80,
+            top: 48,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            onclose: function () {
+                detailsWinBox = null;
+                return false;
+            },
+        });
+        detailsWinBox.body.appendChild(formatter.render());
     }
-    detailsContainer.appendChild(formatter.render());
-    detailsContainer.hidden = false;
 }
 
 /** Hides the details panel. */
 function hideDetails() {
-    detailsContainer.hidden = true;
+    if (detailsWinBox) {
+        detailsWinBox.close(true);
+        detailsWinBox = null;
+    }
 }
+
+window.addEventListener('resize', () => {
+    if (!detailsWinBox) return;
+    const maxX = window.innerWidth - detailsWinBox.width;
+    const maxY = window.innerHeight - detailsWinBox.height;
+    const x = Math.max(0, Math.min(detailsWinBox.x, maxX));
+    const y = Math.max(48, Math.min(detailsWinBox.y, maxY));
+    detailsWinBox.move(x, y);
+});
 
 // --- event wiring ---
 on("node-clicked", node => showDetails(node));
