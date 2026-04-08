@@ -1,2 +1,7 @@
 # Include the Vite build output
 recursive-include src/procmap/dist *
+
+# Include top-level files
+include LICENSE
+include README.md
+include pyproject.toml
