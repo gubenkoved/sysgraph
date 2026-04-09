@@ -1,6 +1,6 @@
 import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
 import { getGraph } from './state.js';
-import { ForceGraphInstance } from './graph-ui.js';
+import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { emit, handle } from './event-bus.js';
 
 import { Pane } from 'tweakpane';
@@ -93,18 +93,12 @@ actionsFolder.addBlade({ view: 'separator' });
 // --- pin / unpin ---
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
-    graphData.nodes.forEach(node => {
-        node.fx = node.x;
-        node.fy = node.y;
-    });
+    graphData.nodes.forEach(node => pinNode(node));
 });
 
 actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
-    graphData.nodes.forEach(node => {
-        node.fx = undefined;
-        node.fy = undefined;
-    });
+    graphData.nodes.forEach(node => unpinNode(node));
 });
 
 actionsFolder.addBlade({ view: 'separator' });

@@ -292,6 +292,23 @@ function drawTextWithStroke(ctx, text, x, y, fontSize, fillStyle, strokeStyle, s
     ctx.restore();
 }
 
+/** @param {Object} node */
+export function pinNode(node) {
+    node.fx = node.x;
+    node.fy = node.y;
+}
+
+/** @param {Object} node */
+export function unpinNode(node) {
+    node.fx = undefined;
+    node.fy = undefined;
+}
+
+/** @param {Object} node */
+export function isNodePinned(node) {
+    return node.fx !== undefined || node.fy !== undefined;
+}
+
 export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .nodeId('id')
     .graphData({ nodes: [], links: [] })
@@ -396,7 +413,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         }
 
         // draw outline for locked (pinned) nodes
-        const locked = (node.fx !== undefined || node.fy !== undefined);
+        const locked = isNodePinned(node);
         if (locked) {
             // stroke width should scale inversely with zoom so it remains visible
             //const strokeWidth = Math.max(1.2, 2 / globalScale);
@@ -435,8 +452,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .onNodeClick((node, event) => {
         if (state.currentTool === 'pointer') {
             if (event && event.altKey) {
-                node.fx = undefined;
-                node.fy = undefined;
+                unpinNode(node);
             }
         }
         emit("node-clicked", { data: node, shiftKey: event?.shiftKey ?? false });
@@ -446,13 +462,11 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     })
     .onNodeDrag(node => {
         // keep node pinned while dragging
-        node.fx = node.x;
-        node.fy = node.y;
+        pinNode(node);
     })
     .onNodeDragEnd(node => {
         // fix node in place after drag
-        node.fx = node.x;
-        node.fy = node.y;
+        pinNode(node);
     })
     .onNodeHover((node, prevNode) => {
         if (node != null) {
@@ -471,6 +485,20 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .onNodeRightClick((node, event) => {
         event.preventDefault();
         const items = [];
+
+        if (isNodePinned(node)) {
+            items.push({
+                label: 'Unpin',
+                action: () => unpinNode(node)
+            });
+        } else {
+            items.push({
+                label: 'Pin',
+                action: () => pinNode(node)
+            });
+        }
+
+        items.push({ divider: true });
 
         items.push({
             label: 'Show adjacent only',

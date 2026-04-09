@@ -220,6 +220,12 @@ md-outlined-button.danger {
   background: rgba(0, 0, 0, 0.06);
 }
 
+.context-menu-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: rgba(0, 0, 0, 0.12);
+}
+
 /* ── Settings Pane (Tweakpane) ───────────────────────────── */
 
 :root {

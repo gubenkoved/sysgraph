@@ -1,7 +1,8 @@
 /**
  * @typedef {Object} ContextMenuItem
- * @property {string} label
- * @property {() => void} action
+ * @property {string} [label]
+ * @property {() => void} [action]
+ * @property {boolean} [divider]
  */
 
 const menu = document.getElementById('contextMenu');
@@ -16,6 +17,12 @@ export function showContextMenu(x, y, items) {
     menu.innerHTML = '';
 
     for (const item of items) {
+        if (item.divider) {
+            const el = document.createElement('div');
+            el.className = 'context-menu-divider';
+            menu.appendChild(el);
+            continue;
+        }
         const el = document.createElement('div');
         el.className = 'context-menu-item';
         el.textContent = item.label;
