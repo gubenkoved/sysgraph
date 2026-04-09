@@ -26,19 +26,10 @@ def main():
         for f in files:
             LOGGER.info(f"  {f}")
 
-    # pipe_connections = discovery.discover_pipe_connections()
-    # for pipe in pipe_connections:
-    #     LOGGER.info(pipe)
-
-    for proc in processes:
-        try:
-            net_conns = discovery.get_net_connections(proc.pid)
-            for conn in net_conns:
-                LOGGER.info(conn)
-        except Exception as e:
-            LOGGER.warning(
-                f"Could not get net connections for PID {proc.pid}: {e}"
-            )
+    all_net_conns = discovery.get_all_net_connections()
+    for pid, conns in all_net_conns.items():
+        for conn in conns:
+            LOGGER.info(conn)
 
     LOGGER.info("done")
 

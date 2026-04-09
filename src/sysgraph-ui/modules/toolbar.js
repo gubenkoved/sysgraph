@@ -1,6 +1,7 @@
-import { state } from './state.js';
-import { emit, on } from './event-bus.js';
+import { state, setCurrentTool } from './state.js';
+import { emit } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
+import { EVT_SEARCH_CHANGED } from './constants.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer');
@@ -23,7 +24,7 @@ const addToSelectionBtn = document.getElementById('addToSelection');
  * @param {HTMLCanvasElement} canvas
  */
 export function setTool(tool, selectionCanvas, canvas) {
-    state.currentTool = tool;
+    setCurrentTool(tool);
 
     toolPointerBtn.classList.toggle('active', tool === 'pointer');
     toolRectSelectBtn.classList.toggle('active', tool === 'rect-select');
@@ -43,7 +44,7 @@ export function setTool(tool, selectionCanvas, canvas) {
         addToSelectionBtn.style.display = 'inline-block';
         searchInput.focus();
         if (searchInput.value) {
-            emit("search-expression-changed", searchInput.value);
+            emit(EVT_SEARCH_CHANGED, searchInput.value);
         } else {
             searchMatchCount.style.display = 'none';
             addToSelectionBtn.disabled = true;
@@ -54,7 +55,7 @@ export function setTool(tool, selectionCanvas, canvas) {
         searchHelpPopover.classList.remove('open');
         searchMatchCount.style.display = 'none';
         addToSelectionBtn.style.display = 'none';
-        emit("search-expression-changed", "");
+        emit(EVT_SEARCH_CHANGED, "");
     }
 
     updateSelectionInfo();
@@ -92,7 +93,7 @@ export function initToolbar(selectionCanvas, canvas) {
     // search input
     searchInput.addEventListener('input', (event) => {
         event.stopPropagation();
-        emit("search-expression-changed", event.target.value);
+        emit(EVT_SEARCH_CHANGED, event.target.value);
     });
 
     // search help popover toggle

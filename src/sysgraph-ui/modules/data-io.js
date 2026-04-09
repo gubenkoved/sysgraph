@@ -3,12 +3,22 @@
  * @returns {Promise<{ nodes: import('./graph.js').GraphNode[], edges: import('./graph.js').GraphEdge[] }>}
  */
 export async function loadDataFromApi() {
-    const res = await fetch('/api/graph');
+    let res;
+    try {
+        res = await fetch('/api/graph');
+    } catch (err) {
+        throw new Error(`Network error fetching /api/graph: ${err.message}`);
+    }
 
     if (!res.ok)
-        throw new Error('Failed to fetch /api/graph: ' + res.status);
+        throw new Error(`Failed to fetch /api/graph: HTTP ${res.status}`);
 
-    const response = await res.json();
+    let response;
+    try {
+        response = await res.json();
+    } catch (err) {
+        throw new Error(`Invalid JSON from /api/graph: ${err.message}`);
+    }
 
     const nodes = (response.nodes || []).map(n => ({
         id: n.id,

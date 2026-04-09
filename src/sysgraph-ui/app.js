@@ -1,4 +1,4 @@
-import { state, getGraph, updateGraph, resetState } from './modules/state.js';
+import { state, getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
 import { Graph } from './modules/graph.js';
 import { refreshGraphUI, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
 import { on, emit, registerHandler } from './modules/event-bus.js';
@@ -7,7 +7,14 @@ import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
+import { showError } from './modules/util.js';
 import './modules/details-panel.js';
+import {
+    EVT_GRAPH_UPDATED, EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
+    EVT_SEARCH_CHANGED, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
+    EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,
+    CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
+} from './modules/constants.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/filled-tonal-button.js';
 import '@material/web/button/text-button.js';
@@ -20,63 +27,73 @@ const searchMatchCountEl = document.getElementById('searchMatchCount');
 const addToSelectionBtn = document.getElementById('addToSelection');
 
 // --- event wiring ---
-on("graph-updated", async () => {
+on(EVT_GRAPH_UPDATED, async () => {
     updateDynamicGraphPanes();
     await refreshGraphUI();
 });
-on("clear-button-clicked", async () => {
+on(EVT_CLEAR_CLICKED, async () => {
     resetState();
-    emit("graph-updated", null);
+    emit(EVT_GRAPH_UPDATED, null);
 });
-on("graph-filters-updated", async () => {
+on(EVT_FILTERS_UPDATED, async () => {
     await refreshGraphUI();
 })
 
-on("search-expression-changed", (expression) => {
+on(EVT_SEARCH_CHANGED, (expression) => {
     if (expression && expression.trim()) {
         const graph = getGraph();
         const matches = search(graph, expression);
         const matchesMap = new Map(matches.map(x => [x.nodeId, x]));
-        state.search = {
+        setSearch({
             matchesMap,
             matchColorsMap: computeMatchColors(matchesMap),
-        }
+        })
         searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
         searchMatchCountEl.style.display = 'inline';
         addToSelectionBtn.disabled = matchesMap.size === 0;
     } else {
-        state.search = null;
+        setSearch(null);
         searchMatchCountEl.style.display = 'none';
         addToSelectionBtn.disabled = true;
     }
 });
 
-on("selection-changed", () => updateSelectionInfo());
+on(EVT_SELECTION_CHANGED, () => updateSelectionInfo());
 
 // graph ui related handlers
-on("graph-ui-settings-updated", async () => {
+on(EVT_SETTINGS_UPDATED, async () => {
     await refreshGraphUI();
 });
-on("graph-ui-links-curvature-updated", autoAdjustCurvature);
-on("d3-simulation-parameters-changed", applyD3Params);
+on(EVT_CURVATURE_UPDATED, autoAdjustCurvature);
+on(EVT_D3_PARAMS_CHANGED, applyD3Params);
 
 // --- command handlers ---
-registerHandler("export-graph", () => {
+registerHandler(CMD_EXPORT, () => {
     const graph = getGraph();
     return new Blob([serializeGraph(graph)], { type: 'application/json' });
 });
 
-registerHandler("import-graph", (text) => {
-    const loadedData = parseGraphData(text);
-    resetState();
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    emit("graph-updated", null);
+registerHandler(CMD_IMPORT, async (text) => {
+    try {
+        const loadedData = parseGraphData(text);
+        resetState();
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        emit(EVT_GRAPH_UPDATED, null);
+    } catch (err) {
+        console.error("import failed:", err);
+        showError(`Import failed: ${err.message}`);
+    }
 });
 
-registerHandler("reload-graph", async () => {
-    const loadedData = await loadDataFromApi();
-    updateGraph(new Graph(loadedData.nodes, loadedData.edges));
-    emit("graph-updated", null);
+registerHandler(CMD_RELOAD, async () => {
+    try {
+        const loadedData = await loadDataFromApi();
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        emit(EVT_GRAPH_UPDATED, null);
+    } catch (err) {
+        console.error("reload failed:", err);
+        showError(`Reload failed: ${err.message}`);
+    }
 });
 
 // --- initialize selection overlay & toolbar ---
@@ -85,10 +102,15 @@ initToolbar(selectionCanvas, canvas);
 
 // --- initial load ---
 window.addEventListener('load', async () => {
-    console.log("initial loading...");
-    emit("d3-simulation-parameters-changed", null);
-    const loadedData = await loadDataFromApi();
-    const graph = new Graph(loadedData.nodes, loadedData.edges);
-    updateGraph(graph);
-    emit("graph-updated", null);
+    try {
+        console.log("initial loading...");
+        emit(EVT_D3_PARAMS_CHANGED, null);
+        const loadedData = await loadDataFromApi();
+        const graph = new Graph(loadedData.nodes, loadedData.edges);
+        updateGraph(graph);
+        emit(EVT_GRAPH_UPDATED, null);
+    } catch (err) {
+        console.error("initial load failed:", err);
+        showError(`Failed to load graph: ${err.message}`);
+    }
 });

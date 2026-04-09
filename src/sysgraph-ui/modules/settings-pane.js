@@ -2,6 +2,12 @@ import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.j
 import { getGraph } from './state.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { emit, handle } from './event-bus.js';
+import { showError } from './util.js';
+import {
+    EVT_D3_PARAMS_CHANGED, EVT_SETTINGS_UPDATED, EVT_CURVATURE_UPDATED,
+    EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
+    CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
+} from './constants.js';
 
 import { Pane } from 'tweakpane';
 
@@ -25,27 +31,27 @@ const d3Params = [
 
 for (const p of d3Params) {
     d3RenderingSettingsFolder.addBinding(settings, p.key, p).on('change', () => {
-        emit("d3-simulation-parameters-changed", null);
+        emit(EVT_D3_PARAMS_CHANGED, null);
     });
 }
 
 d3RenderingSettingsFolder.addBinding(settings, 'd3CenterForce').on('change', () => {
-    emit("d3-simulation-parameters-changed", null);
+    emit(EVT_D3_PARAMS_CHANGED, null);
 });
 
 // --- graph display settings ---
 const displayOptionsFolder = pane.addFolder({ title: "display options", expanded: false });
 
 displayOptionsFolder.addBinding(settings, 'showIsolated').on('change', () => {
-    emit("graph-ui-settings-updated", null);
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 displayOptionsFolder.addBinding(settings, 'showGrid').on('change', () => {
-    emit("graph-ui-settings-updated", null);
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
-    emit("graph-ui-links-curvature-updated", null);
+    emit(EVT_CURVATURE_UPDATED, null);
 });
 
 // --- label settings ---
@@ -113,22 +119,27 @@ updateSizingVisibility();
 
 nodeSizingModeBinding.on('change', () => {
     updateSizingVisibility();
-    emit("graph-ui-settings-updated", null);
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 nodeSizingConstantBinding.on('change', () => {
-    emit("graph-ui-settings-updated", null);
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 nodeSizingExpressionBinding.on('change', () => {
-    emit("graph-ui-settings-updated", null);
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
 
 // --- refresh button ---
 actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
-    await handle("reload-graph");
+    try {
+        await handle(CMD_RELOAD);
+    } catch (err) {
+        console.error('reload failed:', err);
+        showError(`Reload failed: ${err.message}`);
+    }
 });
 
 actionsFolder.addBlade({ view: 'separator' });
@@ -148,11 +159,11 @@ actionsFolder.addBlade({ view: 'separator' });
 
 // --- clear / export / import ---
 actionsFolder.addButton({ title: 'clear' }).on('click', async () => {
-    emit("clear-button-clicked", null);
+    emit(EVT_CLEAR_CLICKED, null);
 });
 
 actionsFolder.addButton({ title: 'export data' }).on('click', () => {
-    const blob = handle("export-graph");
+    const blob = handle(CMD_EXPORT);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -170,8 +181,13 @@ document.getElementById('importFile').addEventListener('change', async (event) =
     const file = event.target.files[0];
     if (!file) return;
 
-    const text = await file.text();
-    await handle("import-graph", text);
+    try {
+        const text = await file.text();
+        await handle(CMD_IMPORT, text);
+    } catch (err) {
+        console.error('import failed:', err);
+        showError(`Import failed: ${err.message}`);
+    }
 
     event.target.value = '';
 });
@@ -227,7 +243,7 @@ export function updateDynamicGraphPanes() {
             settings.nodeFilters[key] = true;
         }
         nodeFiltersFolder.addBinding(settings.nodeFilters, key).on('change', () => {
-            emit("graph-filters-updated", null);
+            emit(EVT_FILTERS_UPDATED, null);
         });
     }
 
@@ -236,7 +252,7 @@ export function updateDynamicGraphPanes() {
             settings.edgeFilters[key] = true;
         }
         edgeFiltersFolder.addBinding(settings.edgeFilters, key).on('change', () => {
-            emit("graph-filters-updated", null);
+            emit(EVT_FILTERS_UPDATED, null);
         });
     }
 

@@ -2,6 +2,7 @@ import { state, getGraph, updateGraph } from './state.js';
 import { filterGraph, } from './graph.js';
 import { ForceGraphInstance } from './graph-ui.js';
 import { emit } from './event-bus.js';
+import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constants.js';
 
 /**
  * Removes all currently selected nodes (and their connected edges) from the
@@ -27,10 +28,10 @@ export async function deleteSelectedNodes() {
     )
 
     updateGraph(filteredGraph);
-    emit("graph-updated", null);
+    emit(EVT_GRAPH_UPDATED, null);
 
     state.selection.selectedNodeIds.clear();
-    emit("selection-changed", null);
+    emit(EVT_SELECTION_CHANGED, null);
 }
 
 /**
@@ -45,7 +46,7 @@ function isNodeInRect(node, rect) {
     const minY = Math.min(rect.y1, rect.y2);
     const maxY = Math.max(rect.y1, rect.y2);
 
-    const r = Math.max(4, (node.val || 1) * 3);
+    const r = nodeRadius(node);
     return node.x + r > minX && node.x - r < maxX && node.y + r > minY && node.y - r < maxY;
 }
 
@@ -214,7 +215,7 @@ export function initSelection() {
                 }
             });
 
-            emit("selection-changed", null);
+            emit(EVT_SELECTION_CHANGED, null);
             state.selection.selectionStartCanvas = null;
             state.selection.selectionEndCanvas = null;
             drawSelectionRectangle();

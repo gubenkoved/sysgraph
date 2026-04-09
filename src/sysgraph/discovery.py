@@ -5,10 +5,28 @@ import subprocess
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from socket import AddressFamily
 
 import psutil
 
+from sysgraph.constants import (
+    EDGE_CHILD_PROCESS,
+    EDGE_EXTERNAL_SOCKET,
+    EDGE_PIPE,
+    EDGE_SOCKET,
+    EDGE_SOCKET_CONNECTION,
+    EDGE_UDS,
+    EDGE_UDS_CONNECTION,
+    NODE_EXTERNAL_IP,
+    NODE_PIPE,
+    NODE_PROCESS,
+    NODE_SOCKET,
+    NODE_UDS,
+    external_ip_node_id,
+    pipe_node_id,
+    process_node_id,
+    socket_node_id,
+    uds_node_id,
+)
 from sysgraph.graph import Graph, Node
 from sysgraph.model import (
     NetConnection,
@@ -200,26 +218,6 @@ def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
     return result_map
 
 
-def get_net_connections(pid: int) -> list[NetConnection]:
-    proc = psutil.Process(pid)
-    connections: list[NetConnection] = []
-    for pcon in proc.net_connections(kind="all"):
-        if pcon.family not in (AddressFamily.AF_INET, AddressFamily.AF_INET6):
-            continue
-        connections.append(
-            NetConnection(
-                pid=pid,
-                local_address=SocketAddress(pcon.laddr.ip, pcon.laddr.port),
-                remote_address=SocketAddress(pcon.raddr.ip, pcon.raddr.port)
-                if pcon.raddr
-                else None,
-                socket_type=pcon.type.name,
-                state=pcon.status,
-            )
-        )
-    return connections
-
-
 def get_all_net_connections() -> dict[int, list[NetConnection]]:
     """Fetch all network connections system-wide in a single call."""
     result: dict[int, list[NetConnection]] = defaultdict(list)
@@ -240,28 +238,17 @@ def get_all_net_connections() -> dict[int, list[NetConnection]]:
     return result
 
 
-def build_graph(discover_uds_connectivity: bool = True) -> Graph:
-    graph = Graph()
-
+def _add_process_nodes(
+    graph: Graph,
+    processes: list[Process],
+) -> dict[int, Node]:
+    """Create process nodes and parent-child edges."""
     pid_to_node: dict[int, Node] = {}
 
-    # run independent discovery steps in parallel (all I/O-bound)
-    with ThreadPoolExecutor() as executor:
-        processes_future = executor.submit(discover_processes)
-        uds_future = executor.submit(discover_unix_sockets)
-        open_files_future = executor.submit(get_processes_open_files)
-        net_connections_future = executor.submit(get_all_net_connections)
-
-        processes = processes_future.result()
-        uds = uds_future.result()
-        open_files_map = open_files_future.result()
-        all_net_connections = net_connections_future.result()
-
     for proc in processes:
-        proc_node_id = f"process::{proc.pid}"
         node = graph.add_node(
-            proc_node_id,
-            "process",
+            process_node_id(proc.pid),
+            NODE_PROCESS,
             properties={
                 "pid": proc.pid,
                 "command": proc.command,
@@ -274,43 +261,42 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
         )
         pid_to_node[proc.pid] = node
 
-    # add parent-child relationships
     for proc in processes:
-        proc_node = pid_to_node[proc.pid]
-        parent_proc_node = None
-        if proc.parent_pid is not None:
-            parent_proc_node = pid_to_node.get(proc.parent_pid)
-        if parent_proc_node is not None:
-            _ = graph.add_edge(
-                source_id=parent_proc_node.id,
-                target_id=proc_node.id,
-                rel_type="child_process",
+        if proc.parent_pid is None:
+            continue
+        parent_node = pid_to_node.get(proc.parent_pid)
+        if parent_node is not None:
+            graph.add_edge(
+                source_id=parent_node.id,
+                target_id=pid_to_node[proc.pid].id,
+                rel_type=EDGE_CHILD_PROCESS,
             )
 
+    return pid_to_node
+
+
+def _add_uds_nodes(
+    graph: Graph,
+    uds_sockets: list[UnixDomainSocket],
+    pid_to_node: dict[int, Node],
+    discover_connectivity: bool,
+) -> None:
+    """Create UDS nodes, process→UDS edges, and UDS connection edges."""
     uds_node_map: dict[int, Node] = {}
 
     def ensure_uds_node(uds_socket: UnixDomainSocket) -> Node:
         inode = uds_socket.local_inode
-
         if inode in uds_node_map:
             return uds_node_map[inode]
 
-        node_id = f"uds::{inode}"
-
-        if uds_socket.local_path:
-            if uds_socket.local_path == "*":
-                label = f"uds:[{inode}]"
-            else:
-                label = uds_socket.local_path
-
-            # strip trailing @ if present (abstract unix socket)
-            label = label.rstrip("@")
-        else:  # no local path
+        if uds_socket.local_path and uds_socket.local_path != "*":
+            label = uds_socket.local_path.rstrip("@")
+        else:
             label = f"uds:[{inode}]"
 
         node = graph.add_node(
-            node_id,
-            "uds",
+            uds_node_id(inode),
+            NODE_UDS,
             properties={
                 "label": label,
                 "local_inode": uds_socket.local_inode,
@@ -324,12 +310,9 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
         uds_node_map[inode] = node
         return node
 
-    # track which process→uds edges have been added to avoid duplicates
     uds_process_edges: set[tuple[int, int]] = set()
 
-    # create UDS nodes for ALL discovered sockets and connect them
-    # to their processes
-    for uds_socket in uds:
+    for uds_socket in uds_sockets:
         uds_node = ensure_uds_node(uds_socket)
         for p_ref in uds_socket.processes:
             edge_key = (p_ref.pid, uds_socket.local_inode)
@@ -338,125 +321,129 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
                 graph.add_edge(
                     source_id=pid_to_node[p_ref.pid].id,
                     target_id=uds_node.id,
-                    rel_type="uds",
+                    rel_type=EDGE_UDS,
                     properties={
                         "label": f"uds (fd={p_ref.fd})",
                         "fd": p_ref.fd,
                     },
                 )
 
-    # optionally discover connected UDS pairs and add connection edges
-    if discover_uds_connectivity:
-        for con in discover_connected_uds(uds):
+    if discover_connectivity:
+        for con in discover_connected_uds(uds_sockets):
             uds_node1 = ensure_uds_node(con.socket1)
             uds_node2 = ensure_uds_node(con.socket2)
-
             graph.add_edge(
                 uds_node1.id,
                 uds_node2.id,
-                "uds_connection",
+                EDGE_UDS_CONNECTION,
                 properties={
                     "directional": False,
                     "dashed": True,
                 },
             )
 
-    pipe_node_to_node = {}
 
-    def ensure_pipe_node(file_node):
-        if file_node not in pipe_node_to_node:
-            pipe_node_to_node[file_node] = graph.add_node(
-                f"pipe::{file_node}",
-                "pipe",
-                properties={
-                    "label": f"pipe:[{file_node}]",
-                },
+def _add_pipe_nodes(
+    graph: Graph,
+    open_files_map: dict[int, list[ProcessOpenFile]],
+    pid_to_node: dict[int, Node],
+) -> None:
+    """Create pipe nodes and directional pipe edges."""
+    pipe_nodes: dict[str, Node] = {}
+
+    def ensure_pipe_node(file_node: str) -> Node:
+        if file_node not in pipe_nodes:
+            pipe_nodes[file_node] = graph.add_node(
+                pipe_node_id(file_node),
+                NODE_PIPE,
+                properties={"label": f"pipe:[{file_node}]"},
             )
-        return pipe_node_to_node[file_node]
+        return pipe_nodes[file_node]
 
     for pid, files in open_files_map.items():
         if pid not in pid_to_node:
             continue
         process_node = pid_to_node[pid]
         for file in files:
-            # so far just show the pipes
             if file.file_type != "FIFO":
                 continue
             node = ensure_pipe_node(file.node)
-
+            props = {
+                "label": f"pipe (fd={file.fd})",
+                "fd": file.fd,
+                "mode": file.mode,
+            }
             if file.mode == "r":
-                _ = graph.add_edge(
+                graph.add_edge(
                     source_id=node.id,
                     target_id=process_node.id,
-                    rel_type="pipe",
-                    properties={
-                        "label": f"pipe (fd={file.fd})",
-                        "fd": file.fd,
-                        "mode": file.mode,
-                    },
+                    rel_type=EDGE_PIPE,
+                    properties=props,
                 )
             else:
-                _ = graph.add_edge(
+                graph.add_edge(
                     source_id=process_node.id,
                     target_id=node.id,
-                    rel_type="pipe",
-                    properties={
-                        "label": f"pipe (fd={file.fd})",
-                        "fd": file.fd,
-                        "mode": file.mode,
-                    },
+                    rel_type=EDGE_PIPE,
+                    properties=props,
                 )
 
-    socket_to_pids: dict[tuple[SocketAddress, str], list[int]] = {}
-    socket_to_node: dict[tuple[SocketAddress, str], Node] = {}
+
+_SIMPLE_SOCKET_TYPE = {
+    "SOCK_DGRAM": "UDP",
+    "SOCK_STREAM": "TCP",
+}
+
+
+def _add_network_nodes(
+    graph: Graph,
+    processes: list[Process],
+    all_net_connections: dict[int, list[NetConnection]],
+    pid_to_node: dict[int, Node],
+) -> None:
+    """Create socket/external-IP nodes and their edges."""
+    sock_to_pids: dict[tuple[SocketAddress, str], list[int]] = {}
+    sock_to_node: dict[tuple[SocketAddress, str], Node] = {}
+    connected_sockets: set[tuple[str, ...]] = set()
 
     def is_ipv6(address: str) -> bool:
         return ":" in address
 
-    def ensure_socket(address: SocketAddress, socket_type, state: str):
-        key = (address, socket_type)
-        if key in socket_to_node:
-            return socket_to_node[key]
-        socket_node_id = f"socket::{address}::{socket_type}"
-        socket_node = graph.add_node(socket_node_id, "socket")
+    def ensure_socket(
+        address: SocketAddress, sock_type: str, state: str
+    ) -> Node:
+        key = (address, sock_type)
+        if key in sock_to_node:
+            return sock_to_node[key]
 
-        simple_socket_type = {
-            "SOCK_DGRAM": "UDP",
-            "SOCK_STREAM": "TCP",
-        }
-
-        simple_type = simple_socket_type.get(socket_type, socket_type)
-
+        node = graph.add_node(
+            socket_node_id(str(address), sock_type),
+            NODE_SOCKET,
+        )
+        simple = _SIMPLE_SOCKET_TYPE.get(sock_type, sock_type)
         if is_ipv6(address.ip):
-            socket_node.properties["label"] = (
-                f"[{address.ip}]:{address.port} ({simple_type})"
+            node.properties["label"] = (
+                f"[{address.ip}]:{address.port} ({simple})"
             )
         else:
-            socket_node.properties["label"] = (
-                f"{address.ip}:{address.port} ({simple_type})"
+            node.properties["label"] = (
+                f"{address.ip}:{address.port} ({simple})"
             )
+        node.properties["state"] = state
+        node.properties["socket_type"] = sock_type
+        sock_to_node[key] = node
+        return node
 
-        socket_node.properties["state"] = state
-        socket_node.properties["socket_type"] = socket_type
-
-        socket_to_node[key] = socket_node
-        return socket_node
-
-    connected_sockets = set()
-
-    def ensure_sockets_connected(socket1: Node, socket2: Node):
-        key = tuple(sorted([socket1.id, socket2.id]))
+    def ensure_sockets_connected(s1: Node, s2: Node) -> None:
+        key = tuple(sorted([s1.id, s2.id]))
         if key in connected_sockets:
             return
         connected_sockets.add(key)
-        _ = graph.add_edge(
-            socket1.id,
-            socket2.id,
-            "socket_connection",
-            {
-                "directional": False,
-                "dashed": True,
-            },
+        graph.add_edge(
+            s1.id,
+            s2.id,
+            EDGE_SOCKET_CONNECTION,
+            {"directional": False, "dashed": True},
         )
 
     for proc in processes:
@@ -468,26 +455,25 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
             continue
 
         for net_con in net_connections:
-            socket_id = (net_con.local_address, net_con.socket_type)
-
-            # ensure socket in graph
+            sock_key = (
+                net_con.local_address,
+                net_con.socket_type,
+            )
             local_socket = ensure_socket(
                 net_con.local_address,
                 net_con.socket_type,
                 net_con.state,
             )
 
-            # process connection
-            if proc.pid not in socket_to_pids.get(socket_id, []):
-                socket_to_pids[socket_id] = socket_to_pids.get(
-                    socket_id, []
-                ) + [proc.pid]
+            if proc.pid not in sock_to_pids.get(sock_key, []):
+                sock_to_pids[sock_key] = sock_to_pids.get(sock_key, []) + [
+                    proc.pid
+                ]
                 graph.add_edge(
                     source_id=proc_node.id,
                     target_id=local_socket.id,
-                    rel_type="socket",
+                    rel_type=EDGE_SOCKET,
                 )
-
                 if net_con.remote_address:
                     remote_socket = ensure_socket(
                         net_con.remote_address,
@@ -496,35 +482,44 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
                     )
                     ensure_sockets_connected(local_socket, remote_socket)
 
-    # post-process all sockets which are NOT connected to any process -- these
-    # are remote endpoints, group the by IP address
-    external_ip_to_node = {}
+    # sockets not connected to any process are remote endpoints
+    external_ip_nodes: dict[str, Node] = {}
 
-    def ensure_external_ip(address):
-        if address not in external_ip_to_node:
-            external_ip_to_node[address] = graph.add_node(
-                f"external_ip::{address}",
-                "external_ip",
-                {
-                    "label": address,
-                },
-            )
-        return external_ip_to_node[address]
-
-    for socket, socket_node in socket_to_node.items():
-        pids = socket_to_pids.get(socket)
-
-        if pids:
+    for sock_key, sock_node in sock_to_node.items():
+        if sock_to_pids.get(sock_key):
             continue
-
-        external_ip = socket[0].ip
-        external_ip_node = ensure_external_ip(external_ip)
-
-        # add connection
+        ip = sock_key[0].ip
+        if ip not in external_ip_nodes:
+            external_ip_nodes[ip] = graph.add_node(
+                external_ip_node_id(ip),
+                NODE_EXTERNAL_IP,
+                {"label": ip},
+            )
         graph.add_edge(
-            external_ip_node.id,
-            socket_node.id,
-            "external_socket",
+            external_ip_nodes[ip].id,
+            sock_node.id,
+            EDGE_EXTERNAL_SOCKET,
         )
+
+
+def build_graph(discover_uds_connectivity: bool = True) -> Graph:
+    graph = Graph()
+
+    # run independent discovery steps in parallel (all I/O-bound)
+    with ThreadPoolExecutor() as executor:
+        processes_future = executor.submit(discover_processes)
+        uds_future = executor.submit(discover_unix_sockets)
+        open_files_future = executor.submit(get_processes_open_files)
+        net_connections_future = executor.submit(get_all_net_connections)
+
+        processes = processes_future.result()
+        uds = uds_future.result()
+        open_files_map = open_files_future.result()
+        all_net_connections = net_connections_future.result()
+
+    pid_to_node = _add_process_nodes(graph, processes)
+    _add_uds_nodes(graph, uds, pid_to_node, discover_uds_connectivity)
+    _add_pipe_nodes(graph, open_files_map, pid_to_node)
+    _add_network_nodes(graph, processes, all_net_connections, pid_to_node)
 
     return graph

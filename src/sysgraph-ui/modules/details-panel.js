@@ -1,5 +1,6 @@
 import JSONFormatter from 'json-formatter-js';
 import { on } from './event-bus.js';
+import { EVT_NODE_CLICKED, EVT_LINK_CLICKED } from './constants.js';
 
 // --- cached DOM elements (primary panel) ---
 const panel = document.getElementById('detailsPanel');
@@ -137,5 +138,5 @@ function handleClick(payload) {
     }
 }
 
-on("node-clicked", handleClick);
-on("link-clicked", handleClick);
+on(EVT_NODE_CLICKED, handleClick);
+on(EVT_LINK_CLICKED, handleClick);

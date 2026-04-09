@@ -1,10 +1,22 @@
-import { state } from './state.js';
+import { state, setHighlight, setAdjacencyFilter } from './state.js';
 import { emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js'
 import { showContextMenu } from './context-menu.js';
 import { ColorScale } from './color-scale.js';
+import {
+    EVT_NODE_CLICKED, EVT_LINK_CLICKED, EVT_BACKGROUND_CLICK,
+    nodeRadius, nodePointerRadius, MAX_NODE_VAL, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,
+    SEARCH_NOT_MATCHING_OPACITY, SCORE_EPSILON,
+    SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
+    GRID_SPACING, GRID_CROSS_HALF, GRID_CENTER_CROSS_HALF, MAX_CROSSES_PER_AXIS,
+    GRID_LINE_COLOR, GRID_LINE_COLOR_UNSTRESSED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_UNSTRESSED,
+    MAX_ZOOM_BOOST, REHEAT_ALPHA, REHEAT_TIMEOUT_MS,
+    SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
+    D3_CHARGE_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,
+    D3_COLLISION_BASE_RADIUS, D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_COLLISION_ITERATIONS,
+} from './constants.js';
 
 import ForceGraph from 'force-graph';
 import * as d3 from 'd3';
@@ -35,8 +47,6 @@ function getNodeLabel(node) {
     }
 }
 
-const maxNodeVal = 10;
-
 /**
  * Computes the display size value for a node based on the current sizing mode.
  * @param {Object} node
@@ -51,7 +61,7 @@ function getNodeVal(node, degree) {
             try {
                 const fn = new Function('node', 'degree', `with(node){return (${settings.nodeSizingExpression})}`);
                 const val = fn(node, degree) || 1;
-                return Math.min(val, maxNodeVal);
+                return Math.min(val, MAX_NODE_VAL);
             } catch {
                 return 1;
             }
@@ -70,20 +80,12 @@ function getNodeVal(node, degree) {
 
 const fontFamily = 'Ubuntu';
 
-/** @type {number} */
-const searchNotMatchingBaseOpacity = 0.5;
-
 /** Color scale for search match scores: best match (0) → red, worst (1) → yellow. */
 const searchMatchColorScale = new ColorScale([
-    ['rgb(255, 0, 0)', 0],       // red – best match
-    ['rgb(255, 140, 0)', 0.5],     // orange – mid
-    ['rgb(195, 179, 41)', 1],     // dark yellow – worst match
+    [SEARCH_COLOR_BEST, 0],
+    [SEARCH_COLOR_MID, 0.5],
+    [SEARCH_COLOR_WORST, 1],
 ]);
-
-const backgroundLinesColor = 'rgba(0, 0, 0, 0.15)';
-const backgroundLinesColorUnstressed = 'rgba(0, 0, 0, 0.07)';
-const centerLinesColor = 'rgba(255, 0, 0, 0.3)';
-const centerLinesColorUnstressed = 'rgba(255, 0, 0, 0.1)';
 
 /**
  * Computes a normalized color map for a set of search matches using a log
@@ -97,12 +99,11 @@ export function computeMatchColors(matchesMap) {
     const colors = new Map();
     if (!matchesMap || matchesMap.size === 0) return colors;
 
-    const epsilon = 1e-12;
     const logScores = [];
 
     for (const [nodeId, match] of matchesMap) {
         // −log₁₀: higher value = better match
-        logScores.push({ nodeId, logScore: -Math.log10(match.score + epsilon) });
+        logScores.push({ nodeId, logScore: -Math.log10(match.score + SCORE_EPSILON) });
     }
 
     let minLog = Infinity;
@@ -349,7 +350,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // decrease opacity by default if in search mode to make matches stand out mode
         if (!state.highlight && state.search) {
-            alphaMultiplier = searchNotMatchingBaseOpacity;
+            alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
         }
 
         if (state.highlight) {
@@ -388,18 +389,16 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     .nodeRelSize(6)
     // custom canvas drawing: keep node size constant on zoom and draw labels scaled nicely
     .nodeCanvasObject((node, ctx, globalScale) => {
-        const baseSize = Math.max(4, (node.val || 1) * 3);
-        //const r = Math.max(3, baseSize / globalScale); // keep circle size roughly constant on screen
-        const r = baseSize;
+        const r = nodeRadius(node);
 
         // scale up selection/search indicators when zoomed out (up to 3x)
-        const zoomBoost = Math.min(3, Math.max(1, 1 / globalScale));
+        const zoomBoost = Math.min(MAX_ZOOM_BOOST, Math.max(1, 1 / globalScale));
 
         let alphaMultiplier = 1.0;
 
         // decrease opacity by default if in search mode to make matches stand out mode
         if (!state.highlight && state.search && !state.search.matchesMap.has(node.id)) {
-            alphaMultiplier = searchNotMatchingBaseOpacity;
+            alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
         }
 
         if (state.highlight) {
@@ -455,20 +454,20 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // show search matches via color-coded pulsing outline
         if (state.search && state.search.matchesMap.has(node.id)) {
-            const matchColor = state.search.matchColorsMap.get(node.id) || 'rgb(255, 0, 0)';
-            const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * 2);
-            drawCircle(ctx, node.x, node.y, r + (5 + pulse) * zoomBoost, 3 * zoomBoost, matchColor);
+            const matchColor = state.search.matchColorsMap.get(node.id) || SEARCH_COLOR_BEST;
+            const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * SEARCH_PULSE_FREQ);
+            drawCircle(ctx, node.x, node.y, r + (SEARCH_PULSE_BASE + pulse) * zoomBoost, 3 * zoomBoost, matchColor);
         }
 
         // generic label based on current label mode
         const label = getNodeLabel(node);
 
         //const fontSize = Math.max(3, 12 / globalScale);
-        drawText(ctx, label, node.x + r + 4, node.y, 12, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
+        drawText(ctx, label, node.x + r + NODE_LABEL_OFFSET, node.y, NODE_LABEL_FONT_SIZE, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
     })
     // pointer area for interactions (keeps it reasonably large for hit testing)
     .nodePointerAreaPaint((node, color, ctx) => {
-        const r = Math.max(8, (node.val || 1) * 3);
+        const r = nodePointerRadius(node);
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
@@ -480,10 +479,10 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
                 unpinNode(node);
             }
         }
-        emit("node-clicked", { data: node, shiftKey: event?.shiftKey ?? false });
+        emit(EVT_NODE_CLICKED, { data: node, shiftKey: event?.shiftKey ?? false });
     })
     .onLinkClick((link, event) => {
-        emit("link-clicked", { data: link, shiftKey: event?.shiftKey ?? false });
+        emit(EVT_LINK_CLICKED, { data: link, shiftKey: event?.shiftKey ?? false });
     })
     .onNodeDrag(node => {
         // keep node pinned while dragging
@@ -499,12 +498,12 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
             const { nodeDistancesMap, edgeDistancesMap } = bfs(graph, node.id, 2);
 
-            state.highlight = {
+            setHighlight({
                 nodeDistancesMap,
                 edgeDistancesMap
-            }
+            })
         } else {
-            state.highlight = null;
+            setHighlight(null);
         }
     })
     .onNodeRightClick((node, event) => {
@@ -559,7 +558,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
             showContextMenu(event.clientX, event.clientY, [{
                 label: 'Reset adjacency filter',
                 action: () => {
-                    state.adjacencyFilter = null;
+                    setAdjacencyFilter(null);
                     refreshGraphUI();
                 }
             }]);
@@ -567,7 +566,7 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
     })
     .onBackgroundClick(() => {
         if (state.currentTool === 'pointer') {
-            emit('background-click', null);
+        emit(EVT_BACKGROUND_CLICK, null);
         } else if (state.currentTool === 'rect-select') {
             // TODO: is this even reachable?
             // Clear selection on background click
@@ -583,9 +582,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         const topLeft = ForceGraphInstance.screen2GraphCoords(0, 0);
         const bottomRight = ForceGraphInstance.screen2GraphCoords(ctx.canvas.width, ctx.canvas.height);
 
-        const spacing = 100;
-        const halfSmall = 5;   // regular crosses: 10 graph-units
-        const halfBig = 10;    // center cross: 20 graph-units
+        const spacing = GRID_SPACING;
+        const halfSmall = GRID_CROSS_HALF;
+        const halfBig = GRID_CENTER_CROSS_HALF;
         const lw = 1 / globalScale;
 
         // snap visible range to grid
@@ -594,10 +593,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         const yMin = Math.floor(topLeft.y / spacing) * spacing;
         const yMax = Math.ceil(bottomRight.y / spacing) * spacing;
 
-        const maxCrossesPerAxis = 100;
         const xCount = (xMax - xMin) / spacing;
         const yCount = (yMax - yMin) / spacing;
-        const drawGrid = xCount <= maxCrossesPerAxis && yCount <= maxCrossesPerAxis;
+        const drawGrid = xCount <= MAX_CROSSES_PER_AXIS && yCount <= MAX_CROSSES_PER_AXIS;
 
         ctx.save();
         ctx.lineWidth = lw;
@@ -607,9 +605,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
             // in highlight more make it less prominent
             if (!state.highlight) {
-                ctx.strokeStyle = backgroundLinesColor
+                ctx.strokeStyle = GRID_LINE_COLOR
             } else {
-                ctx.strokeStyle = backgroundLinesColorUnstressed;
+                ctx.strokeStyle = GRID_LINE_COLOR_UNSTRESSED;
             }
 
             ctx.beginPath();
@@ -627,10 +625,10 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // draw center cross — bigger and more prominent than rest of the grid
         if (!state.highlight) {
-            ctx.strokeStyle = centerLinesColor;
+            ctx.strokeStyle = GRID_CENTER_COLOR;
         }
         else {
-            ctx.strokeStyle = centerLinesColorUnstressed;
+            ctx.strokeStyle = GRID_CENTER_COLOR_UNSTRESSED;
         }
 
         ctx.lineWidth = lw * 1.5;
@@ -644,9 +642,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
         ctx.restore();
     })
     // tune d3 forces to reduce overlaps
-    .d3Force('charge', d3.forceManyBody().strength(-450))
-    .d3Force('link', d3.forceLink().distance(140).strength(0.8))
-    .d3Force('collision', d3.forceCollide().radius(d => 18 + (d.val || 1) * 6).strength(1).iterations(4))
+    .d3Force('charge', d3.forceManyBody().strength(D3_CHARGE_STRENGTH))
+    .d3Force('link', d3.forceLink().distance(D3_LINK_DISTANCE).strength(D3_LINK_STRENGTH))
+    .d3Force('collision', d3.forceCollide().radius(d => D3_COLLISION_BASE_RADIUS + (d.val || 1) * D3_COLLISION_RADIUS_PER_VAL).strength(D3_COLLISION_STRENGTH).iterations(D3_COLLISION_ITERATIONS))
     .d3Force('forceX', d3.forceX())
     .d3Force('forceY', d3.forceY());
 
@@ -672,10 +670,10 @@ function updateAdjacencyFilter(nodeId, extendExisting = false) {
         }
 
         if (!extendExisting) {
-            state.adjacencyFilter = {
+            setAdjacencyFilter({
                 visibleNodeIds: nodeIds,
                 hiddenCounts: new Map(),
-            };
+            });
         } else {
             for (const nodeId of nodeIds) {
                 state.adjacencyFilter.visibleNodeIds.add(nodeId);
@@ -703,7 +701,7 @@ function updateAdjacencyFilter(nodeId, extendExisting = false) {
         state.adjacencyFilter.hiddenCounts = hiddenCounts;
     } else {
         // reset the filter
-        state.adjacencyFilter = null;
+        setAdjacencyFilter(null);
     }
 }
 
@@ -886,7 +884,7 @@ export function applyD3Params() {
 
     const collisionForce = ForceGraphInstance.d3Force('collision');
     if (collisionForce && typeof collisionForce.radius === 'function') {
-        collisionForce.radius(d => (18 + (d.val || 1) * 6) * settings.d3CollisionMultiplier);
+        collisionForce.radius(d => (D3_COLLISION_BASE_RADIUS + (d.val || 1) * D3_COLLISION_RADIUS_PER_VAL) * settings.d3CollisionMultiplier);
     }
 
     // velocityDecay and alpha target
@@ -895,7 +893,7 @@ export function applyD3Params() {
 
     // tiny reheat so changes take effect visibly
     if (typeof ForceGraphInstance.d3Alpha === 'function') {
-        ForceGraphInstance.d3Alpha(0.25);
-        setTimeout(() => { if (typeof ForceGraphInstance.d3AlphaTarget === 'function') ForceGraphInstance.d3AlphaTarget(0); }, 600);
+        ForceGraphInstance.d3Alpha(REHEAT_ALPHA);
+        setTimeout(() => { if (typeof ForceGraphInstance.d3AlphaTarget === 'function') ForceGraphInstance.d3AlphaTarget(0); }, REHEAT_TIMEOUT_MS);
     }
 }

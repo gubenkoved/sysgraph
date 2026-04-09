@@ -71,30 +71,9 @@ def health():
 
 
 @app.get("/api/graph", response_model=GraphSchema)
-def get_graph() -> GraphSchema:
+def get_graph() -> dict:
     graph = build_graph()
-    graph_dict = graph.as_dict()
-
-    LOGGER.debug(graph_dict)
-
-    return GraphSchema(
-        nodes=[
-            GraphNodeSchema(
-                id=node["id"], type=node["type"], properties=node["properties"]
-            )
-            for node in graph_dict["nodes"]
-        ],
-        edges=[
-            GraphEdgeSchema(
-                id=edge["id"],
-                source_id=edge["source_id"],
-                target_id=edge["target_id"],
-                type=edge["type"],
-                properties=edge["properties"],
-            )
-            for edge in graph_dict["edges"]
-        ],
-    )
+    return graph.as_dict()
 
 
 # Serve built assets (JS/CSS bundles, Shoelace icons, etc.) from the same

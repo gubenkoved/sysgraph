@@ -13,3 +13,39 @@ export function fnv1a(str) {
 
     return hash >>> 0; // unsigned
 }
+
+/**
+ * Shows a dismissible error toast at the bottom of the viewport.
+ * Auto-dismisses after `durationMs` (default 8 s). Returns the DOM element.
+ * @param {string} message
+ * @param {{ durationMs?: number }} [opts]
+ * @returns {HTMLDivElement}
+ */
+export function showError(message, { durationMs = 8000 } = {}) {
+    const el = document.createElement('div');
+    el.textContent = message;
+    Object.assign(el.style, {
+        position: 'fixed',
+        bottom: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#dc2626',
+        color: '#fff',
+        padding: '10px 20px',
+        borderRadius: '8px',
+        fontSize: '13px',
+        fontFamily: "'Ubuntu', 'Segoe UI', 'Arial', sans-serif",
+        zIndex: '9999',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+        cursor: 'pointer',
+        maxWidth: '600px',
+        wordBreak: 'break-word',
+    });
+    el.title = 'Click to dismiss';
+    el.addEventListener('click', () => el.remove());
+    document.body.appendChild(el);
+    if (durationMs > 0) {
+        setTimeout(() => el.remove(), durationMs);
+    }
+    return el;
+}

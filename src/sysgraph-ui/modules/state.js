@@ -90,3 +90,35 @@ export function updateGraph(newGraph) {
 export function getGraph() {
     return state.graph;
 }
+
+// ── State setters ───────────────────────────────────────────
+// Thin wrappers to centralize mutations; keeps direct `state.X =` out of
+// other modules so future validation or event hooks can be added in one place.
+
+/**
+ * @param {HighlightState | null} value
+ */
+export function setHighlight(value) {
+    state.highlight = value;
+}
+
+/**
+ * @param {SearchState | null} value
+ */
+export function setSearch(value) {
+    state.search = value;
+}
+
+/**
+ * @param {AdjacencyFilter | null} value
+ */
+export function setAdjacencyFilter(value) {
+    state.adjacencyFilter = value;
+}
+
+/**
+ * @param {string} tool
+ */
+export function setCurrentTool(tool) {
+    state.currentTool = tool;
+}
