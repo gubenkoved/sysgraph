@@ -55,6 +55,11 @@ const searchMatchColorScale = new ColorScale([
     ['rgb(195, 179, 41)', 1],     // dark yellow – worst match
 ]);
 
+const backgroundLinesColor = 'rgba(0, 0, 0, 0.15)';
+const backgroundLinesColorUnstressed = 'rgba(0, 0, 0, 0.07)';
+const centerLinesColor = 'rgba(255, 0, 0, 0.3)';
+const centerLinesColorUnstressed = 'rgba(255, 0, 0, 0.1)';
+
 /**
  * Computes a normalized color map for a set of search matches using a log
  * transform of the Fuse.js scores.  Fuse scores are tiny (near 0 = best),
@@ -549,9 +554,9 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
             // in highlight more make it less prominent
             if (!state.highlight) {
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.strokeStyle = backgroundLinesColor
             } else {
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.strokeStyle = backgroundLinesColorUnstressed;
             }
 
             ctx.beginPath();
@@ -569,10 +574,10 @@ export const ForceGraphInstance = ForceGraph()(document.getElementById('graph'))
 
         // draw center cross — bigger and more prominent than rest of the grid
         if (!state.highlight) {
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)';
+            ctx.strokeStyle = centerLinesColor;
         }
         else {
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
+            ctx.strokeStyle = centerLinesColorUnstressed;
         }
 
         ctx.lineWidth = lw * 1.5;
