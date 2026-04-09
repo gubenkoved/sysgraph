@@ -10,7 +10,7 @@ cd "$PROJECT_ROOT"
 python -m pip install --quiet --upgrade build twine
 
 # Build the frontend first (must be present in dist/ for the package)
-if [ ! -d "src/procmap/dist" ]; then
+if [ ! -d "src/sysgraph/dist" ]; then
     echo "Frontend dist/ not found, building..."
     "$CUR_DIR/build-ui.sh"
 fi

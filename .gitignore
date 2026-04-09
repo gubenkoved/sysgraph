@@ -8,5 +8,5 @@ __pycache__/
 dist/
 build/
 node_modules/
-src/procmap/dist/
-src/procmap-ui/public/
+src/sysgraph/dist/
+src/sysgraph-ui/public/

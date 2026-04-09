@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Build the frontend UI using Node.js inside Docker — no host Node.js required.
-# Outputs to src/procmap/dist/
+# Outputs to src/sysgraph/dist/
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -19,4 +19,4 @@ docker run --rm \
   "$NODE_IMAGE" \
   sh -c "npm ci && npm run build"
 
-echo "Frontend built → src/procmap/dist/"
+echo "Frontend built → src/sysgraph/dist/"

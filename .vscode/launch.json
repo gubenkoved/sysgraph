@@ -8,7 +8,7 @@
             "name": "Python Debugger: Run main.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/procmap/main.py",
+            "program": "${workspaceFolder}/src/sysgraph/main.py",
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
@@ -18,7 +18,7 @@
             "name": "Python Debugger: Run API",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/procmap/app.py",
+            "program": "${workspaceFolder}/src/sysgraph/app.py",
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"

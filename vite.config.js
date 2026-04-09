@@ -3,11 +3,11 @@ import { resolve } from 'path';
 import { readFileSync } from 'fs';
 
 /**
- * Read the package version from src/procmap/__init__.py (single source of truth).
+ * Read the package version from src/sysgraph/__init__.py (single source of truth).
  */
 function readPythonVersion() {
   const initPy = readFileSync(
-    resolve(__dirname, 'src/procmap/__init__.py'), 'utf-8',
+    resolve(__dirname, 'src/sysgraph/__init__.py'), 'utf-8',
   );
   const match = initPy.match(/__version__\s*=\s*["']([^"']+)["']/);
   if (!match) throw new Error('Could not parse __version__ from __init__.py');
@@ -15,10 +15,10 @@ function readPythonVersion() {
 }
 
 export default defineConfig({
-  root: 'src/procmap-ui',
+  root: 'src/sysgraph-ui',
   publicDir: 'public',
   build: {
-    outDir: resolve(__dirname, 'src/procmap/dist'),
+    outDir: resolve(__dirname, 'src/sysgraph/dist'),
     emptyOutDir: true,
   },
   plugins: [

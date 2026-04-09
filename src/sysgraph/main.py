@@ -4,7 +4,7 @@ import logging
 
 import coloredlogs
 
-from procmap import discovery
+from sysgraph import discovery
 
 LOGGER = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from procmap.discovery import build_graph
+from sysgraph.discovery import build_graph
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ async def lifespan(app):
     logging.info(f"shutdown for process with PID {os.getpid()}")
 
 
-app = FastAPI(title="procmap API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="sysgraph API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # Vite build output — run scripts/build-ui.sh to produce it.
@@ -111,7 +111,7 @@ def main():
 
     import uvicorn
 
-    parser = argparse.ArgumentParser(description="procmap server")
+    parser = argparse.ArgumentParser(description="sysgraph server")
     parser.add_argument(
         "-p",
         "--port",
@@ -122,7 +122,7 @@ def main():
     args = parser.parse_args()
 
     uvicorn.run(
-        "procmap.app:app",
+        "sysgraph.app:app",
         host="0.0.0.0",
         port=args.port,
         reload=True,

@@ -1,6 +1,6 @@
 import unittest
 
-from procmap import discovery
+from sysgraph import discovery
 
 
 class DiscoveryTest(unittest.TestCase):

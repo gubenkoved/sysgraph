@@ -9,8 +9,8 @@ from socket import AddressFamily
 
 import psutil
 
-from procmap.graph import Graph, Node
-from procmap.model import (
+from sysgraph.graph import Graph, Node
+from sysgraph.model import (
     NetConnection,
     Process,
     ProcessOpenFile,

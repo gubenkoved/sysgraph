@@ -1,32 +1,32 @@
-# Copilot Instructions for procmap
+# Copilot Instructions for sysgraph
 
 ## IMPORTANT: Build System
 
 **NEVER run node, npm, or npx commands directly on the host.**
 All frontend build/dev tasks MUST use the dockerized scripts in `scripts/`:
-- `./scripts/build-ui.sh` — production build (outputs to `src/procmap/dist/`)
+- `./scripts/build-ui.sh` — production build (outputs to `src/sysgraph/dist/`)
 - `./scripts/dev-ui.sh` — dev server with HMR (Vite on port 5173)
 
 Only use local `npm` if the user explicitly confirms they have Node.js installed and want to use it.
 
-**After any frontend/UI changes** (HTML, CSS, JS in `src/procmap-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/procmap/dist/`.
+**After any frontend/UI changes** (HTML, CSS, JS in `src/sysgraph-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/sysgraph/dist/`.
 
 ## Project Overview
 
-**procmap** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
+**sysgraph** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
 
 - **Author:** Eugene Gubenkov (`gubenkoved@gmail.com`)
 - **License:** MIT
 - **Python:** ≥ 3.12 (strict)
 - **Node.js:** 22 (used for frontend build via Vite)
-- **Package name:** `procmap` (importable as `procmap`)
+- **Package name:** `sysgraph` (importable as `sysgraph`)
 
 ## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  Browser (SPA)                                           │
-│  Built by Vite from src/procmap-ui/ → src/procmap/dist/  │
+│  Built by Vite from src/sysgraph-ui/ → src/sysgraph/dist/  │
 │  Libraries (npm): force-graph, d3@6, tweakpane,          │
 │    fuse.js, @material/web, json-formatter-js, winbox     │
 │  Icons: Material Symbols Outlined (Google Fonts CDN)     │
@@ -53,14 +53,14 @@ Only use local `npm` if the user explicitly confirms they have Node.js installed
 ## Directory Layout
 
 ```
-procmap/
+sysgraph/
 ├── pyproject.toml          # Ruff + isort config
 ├── setup.py                # Package metadata, dependencies
 ├── requirements.txt        # Locked deps (pip-compile output)
 ├── requirements-dev.in     # Dev dependencies (pytest, ruff, httpx, etc.)
 ├── package.json            # Node.js deps & scripts (Vite build)
 ├── package-lock.json       # Locked npm deps
-├── vite.config.js          # Vite build config (root: src/procmap-ui)
+├── vite.config.js          # Vite build config (root: src/sysgraph-ui)
 ├── Dockerfile              # Multi-stage: Node.js build + Python runtime
 ├── MANIFEST.in             # Includes dist/ in Python package
 ├── jsconfig.json           # JS/TS IDE config (checkJs enabled)
@@ -70,14 +70,14 @@ procmap/
 │   ├── build-image.sh      # Build Docker image
 │   ├── build-ui.sh         # Build frontend via Docker (no host Node.js needed)
 │   ├── dev-ui.sh           # Start Vite dev server via Docker
-│   ├── publish-image.sh    # Tag & push to Docker Hub (gubenkoved/procmap)
+│   ├── publish-image.sh    # Tag & push to Docker Hub (gubenkoved/sysgraph)
 │   ├── compile-requirements.sh  # pip-compile to lock deps
 │   ├── docker-entrypoint.sh     # Container entrypoint (uvicorn)
 │   └── lint.sh             # Run ruff + isort
 ├── src/
-│   └── procmap/                 # Python backend package
+│   └── sysgraph/                 # Python backend package
 │       ├── __init__.py          # Exports __version__ (single source of truth)
-│       ├── __main__.py          # Allows `python -m procmap`
+│       ├── __main__.py          # Allows `python -m sysgraph`
 │       ├── app.py               # FastAPI application & API schemas
 │       ├── discovery.py         # OS process/connection discovery + graph building
 │       ├── graph.py             # Graph data structure (Node, Relationship, Graph)
@@ -86,7 +86,7 @@ procmap/
 │       ├── dist/                # Vite build output (generated, gitignored)
 │       └── tests/
 │           └── test_discovery.py
-│   └── procmap-ui/             # Frontend source (Vite project root)
+│   └── sysgraph-ui/             # Frontend source (Vite project root)
 │       ├── index.html           # SPA shell (toolbar, detail panel, settings pane)
 │       ├── app.js               # Frontend entry point
 │       └── modules/
@@ -126,22 +126,22 @@ pip install -e .
 pip install -r requirements-dev.in
 
 # Run the backend (auto-reload enabled)
-python src/procmap/app.py
+python src/sysgraph/app.py
 # → serves at http://localhost:8000
-# Alternative: python -m procmap
+# Alternative: python -m sysgraph
 
 # Or via uvicorn directly
-uvicorn procmap.app:app --reload --host 0.0.0.0 --port 8000
+uvicorn sysgraph.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Frontend Build
 
-The frontend is built with **Vite** and outputs to `src/procmap/dist/`. Build scripts use Docker so no host Node.js is needed:
+The frontend is built with **Vite** and outputs to `src/sysgraph/dist/`. Build scripts use Docker so no host Node.js is needed:
 
 ```bash
 # Production build (via Docker)
 ./scripts/build-ui.sh
-# → outputs to src/procmap/dist/
+# → outputs to src/sysgraph/dist/
 
 # Development server with HMR (via Docker)
 ./scripts/dev-ui.sh
@@ -160,7 +160,7 @@ npm run build    # Production build
 ### Running Tests
 
 ```bash
-pytest src/procmap/tests/
+pytest src/sysgraph/tests/
 ```
 
 Tests require running on Linux with access to `/proc` and `ss`.
@@ -178,7 +178,7 @@ Ruff is configured in `pyproject.toml` with line-length=79, target Python 3.12.
 
 ```bash
 ./scripts/build-image.sh [tag]    # default tag: dev
-./scripts/publish-image.sh [tag]  # builds, tags as gubenkoved/procmap, pushes
+./scripts/publish-image.sh [tag]  # builds, tags as gubenkoved/sysgraph, pushes
 ```
 
 The Dockerfile is a **multi-stage build**: stage 1 builds the frontend with Node.js 22, stage 2 copies the Vite output into the Python runtime image. The container runs uvicorn on `$PORT` (default 8000).
@@ -194,11 +194,11 @@ The Dockerfile is a **multi-stage build**: stage 1 builds the frontend with Node
 | `graph.py` | Backend graph data structure: `Node`, `Relationship`, `Graph` with `add_node()`, `add_edge()`, `as_dict()` |
 | `model.py` | Domain models: `Process`, `ProcessOpenFile`, `UnixDomainSocket`, `UnixDomainSocketConnection`, `NetConnection`, `SocketAddress`, etc. |
 | `main.py` | CLI debug script — runs discovery and logs results |
-| `__main__.py` | Allows running as `python -m procmap` (calls `app.main()`) |
+| `__main__.py` | Allows running as `python -m sysgraph` (calls `app.main()`) |
 
 ### Static File Serving
 
-The backend serves the Vite-built frontend from `src/procmap/dist/`:
+The backend serves the Vite-built frontend from `src/sysgraph/dist/`:
 - `GET /` → `dist/index.html`
 - `GET /*` → catch-all `StaticFiles` mount on `dist/` (after all `/api/*` routes)
 - If `dist/` is missing, a warning is logged and the frontend is not served
@@ -245,11 +245,11 @@ The `dist/` directory is included in the Python package via `MANIFEST.in` and `s
 
 ### Build Tooling
 
-The frontend uses **Vite** as the build tool. Source lives in `src/procmap-ui/` and builds to `src/procmap/dist/`.
+The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/` and builds to `src/sysgraph/dist/`.
 
 **Vite config highlights** (`vite.config.js`):
-- `root`: `src/procmap-ui`
-- `build.outDir`: `src/procmap/dist` (inside the Python package)
+- `root`: `src/sysgraph-ui`
+- `build.outDir`: `src/sysgraph/dist` (inside the Python package)
 - Injects `__APP_VERSION__` into `index.html` from `__init__.py` `__version__`
 - Dev server proxies `/api` to `http://localhost:8000` (the FastAPI backend)
 
@@ -340,7 +340,7 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 ## Common Development Tasks
 
 ### Adding a new API endpoint
-1. Add route in `src/procmap/app.py` with appropriate Pydantic request/response models
+1. Add route in `src/sysgraph/app.py` with appropriate Pydantic request/response models
 2. Implement business logic in `discovery.py` or a new module
 3. Update frontend `data-io.js` if the frontend needs to call it
 
@@ -351,7 +351,7 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 4. Optionally add hardcoded color overrides in `settings.js` (`overrideNodeColors`/`overrideEdgeColors`)
 
 ### Adding a new frontend module
-1. Create `src/procmap-ui/modules/your-module.js`
+1. Create `src/sysgraph-ui/modules/your-module.js`
 2. Use ES module exports; import from other modules as needed
 3. Wire into the app via `event-bus.js` events or direct imports in `app.js`
 4. Install new npm packages with `npm install <package>` if needed
@@ -372,8 +372,8 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 - Dynamic per-type settings: Modify `updateDynamicGraphPanes()` in `settings-pane.js`
 
 ### Testing
-- Backend tests are in `src/procmap/tests/` using `unittest`
-- Run with `pytest src/procmap/tests/`
+- Backend tests are in `src/sysgraph/tests/` using `unittest`
+- Run with `pytest src/sysgraph/tests/`
 - Tests require Linux `/proc` filesystem access
 - Frontend has no automated tests; test manually in browser
 
@@ -381,8 +381,8 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 
 - **Linux only:** The discovery layer depends on `/proc` filesystem and the `ss` command. It will not work on macOS or Windows.
 - **Privileges:** Some process info (e.g., other users' `/proc/[pid]/fd`) requires root or appropriate capabilities. Run with `sudo` for full visibility.
-- **Frontend build required:** The backend serves pre-built Vite output from `src/procmap/dist/`. You must run `./scripts/build-ui.sh` (or `npm run build`) before the backend can serve the frontend. During development, use the Vite dev server (`./scripts/dev-ui.sh` or `npm run dev`) for HMR.
+- **Frontend build required:** The backend serves pre-built Vite output from `src/sysgraph/dist/`. You must run `./scripts/build-ui.sh` (or `npm run build`) before the backend can serve the frontend. During development, use the Vite dev server (`./scripts/dev-ui.sh` or `npm run dev`) for HMR.
 - **No host Node.js needed:** The `build-ui.sh` and `dev-ui.sh` scripts run Node.js inside Docker, so no local Node.js installation is required.
-- **Version single source of truth:** The app version is defined in `src/procmap/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
+- **Version single source of truth:** The app version is defined in `src/sysgraph/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
 - **Graph size:** On busy systems the graph can have thousands of nodes. The force simulation may be slow; tune d3 parameters via the settings pane.
 - **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"external_ip::{ip}"`. Edge IDs are UUIDs.

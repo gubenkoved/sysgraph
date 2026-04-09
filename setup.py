@@ -15,7 +15,7 @@ README = (HERE / "README.md").read_text(encoding="utf-8") if (HERE / "README.md"
 
 # Try to read __version__ from package if present, otherwise fall back to 0.0.0
 def read_version():
-    version_file = HERE / "src" / "procmap" / "__init__.py"
+    version_file = HERE / "src" / "sysgraph" / "__init__.py"
     if version_file.exists():
         for line in version_file.read_text(encoding="utf-8").splitlines():
             if line.strip().startswith("__version__"):
@@ -35,18 +35,18 @@ if not packages:
         packages = []
 
 setup(
-    name="procmap",
+    name="sysgraph",
     version=read_version(),
     description="Visualizer for processes and their interconnections",
     long_description=README,
     long_description_content_type="text/markdown",
     author="Eugene Gubenkov",
     author_email="gubenkoved@gmail.com",
-    url="https://github.com/gubenkoved/procmap",
+    url="https://github.com/gubenkoved/sysgraph",
     packages=packages,
     package_dir={"": "src"},
     include_package_data=True,
-    package_data={"procmap": ["dist/*", "dist/**/*"]},
+    package_data={"sysgraph": ["dist/*", "dist/**/*"]},
     zip_safe=False,
     python_requires=">=3.12",
     install_requires=[
@@ -80,12 +80,12 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "procmap=procmap.app:main",
+            "sysgraph=sysgraph.app:main",
         ],
     },
     license="MIT",
     project_urls={
-        "Source": "https://github.com/gubenkoved/procmap",
-        "Issues": "https://github.com/gubenkoved/procmap/issues",
+        "Source": "https://github.com/gubenkoved/sysgraph",
+        "Issues": "https://github.com/gubenkoved/sysgraph/issues",
     },
 )

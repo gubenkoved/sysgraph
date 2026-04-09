@@ -1,4 +1,4 @@
-# procmap
+# sysgraph
 
 Real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
 
@@ -25,20 +25,20 @@ Real-time process-graph visualizer that discovers running OS processes, their in
 ## Installation
 
 ```bash
-pip install procmap
+pip install sysgraph
 ```
 
 ## Usage
 
 ```bash
 # Start the web server (default: http://localhost:8000)
-procmap
+sysgraph
 
 # Specify a custom port
-procmap --port 9000
+sysgraph --port 9000
 
 # Or run as a module
-python -m procmap
+python -m sysgraph
 ```
 
 Open your browser to the displayed URL to see the interactive process graph.
@@ -46,13 +46,13 @@ Open your browser to the displayed URL to see the interactive process graph.
 For full visibility into all processes and their connections, run with elevated privileges:
 
 ```bash
-sudo procmap
+sudo sysgraph
 ```
 
 ## Docker
 
 ```bash
-docker run --rm -it --pid=host --net=host gubenkoved/procmap
+docker run --rm -it --pid=host --net=host gubenkoved/sysgraph
 ```
 
 The `--pid=host` and `--net=host` flags allow the container to see host processes and network connections.

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Start the Vite dev server inside Docker — no host Node.js required.
 # Proxies /api requests to http://localhost:8000 (the FastAPI backend).
-# Run the FastAPI backend separately: python src/procmap/app.py
+# Run the FastAPI backend separately: python src/sysgraph/app.py
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"

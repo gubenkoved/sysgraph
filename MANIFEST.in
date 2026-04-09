@@ -1,5 +1,5 @@
 # Include the Vite build output
-recursive-include src/procmap/dist *
+recursive-include src/sysgraph/dist *
 
 # Include top-level files
 include LICENSE

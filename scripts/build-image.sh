@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build the Docker image for procmap
+# Build the Docker image for sysgraph
 # Usage: ./scripts/build-image.sh [tag]
 # Example: ./scripts/build-image.sh dev
 
@@ -15,6 +15,6 @@ fi
 
 echo "Building Docker image with tag: ${TAG}"
 
-docker build -t "procmap:${TAG}" "${CONTEXT_DIR}"
+docker build -t "sysgraph:${TAG}" "${CONTEXT_DIR}"
 
-echo "Built procmap:${TAG}"
+echo "Built sysgraph:${TAG}"

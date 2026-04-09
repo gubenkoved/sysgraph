@@ -5,8 +5,8 @@ WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY vite.config.js ./
-COPY src/procmap-ui/ ./src/procmap-ui/
-COPY src/procmap/__init__.py ./src/procmap/__init__.py
+COPY src/sysgraph-ui/ ./src/sysgraph-ui/
+COPY src/sysgraph/__init__.py ./src/sysgraph/__init__.py
 RUN npm run build
 
 # --- Stage 2: Python runtime ---
@@ -31,7 +31,7 @@ COPY pyproject.toml setup.py /app/
 COPY . /app
 
 # Copy the Vite build output from stage 1
-COPY --from=ui-build /build/src/procmap/dist/ /app/src/procmap/dist/
+COPY --from=ui-build /build/src/sysgraph/dist/ /app/src/sysgraph/dist/
 
 RUN pip install --no-cache-dir .
 

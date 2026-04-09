@@ -84,7 +84,7 @@ nodeLabelExpressionBinding.on('change', () => {
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
 
 // --- refresh button ---
-actionsFolder.addButton({ title: 'reload procmap graph' }).on('click', async () => {
+actionsFolder.addButton({ title: 'reload sysgraph graph' }).on('click', async () => {
     await handle("reload-graph");
 });
 

@@ -13,8 +13,8 @@
         }
     },
     "include": [
-        "src/procmap-ui/**/*",
-        "src/procmap-ui/modules/**/*"
+        "src/sysgraph-ui/**/*",
+        "src/sysgraph-ui/modules/**/*"
     ],
     "exclude": [
         "node_modules"

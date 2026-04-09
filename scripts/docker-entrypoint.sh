@@ -14,4 +14,4 @@ case "$PORT" in
     ;;
 esac
 
-exec uvicorn procmap.app:app --host 0.0.0.0 --port "$PORT"
+exec uvicorn sysgraph.app:app --host 0.0.0.0 --port "$PORT"

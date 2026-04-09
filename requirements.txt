@@ -15,9 +15,9 @@ anyio==4.12.0
 click==8.3.1
     # via uvicorn
 coloredlogs==15.0.1
-    # via procmap (setup.py)
+    # via sysgraph (setup.py)
 fastapi==0.125.0
-    # via procmap (setup.py)
+    # via sysgraph (setup.py)
 h11==0.16.0
     # via uvicorn
 httptools==0.7.1
@@ -27,7 +27,7 @@ humanfriendly==10.0
 idna==3.11
     # via anyio
 psutil==7.1.3
-    # via procmap (setup.py)
+    # via sysgraph (setup.py)
 pydantic==2.12.5
     # via fastapi
 pydantic-core==2.41.5
@@ -49,7 +49,7 @@ typing-extensions==4.15.0
 typing-inspection==0.4.2
     # via pydantic
 uvicorn[standard]==0.38.0
-    # via procmap (setup.py)
+    # via sysgraph (setup.py)
 uvloop==0.22.1
     # via uvicorn
 watchfiles==1.1.1
