@@ -1,0 +1,283 @@
+/* ── Reset & Base ────────────────────────────────────────── */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-family: 'Ubuntu', 'Segoe UI', 'Arial';
+}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+
+#toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+#toolbar md-outlined-button {
+  --md-outlined-button-container-height: 28px;
+  --md-outlined-button-label-text-size: 12px;
+  --md-outlined-button-label-text-weight: 500;
+  --md-outlined-button-icon-size: 16px;
+  --md-outlined-button-leading-space: 10px;
+  --md-outlined-button-trailing-space: 12px;
+  --md-outlined-button-icon-offset: -2px;
+  --md-outlined-button-container-shape: 4px;
+}
+
+md-outlined-button.active {
+  --md-outlined-button-container-color: #d0e1ff;
+  --md-outlined-button-label-text-color: #1a56db;
+  --md-outlined-button-outline-color: #1a56db;
+  --md-outlined-button-icon-color: #1a56db;
+}
+
+md-outlined-button.danger {
+  --md-outlined-button-label-text-color: #dc2626;
+  --md-outlined-button-outline-color: #dc2626;
+  --md-outlined-button-icon-color: #dc2626;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+
+#searchInput {
+  width: 240px;
+  height: 28px;
+  --md-outlined-text-field-container-shape: 4px;
+  --md-outlined-text-field-top-space: 4px;
+  --md-outlined-text-field-bottom-space: 4px;
+  --md-outlined-text-field-input-text-size: 12px;
+  --md-outlined-text-field-label-text-size: 12px;
+}
+
+#searchHelpTrigger {
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-state-layer-height: 28px;
+  --md-icon-button-state-layer-width: 28px;
+  height: 28px;
+  width: 28px;
+}
+
+.search-help-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+#searchHelp {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  z-index: 150;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  line-height: 1.5;
+  background: #1e293b;
+  color: #fff;
+}
+
+#searchHelp.open {
+  display: block;
+}
+
+#searchHelp code {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ── Content & Graph ─────────────────────────────────────── */
+
+#content {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#graph {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Details Panel ───────────────────────────────────────── */
+
+.details-panel {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 420px;
+  height: 350px;
+  min-width: 200px;
+  min-height: 120px;
+  max-height: calc(100% - 16px);
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  resize: both;
+}
+
+.details-panel.open {
+  display: flex;
+}
+
+.details-panel .panel-header {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 2px 0 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.details-panel .panel-header:active {
+  cursor: grabbing;
+}
+
+.details-panel .panel-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.details-panel md-icon-button {
+  --md-icon-button-icon-size: 16px;
+  --md-icon-button-state-layer-height: 24px;
+  --md-icon-button-state-layer-width: 24px;
+  height: 24px;
+  width: 24px;
+}
+
+.details-panel .panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  font-family: 'Ubuntu', 'Segoe UI', 'Arial';
+}
+
+#detailsPanel {
+  border-left: 3px solid #1a73e8;
+}
+
+#detailsPanel .panel-header {
+  background: rgba(26, 115, 232, 0.06);
+}
+
+/* ── Context Menu ────────────────────────────────────────── */
+
+#contextMenu {
+  display: none;
+  position: fixed;
+  z-index: 200;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  padding: 4px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  font-size: 13px;
+}
+
+.context-menu-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.context-menu-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Settings Pane (Tweakpane) ───────────────────────────── */
+
+:root {
+  --tp-base-background-color: hsla(230, 5%, 90%, 1.00);
+  --tp-base-shadow-color: hsla(0, 0%, 0%, 0.10);
+  --tp-button-background-color: hsla(230, 7%, 75%, 1.00);
+  --tp-button-background-color-active: hsla(230, 7%, 60%, 1.00);
+  --tp-button-background-color-focus: hsla(230, 7%, 65%, 1.00);
+  --tp-button-background-color-hover: hsla(230, 7%, 70%, 1.00);
+  --tp-button-foreground-color: hsla(230, 10%, 30%, 1.00);
+  --tp-container-background-color: hsla(230, 15%, 30%, 0.20);
+  --tp-container-background-color-active: hsla(230, 15%, 30%, 0.32);
+  --tp-container-background-color-focus: hsla(230, 15%, 30%, 0.28);
+  --tp-container-background-color-hover: hsla(230, 15%, 30%, 0.24);
+  --tp-container-foreground-color: hsla(230, 10%, 30%, 1.00);
+  --tp-groove-foreground-color: hsla(230, 15%, 30%, 0.10);
+  --tp-input-background-color: hsla(230, 15%, 30%, 0.10);
+  --tp-input-background-color-active: hsla(230, 15%, 30%, 0.22);
+  --tp-input-background-color-focus: hsla(230, 15%, 30%, 0.18);
+  --tp-input-background-color-hover: hsla(230, 15%, 30%, 0.14);
+  --tp-input-foreground-color: hsla(230, 10%, 30%, 1.00);
+  --tp-label-foreground-color: hsla(230, 10%, 30%, 0.70);
+  --tp-monitor-background-color: hsla(230, 15%, 30%, 0.10);
+  --tp-monitor-foreground-color: hsla(230, 10%, 30%, 0.50);
+}
+
+.tp-rotv {
+  font-family: 'Ubuntu', 'Segoe UI', 'Arial', sans-serif !important;
+  opacity: 0.9;
+}
+
+#settingsPane {
+  max-height: calc(100% - 20px);
+  position: absolute;
+  overflow-y: auto;
+  right: 10px;
+  top: 10px;
+}
+
+/* ── Misc ────────────────────────────────────────────────── */
+
+#version-badge {
+  position: fixed;
+  bottom: 6px;
+  left: 8px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 10;
+  font-family: 'Ubuntu', 'Segoe UI', 'Arial', sans-serif;
+}
+
+.muted {
+  color: #666;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin: 6px 0;
+}
