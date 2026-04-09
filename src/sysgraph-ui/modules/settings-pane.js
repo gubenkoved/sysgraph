@@ -49,9 +49,9 @@ displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.20
 });
 
 // --- label settings ---
-const labelSettingsFolder = pane.addFolder({ title: "label settings", expanded: false });
+displayOptionsFolder.addBlade({ view: 'separator' });
 
-const nodeLabelModeBinding = labelSettingsFolder.addBinding(settings, 'nodeLabelMode', {
+const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings, 'nodeLabelMode', {
     label: 'node label',
     view: 'list',
     options: [
@@ -62,8 +62,8 @@ const nodeLabelModeBinding = labelSettingsFolder.addBinding(settings, 'nodeLabel
     ],
 });
 
-const nodeLabelExpressionBinding = labelSettingsFolder.addBinding(settings, 'nodeLabelExpression', {
-    label: 'expression',
+const nodeLabelExpressionBinding = displayOptionsFolder.addBinding(settings, 'nodeLabelExpression', {
+    label: 'label expr',
 });
 
 // show/hide expression input based on mode
@@ -79,6 +79,49 @@ nodeLabelModeBinding.on('change', () => {
 
 nodeLabelExpressionBinding.on('change', () => {
     // emit("graph-ui-settings-updated", null);
+});
+
+// --- node sizing settings ---
+displayOptionsFolder.addBlade({ view: 'separator' });
+
+const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings, 'nodeSizingMode', {
+    label: 'node sizing',
+    view: 'list',
+    options: [
+        { text: 'degree', value: 'degree' },
+        { text: 'constant', value: 'constant' },
+        { text: 'expression', value: 'expression' },
+    ],
+});
+
+const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings, 'nodeSizingConstant', {
+    label: 'size',
+    min: 1,
+    max: 10,
+    step: 0.5,
+});
+
+const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings, 'nodeSizingExpression', {
+    label: 'size expr',
+});
+
+function updateSizingVisibility() {
+    nodeSizingConstantBinding.hidden = settings.nodeSizingMode !== 'constant';
+    nodeSizingExpressionBinding.hidden = settings.nodeSizingMode !== 'expression';
+}
+updateSizingVisibility();
+
+nodeSizingModeBinding.on('change', () => {
+    updateSizingVisibility();
+    emit("graph-ui-settings-updated", null);
+});
+
+nodeSizingConstantBinding.on('change', () => {
+    emit("graph-ui-settings-updated", null);
+});
+
+nodeSizingExpressionBinding.on('change', () => {
+    emit("graph-ui-settings-updated", null);
 });
 
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });

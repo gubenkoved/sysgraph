@@ -30,6 +30,13 @@ export const settings = {
     // expression template used when nodeLabelMode === 'expression'
     nodeLabelExpression: '(properties.name || properties.label) || (type + " " + id)',
 
+    // node sizing mode: 'degree' | 'constant' | 'expression'
+    nodeSizingMode: 'degree',
+    // constant node size used when nodeSizingMode === 'constant'
+    nodeSizingConstant: 3,
+    // expression evaluated per node when nodeSizingMode === 'expression'
+    nodeSizingExpression: 'Math.sqrt(Math.max(1, degree))',
+
     nodeColors: {},
     edgeColors: {},
     edgeWidths: {},

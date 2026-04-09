@@ -35,6 +35,31 @@ function getNodeLabel(node) {
     }
 }
 
+const maxNodeVal = 10;
+
+/**
+ * Computes the display size value for a node based on the current sizing mode.
+ * @param {Object} node
+ * @param {number} degree
+ * @returns {number}
+ */
+function getNodeVal(node, degree) {
+    switch (settings.nodeSizingMode) {
+        case 'constant':
+            return settings.nodeSizingConstant;
+        case 'expression':
+            try {
+                const fn = new Function('node', 'degree', `with(node){return (${settings.nodeSizingExpression})}`);
+                const val = fn(node, degree) || 1;
+                return Math.min(val, maxNodeVal);
+            } catch {
+                return 1;
+            }
+        default:
+            return Math.sqrt(Math.max(1, degree));
+    }
+}
+
 /**
  * @typedef {Object} RgbaColor
  * @property {number} r
@@ -716,11 +741,11 @@ export async function refreshGraphUI() {
         nodes = nodes.filter(n => connected.has(n.id));
     }
 
-    // size the nodes based on their degree
+    // size the nodes based on the current sizing mode
     const nodeDegreesMap = computeNodeDegrees(graph);
     nodes.forEach(n => {
         const degree = nodeDegreesMap.get(n.id) || 0;
-        n.val = Math.sqrt(Math.max(1, degree));
+        n.val = getNodeVal(n, degree);
     });
 
     mergeGraphDataIntoForceGraph(nodes, edges);
