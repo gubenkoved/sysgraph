@@ -101,9 +101,7 @@ def get_graph() -> GraphSchema:
 # directory that provides index.html.  This catch-all mount MUST come after
 # all explicit routes so that /api/* and / are matched first.
 if _dist_dir.is_dir():
-    app.mount(
-        "/", StaticFiles(directory=str(_dist_dir)), name="static"
-    )
+    app.mount("/", StaticFiles(directory=str(_dist_dir)), name="static")
 
 
 def main():
