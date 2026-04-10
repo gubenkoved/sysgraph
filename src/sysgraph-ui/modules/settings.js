@@ -8,42 +8,76 @@ import { fnv1a } from './util.js'
  * @property {number} a
  */
 
+/** @typedef {Record<string, RgbaColor>} ColorMap */
+/** @typedef {Record<string, number>} EdgeWidthMap */
+/** @typedef {Record<string, boolean>} FilterMap */
+
+/**
+ * @typedef {Object} SettingsShape
+ * @property {number} d3Charge
+ * @property {number} d3LinkDistance
+ * @property {number} d3LinkStrength
+ * @property {number} d3CollisionMultiplier
+ * @property {number} d3AlphaTarget
+ * @property {number} d3VelocityDecay
+ * @property {number} d3ForceXYStrength
+ * @property {boolean} d3CenterForce
+ * @property {boolean} showIsolated
+ * @property {boolean} showGrid
+ * @property {number} curvatureStep
+ * @property {string} nodeLabelMode
+ * @property {string} nodeLabelExpression
+ * @property {string} nodeSizingMode
+ * @property {number} nodeSizingConstant
+ * @property {string} nodeSizingExpression
+ * @property {ColorMap} nodeColors
+ * @property {ColorMap} edgeColors
+ * @property {EdgeWidthMap} edgeWidths
+ * @property {FilterMap} nodeFilters
+ * @property {FilterMap} edgeFilters
+ */
+
+/** @returns {SettingsShape} */
+export function createDefaultSettings() {
+    return {
+        d3Charge: -400,
+        d3LinkDistance: 140,
+        d3LinkStrength: 0.8,
+        d3CollisionMultiplier: 1.0,
+        d3AlphaTarget: 0.0,
+        d3VelocityDecay: 0.80,
+        d3ForceXYStrength: 0.1,
+        d3CenterForce: true,
+
+        showIsolated: true,
+        showGrid: true,
+
+        // curvature interval per each link when there are multiple
+        curvatureStep: 0.005,
+
+        // node label mode: 'default' | 'type' | 'id' | 'expression'
+        nodeLabelMode: 'default',
+        // expression template used when nodeLabelMode === 'expression'
+        nodeLabelExpression: '(properties.name || properties.label) || (type + " " + id)',
+
+        // node sizing mode: 'degree' | 'constant' | 'expression'
+        nodeSizingMode: 'degree',
+        // constant node size used when nodeSizingMode === 'constant'
+        nodeSizingConstant: 3,
+        // expression evaluated per node when nodeSizingMode === 'expression'
+        nodeSizingExpression: 'Math.sqrt(Math.max(1, degree))',
+
+        nodeColors: {},
+        edgeColors: {},
+        edgeWidths: {},
+
+        nodeFilters: {},
+        edgeFilters: {},
+    };
+}
+
 /** Application-wide settings for d3 simulation, display, and colours. */
-export const settings = {
-    d3Charge: -400,
-    d3LinkDistance: 140,
-    d3LinkStrength: 0.8,
-    d3CollisionMultiplier: 1.0,
-    d3AlphaTarget: 0.0,
-    d3VelocityDecay: 0.80,
-    d3ForceXYStrength: 0.1,
-    d3CenterForce: true,
-
-    showIsolated: true,
-    showGrid: true,
-
-    // curvature interval per each link when there are multiple
-    curvatureStep: 0.005,
-
-    // node label mode: 'default' | 'type' | 'id' | 'expression'
-    nodeLabelMode: 'default',
-    // expression template used when nodeLabelMode === 'expression'
-    nodeLabelExpression: '(properties.name || properties.label) || (type + " " + id)',
-
-    // node sizing mode: 'degree' | 'constant' | 'expression'
-    nodeSizingMode: 'degree',
-    // constant node size used when nodeSizingMode === 'constant'
-    nodeSizingConstant: 3,
-    // expression evaluated per node when nodeSizingMode === 'expression'
-    nodeSizingExpression: 'Math.sqrt(Math.max(1, degree))',
-
-    nodeColors: {},
-    edgeColors: {},
-    edgeWidths: {},
-
-    nodeFilters: {},
-    edgeFilters: {},
-};
+export const settings = createDefaultSettings();
 
 /** @type {number} Default link opacity. */
 export const defaultLinkOpacity = 0.5;
@@ -54,6 +88,7 @@ export const defaultEdgeWidth = 1;
 /** @type {number[]} Alpha multipliers for highlight distances 0, 1, 2, 3+. */
 export const highlightAlphaMultipliers = [1.0, 1.0, 0.5, 0.1]
 
+/** @type {ColorMap} */
 const defaultNodeColors = {
     process: { r: 21, g: 127, b: 200, a: 1.0 },
     socket: { r: 220, g: 75, b: 47, a: 1.0 },
@@ -62,6 +97,7 @@ const defaultNodeColors = {
     external_ip: { r: 255, g: 103, b: 0, a: 1.0 },
 }
 
+/** @type {ColorMap} */
 const defaultEdgeColors = {
     uds: {r: 27, g: 124, b: 77, a: defaultLinkOpacity},
     uds_connection: {r: 27, g: 124, b: 77, a: defaultLinkOpacity},
@@ -71,6 +107,7 @@ const defaultEdgeColors = {
     child_process: { r: 40, g: 40, b: 40, a: defaultLinkOpacity },
 }
 
+/** @type {EdgeWidthMap} */
 const defaultEdgeWidths = {
     child_process: 1,
     pipe: 1,

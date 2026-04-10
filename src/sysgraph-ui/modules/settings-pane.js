@@ -1,4 +1,11 @@
 import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
+import {
+    listSettingsPresetNames,
+    saveSettingsPreset,
+    deleteSettingsPreset,
+    applySettingsPreset,
+    resetSettingsToDefaults,
+} from './settings-presets.js';
 import { getGraph } from './state.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { emit, handle } from './event-bus.js';
@@ -11,10 +18,50 @@ import {
 
 import { Pane } from 'tweakpane';
 
+/**
+ * @param {string} id
+ * @returns {HTMLElement}
+ */
+function getRequiredElement(id) {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLElement)) {
+        throw new Error(`Missing element: ${id}`);
+    }
+    return element;
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLInputElement}
+ */
+function getRequiredInputElement(id) {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLInputElement)) {
+        throw new Error(`Missing input element: ${id}`);
+    }
+    return element;
+}
+
+const settingsPaneElement = getRequiredElement('settingsPane');
+const importFileInput = getRequiredInputElement('importFile');
+
+/** @type {any} */
 const pane = new Pane({
     title: 'parameters',
-    container: document.getElementById("settingsPane"),
+    container: settingsPaneElement,
 });
+
+const presetUiState = {
+    selectedPresetName: '',
+};
+
+/**
+ * @param {unknown} err
+ * @returns {string}
+ */
+function getErrorMessage(err) {
+    return err instanceof Error ? err.message : String(err);
+}
 
 // --- d3 simulation parameters (data-driven) ---
 const d3RenderingSettingsFolder = pane.addFolder({ title: "d3 forces settings", expanded: false });
@@ -130,6 +177,12 @@ nodeSizingExpressionBinding.on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
+function syncStaticSettingsPane() {
+    updateExpressionVisibility();
+    updateSizingVisibility();
+    pane.refresh();
+}
+
 const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
 
 // --- refresh button ---
@@ -138,7 +191,7 @@ actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
         await handle(CMD_RELOAD);
     } catch (err) {
         console.error('reload failed:', err);
-        showError(`Reload failed: ${err.message}`);
+        showError(`Reload failed: ${getErrorMessage(err)}`);
     }
 });
 
@@ -147,12 +200,16 @@ actionsFolder.addBlade({ view: 'separator' });
 // --- pin / unpin ---
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
-    graphData.nodes.forEach(node => pinNode(node));
+    for (const node of graphData.nodes) {
+        pinNode(node);
+    }
 });
 
 actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
-    graphData.nodes.forEach(node => unpinNode(node));
+    for (const node of graphData.nodes) {
+        unpinNode(node);
+    }
 });
 
 actionsFolder.addBlade({ view: 'separator' });
@@ -174,11 +231,11 @@ actionsFolder.addButton({ title: 'export data' }).on('click', () => {
 });
 
 actionsFolder.addButton({ title: 'import data' }).on('click', () => {
-    document.getElementById('importFile').click();
+    importFileInput.click();
 });
 
-document.getElementById('importFile').addEventListener('change', async (event) => {
-    const file = event.target.files[0];
+importFileInput.addEventListener('change', async (event) => {
+    const file = importFileInput.files && importFileInput.files[0];
     if (!file) return;
 
     try {
@@ -186,10 +243,10 @@ document.getElementById('importFile').addEventListener('change', async (event) =
         await handle(CMD_IMPORT, text);
     } catch (err) {
         console.error('import failed:', err);
-        showError(`Import failed: ${err.message}`);
+        showError(`Import failed: ${getErrorMessage(err)}`);
     }
 
-    event.target.value = '';
+    importFileInput.value = '';
 });
 
 // --- filter panes ---
@@ -202,6 +259,113 @@ let edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: true });
 
 // --- edge width pane ---
 let edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: false });
+
+// --- presets pane ---
+let presetsFolder = pane.addFolder({ title: "presets", expanded: true });
+
+/**
+ * @param {string[]} names
+ */
+function updateSelectedPresetName(names) {
+    if (names.length === 0) {
+        presetUiState.selectedPresetName = '';
+        return;
+    }
+
+    if (!names.includes(presetUiState.selectedPresetName)) {
+        presetUiState.selectedPresetName = names[0];
+    }
+}
+
+function rebuildPresetsFolder() {
+    const expanded = presetsFolder.expanded;
+    const presetNames = listSettingsPresetNames();
+
+    updateSelectedPresetName(presetNames);
+    presetsFolder.dispose();
+    presetsFolder = pane.addFolder({ title: "presets", expanded });
+
+    presetsFolder.addButton({ title: 'save' }).on('click', () => {
+        const rawName = window.prompt('Preset name');
+        const presetName = rawName ? rawName.trim() : '';
+
+        if (!presetName) {
+            return;
+        }
+
+        try {
+            saveSettingsPreset(presetName);
+            presetUiState.selectedPresetName = presetName;
+            rebuildPresetsFolder();
+        } catch (err) {
+            console.error('save preset failed:', err);
+            showError(`Save preset failed: ${getErrorMessage(err)}`);
+        }
+    });
+
+    presetsFolder.addBlade({ view: 'separator' });
+
+    if (presetNames.length > 0) {
+        presetsFolder.addBinding(presetUiState, 'selectedPresetName', {
+            label: 'name',
+            view: 'list',
+            options: presetNames.map((name) => ({ text: name, value: name })),
+        });
+    }
+
+    presetsFolder.addButton({ title: 'load' }).on('click', () => {
+        if (!presetUiState.selectedPresetName) {
+            showError('No saved presets available.');
+            return;
+        }
+
+        try {
+            applySettingsPreset(presetUiState.selectedPresetName);
+            updateDynamicGraphPanes();
+            syncStaticSettingsPane();
+            emit(EVT_D3_PARAMS_CHANGED, null);
+            emit(EVT_SETTINGS_UPDATED, null);
+        } catch (err) {
+            console.error('load preset failed:', err);
+            showError(`Load preset failed: ${getErrorMessage(err)}`);
+        }
+    });
+
+    presetsFolder.addButton({ title: 'delete' }).on('click', () => {
+        if (!presetUiState.selectedPresetName) {
+            showError('No saved presets available.');
+            return;
+        }
+
+        const shouldDelete = window.confirm(`Delete "${presetUiState.selectedPresetName}"?`);
+        if (!shouldDelete) {
+            return;
+        }
+
+        try {
+            deleteSettingsPreset(presetUiState.selectedPresetName);
+            rebuildPresetsFolder();
+        } catch (err) {
+            console.error('delete preset failed:', err);
+            showError(`Delete preset failed: ${getErrorMessage(err)}`);
+        }
+    });
+
+    presetsFolder.addButton({ title: 'reset' }).on('click', () => {
+        try {
+            resetSettingsToDefaults();
+            updateDynamicGraphPanes();
+            syncStaticSettingsPane();
+            emit(EVT_D3_PARAMS_CHANGED, null);
+            emit(EVT_SETTINGS_UPDATED, null);
+        } catch (err) {
+            console.error('reset settings failed:', err);
+            showError(`Reset settings failed: ${getErrorMessage(err)}`);
+        }
+    });
+}
+
+rebuildPresetsFolder();
 
 /**
  * Rebuilds the dynamic filter and colour panes in the settings UI based on the
@@ -227,56 +391,57 @@ export function updateDynamicGraphPanes() {
     edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: ewExpanded });
 
     const graph = getGraph();
+    const nodeFilters = settings.nodeFilters;
+    const edgeFilters = settings.edgeFilters;
+    const nodeColors = settings.nodeColors;
+    const edgeColors = settings.edgeColors;
+    const edgeWidths = settings.edgeWidths;
 
-    const nodeTypes = new Set();
-    for (const node of graph.getNodes()) {
-        nodeTypes.add(node.type);
-    }
-
-    const edgeTypes = new Set();
-    for (const edge of graph.getEdges()) {
-        edgeTypes.add(edge.type);
-    }
+    const nodeTypes = new Set(graph.getNodes().map((node) => node.type));
+    const edgeTypes = new Set(graph.getEdges().map((edge) => edge.type));
 
     for (const key of nodeTypes) {
-        if (!(key in settings.nodeFilters)) {
-            settings.nodeFilters[key] = true;
+        if (!(key in nodeFilters)) {
+            nodeFilters[key] = true;
         }
-        nodeFiltersFolder.addBinding(settings.nodeFilters, key).on('change', () => {
+        nodeFiltersFolder.addBinding(nodeFilters, key).on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
     }
 
     for (const key of edgeTypes) {
-        if (!(key in settings.edgeFilters)) {
-            settings.edgeFilters[key] = true;
+        if (!(key in edgeFilters)) {
+            edgeFilters[key] = true;
         }
-        edgeFiltersFolder.addBinding(settings.edgeFilters, key).on('change', () => {
+        edgeFiltersFolder.addBinding(edgeFilters, key).on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
     }
 
     // initialize colors and edge widths in settings
     for (const key of nodeTypes) {
-        if (!(key in settings.nodeColors)) {
-            settings.nodeColors[key] = structuredClone(getNodeColor(key));
+        if (!(key in nodeColors)) {
+            nodeColors[key] = structuredClone(getNodeColor(key));
         }
-        nodeColorsFolder.addBinding(settings.nodeColors, key);
+        nodeColorsFolder.addBinding(nodeColors, key);
     }
 
     for (const key of edgeTypes) {
-        if (!(key in settings.edgeColors)) {
-            settings.edgeColors[key] = structuredClone(getEdgeColor(key));
+        if (!(key in edgeColors)) {
+            edgeColors[key] = structuredClone(getEdgeColor(key));
         }
-        edgeColorsFolder.addBinding(settings.edgeColors, key);
+        edgeColorsFolder.addBinding(edgeColors, key);
     }
 
     for (const key of edgeTypes) {
-        if (!(key in settings.edgeWidths)) {
-            settings.edgeWidths[key] = getEdgeWidth(key);
+        if (!(key in edgeWidths)) {
+            edgeWidths[key] = getEdgeWidth(key);
         }
-        edgeWidthsFolder.addBinding(settings.edgeWidths, key, {
+        edgeWidthsFolder.addBinding(edgeWidths, key, {
             min: 0.5, max: 5, step: 0.5,
         });
     }
+
+    rebuildPresetsFolder();
+    syncStaticSettingsPane();
 }
