@@ -1,6 +1,6 @@
 import { state, getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
 import { Graph } from './modules/graph.js';
-import { refreshGraphUI, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
+import { refreshGraphUI, refreshGraphColors, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
 import { on, emit, registerHandler } from './modules/event-bus.js';
 import { search } from './modules/search.js';
 import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-io.js';
@@ -12,6 +12,7 @@ import './modules/details-panel.js';
 import {
     EVT_GRAPH_UPDATED, EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
     EVT_SEARCH_CHANGED, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
+    EVT_COLORS_UPDATED,
     EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,
     CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
 } from './modules/constants.js';
@@ -63,6 +64,9 @@ on(EVT_SELECTION_CHANGED, () => updateSelectionInfo());
 // graph ui related handlers
 on(EVT_SETTINGS_UPDATED, async () => {
     await refreshGraphUI();
+});
+on(EVT_COLORS_UPDATED, () => {
+    refreshGraphColors();
 });
 on(EVT_CURVATURE_UPDATED, autoAdjustCurvature);
 on(EVT_D3_PARAMS_CHANGED, applyD3Params);

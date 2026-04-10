@@ -2,12 +2,13 @@ import { state, setHighlight, setAdjacencyFilter } from './state.js';
 import { emit } from './event-bus.js';
 import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
-import { settings, highlightAlphaMultipliers, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js'
+import { settings, highlightAlphaMultipliers, getNodeCssColor, getEdgeCssColor, getEdgeWidth } from './settings.js'
 import { showContextMenu } from './context-menu.js';
 import { ColorScale } from './color-scale.js';
 import {
     EVT_NODE_CLICKED, EVT_LINK_CLICKED, EVT_BACKGROUND_CLICK,
     nodeRadius, nodePointerRadius, MAX_NODE_VAL, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,
+    UI_FONT_FAMILY,
     SEARCH_NOT_MATCHING_OPACITY, SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     GRID_SPACING, GRID_CROSS_HALF, GRID_CENTER_CROSS_HALF, MAX_CROSSES_PER_AXIS,
@@ -70,15 +71,35 @@ function getNodeVal(node, degree) {
     }
 }
 
-/**
- * @typedef {Object} RgbaColor
- * @property {number} r
- * @property {number} g
- * @property {number} b
- * @property {number} a
- */
+const nodeCssColorCache = new Map();
+const edgeCssColorCache = new Map();
 
-const fontFamily = 'Ubuntu';
+function clearColorCaches() {
+    nodeCssColorCache.clear();
+    edgeCssColorCache.clear();
+}
+
+/**
+ * @param {string} nodeType
+ * @returns {string}
+ */
+function getCachedNodeCssColor(nodeType) {
+    if (!nodeCssColorCache.has(nodeType)) {
+        nodeCssColorCache.set(nodeType, getNodeCssColor(nodeType));
+    }
+    return nodeCssColorCache.get(nodeType);
+}
+
+/**
+ * @param {string} edgeType
+ * @returns {string}
+ */
+function getCachedEdgeCssColor(edgeType) {
+    if (!edgeCssColorCache.has(edgeType)) {
+        edgeCssColorCache.set(edgeType, getEdgeCssColor(edgeType));
+    }
+    return edgeCssColorCache.get(edgeType);
+}
 
 /** Color scale for search match scores: best match (0) → red, worst (1) → yellow. */
 const searchMatchColorScale = new ColorScale([
@@ -123,21 +144,12 @@ export function computeMatchColors(matchesMap) {
 }
 
 /**
- * Converts an RGBA color struct to a CSS rgba() string.
- * @param {RgbaColor} color
- * @returns {string}
- */
-function toCssColor({ r, g, b, a }) {
-    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
-}
-
-/**
  * Returns the CSS color for a node based on its type.
  * @param {{ type: string }} node
  * @returns {string}
  */
 function nodeColorFor(node) {
-    return toCssColor(getNodeColor(node.type));
+    return getCachedNodeCssColor(node.type);
 }
 
 /**
@@ -146,7 +158,7 @@ function nodeColorFor(node) {
  * @returns {string}
  */
 function edgeColorFor(edge) {
-    return toCssColor(getEdgeColor(edge.type));
+    return getCachedEdgeCssColor(edge.type);
 }
 
 /**
@@ -271,7 +283,7 @@ function drawDashedCircle(ctx, x, y, r, strokeWidth, strokeStyle, dashSegments, 
  */
 function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle', textAlign = 'left') {
     ctx.save();
-    ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
+    ctx.font = `${fontSize}px ${UI_FONT_FAMILY}`;
     ctx.textAlign = textAlign;
     ctx.textBaseline = textBaseline;
 
@@ -301,7 +313,7 @@ function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle',
  */
 function drawTextWithStroke(ctx, text, x, y, fontSize, fillStyle, strokeStyle, strokeWidth, textBaseline = 'middle', textAlign = 'center') {
     ctx.save();
-    ctx.font = `${fontSize}px ${fontFamily}, sans-serif`;
+    ctx.font = `${fontSize}px ${UI_FONT_FAMILY}`;
 
     ctx.textAlign = textAlign;
     ctx.textBaseline = textBaseline;
@@ -712,6 +724,8 @@ function updateAdjacencyFilter(nodeId, extendExisting = false) {
  * @returns {Promise<void>}
  */
 export async function refreshGraphUI() {
+    clearColorCaches();
+
     // apply type filters
     const graph = filterGraph(
         getGraph(),
@@ -747,6 +761,13 @@ export async function refreshGraphUI() {
     });
 
     mergeGraphDataIntoForceGraph(nodes, edges);
+}
+
+export function refreshGraphColors() {
+    clearColorCaches();
+    if (typeof ForceGraphInstance.refresh === 'function') {
+        ForceGraphInstance.refresh();
+    }
 }
 
 /**
@@ -793,7 +814,11 @@ function mergeGraphDataIntoForceGraph(nodes, edges) {
         if (existing) {
             // NOTE: in existing data source/targets are objects, while in the
             //  new data they are IDs, so we cannot do full Object.assign here;
+            existing.kind = edge.kind;
+            existing.type = edge.type;
             existing.properties = edge.properties;
+            existing.source_id = edge.source_id;
+            existing.target_id = edge.target_id;
             mergedLinks.push(existing);
         } else {
             mergedLinks.push(edge);

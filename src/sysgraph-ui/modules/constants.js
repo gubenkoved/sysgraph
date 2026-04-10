@@ -5,6 +5,7 @@ export const EVT_FILTERS_UPDATED = 'graph-filters-updated';
 export const EVT_SEARCH_CHANGED = 'search-expression-changed';
 export const EVT_SELECTION_CHANGED = 'selection-changed';
 export const EVT_SETTINGS_UPDATED = 'graph-ui-settings-updated';
+export const EVT_COLORS_UPDATED = 'graph-ui-colors-updated';
 export const EVT_CURVATURE_UPDATED = 'graph-ui-links-curvature-updated';
 export const EVT_D3_PARAMS_CHANGED = 'd3-simulation-parameters-changed';
 export const EVT_NODE_CLICKED = 'node-clicked';
@@ -23,6 +24,7 @@ export const NODE_RADIUS_MULTIPLIER = 3;
 export const MAX_NODE_VAL = 10;
 export const NODE_LABEL_FONT_SIZE = 12;
 export const NODE_LABEL_OFFSET = 4;
+export const UI_FONT_FAMILY = "'Ubuntu', 'Segoe UI', 'Arial', sans-serif";
 
 /**
  * Computes the display radius for a node.

@@ -9,6 +9,7 @@ import { fnv1a } from './util.js'
  */
 
 /** @typedef {Record<string, RgbaColor>} ColorMap */
+/** @typedef {Record<string, string>} AuthoredColorMap */
 /** @typedef {Record<string, number>} EdgeWidthMap */
 /** @typedef {Record<string, boolean>} FilterMap */
 
@@ -88,23 +89,23 @@ export const defaultEdgeWidth = 1;
 /** @type {number[]} Alpha multipliers for highlight distances 0, 1, 2, 3+. */
 export const highlightAlphaMultipliers = [1.0, 1.0, 0.5, 0.1]
 
-/** @type {ColorMap} */
-const defaultNodeColors = {
-    process: { r: 21, g: 127, b: 200, a: 1.0 },
-    socket: { r: 220, g: 75, b: 47, a: 1.0 },
-    uds: {r: 54, g: 188, b: 123, a: 1.0},
-    pipe: { r: 169, g: 57, b: 249, a: 1.0 },
-    external_ip: { r: 255, g: 103, b: 0, a: 1.0 },
+/** @type {AuthoredColorMap} */
+const defaultNodeColorHexes = {
+    process: '#157fc8',
+    socket: '#dc4b2f',
+    uds: '#36bc7b',
+    pipe: '#a939f9',
+    external_ip: '#ff6700',
 }
 
-/** @type {ColorMap} */
-const defaultEdgeColors = {
-    uds: {r: 27, g: 124, b: 77, a: defaultLinkOpacity},
-    uds_connection: {r: 27, g: 124, b: 77, a: defaultLinkOpacity},
-    pipe: { r: 207, g: 110, b: 255, a: defaultLinkOpacity },
-    socket_connection: { r: 255, g: 76, b: 40, a: defaultLinkOpacity },
-    socket: { r: 255, g: 76, b: 40, a: defaultLinkOpacity },
-    child_process: { r: 40, g: 40, b: 40, a: defaultLinkOpacity },
+/** @type {AuthoredColorMap} */
+const defaultEdgeColorHexes = {
+    uds: '#1b7c4d',
+    uds_connection: '#1b7c4d',
+    pipe: '#cf6eff',
+    socket_connection: '#ff4c28',
+    socket: '#ff4c28',
+    child_process: '#282828',
 }
 
 /** @type {EdgeWidthMap} */
@@ -117,44 +118,109 @@ const defaultEdgeWidths = {
     uds_connection: 1,
 }
 
-const palette = [
+const paletteHexes = [
     // --- Blues & Cyans (dominant group)
-    { r: 52, g: 152, b: 219 },  // blue
-    { r: 41, g: 128, b: 185 },  // deep blue
-    { r: 31, g: 97, b: 141 },  // darker blue
-    { r: 93, g: 173, b: 226 },  // light blue (still saturated)
+    '#3498db',  // blue
+    '#2980b9',  // deep blue
+    '#1f618d',  // darker blue
+    '#5dade2',  // light blue (still saturated)
 
-    { r: 26, g: 188, b: 156 },  // aqua
-    { r: 22, g: 160, b: 133 },  // teal
-    { r: 0, g: 121, b: 107 },  // deep teal
-    { r: 0, g: 150, b: 136 },  // cyan-teal
+    '#1abc9c',  // aqua
+    '#16a085',  // teal
+    '#00796b',  // deep teal
+    '#009688',  // cyan-teal
 
-    { r: 103, g: 58, b: 183 },  // indigo
-    { r: 142, g: 68, b: 173 },  // purple-blue
-    { r: 75, g: 0, b: 130 },  // deep indigo
+    '#673ab7',  // indigo
+    '#8e44ad',  // purple-blue
+    '#4b0082',  // deep indigo
 
     // --- Greens
-    { r: 39, g: 174, b: 96 },  // green
-    { r: 46, g: 204, b: 113 },  // bright green
-    { r: 0, g: 200, b: 83 },  // vivid green
+    '#27ae60',  // green
+    '#2ecc71',  // bright green
+    '#00c853',  // vivid green
 
     // --- Warm accents (reduced reds)
-    { r: 230, g: 126, b: 34 },  // orange
-    { r: 211, g: 84, b: 0 },  // burnt orange
+    '#e67e22',  // orange
+    '#d35400',  // burnt orange
 
-    { r: 241, g: 196, b: 15 },  // strong yellow
-    { r: 183, g: 149, b: 11 },  // darker yellow
+    '#f1c40f',  // strong yellow
+    '#b7950b',  // darker yellow
 
-    { r: 231, g: 76, b: 60 },  // red (only 1 strong red)
-    { r: 192, g: 57, b: 43 },  // dark red
+    '#e74c3c',  // red (only 1 strong red)
+    '#c0392b',  // dark red
 
-    { r: 233, g: 30, b: 99 },  // pink
-    { r: 192, g: 57, b: 120 },  // deep pink
+    '#e91e63',  // pink
+    '#c03978',  // deep pink
 
     // --- Neutrals for balance
-    { r: 52, g: 73, b: 94 },  // dark slate
-    { r: 127, g: 140, b: 141 }   // gray
+    '#34495e',  // dark slate
+    '#7f8c8d'   // gray
 ];
+
+/**
+ * Converts a hex colour string to an RGBA object.
+ * @param {string} hex
+ * @param {number} alpha
+ * @returns {RgbaColor}
+ */
+function hexToRgbaColor(hex, alpha) {
+    const trimmed = hex.trim();
+    const value = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
+    const normalized = value.length === 3
+        ? value.split('').map((char) => char + char).join('')
+        : value;
+
+    if (normalized.length !== 6) {
+        throw new Error(`Unsupported hex colour: ${hex}`);
+    }
+
+    return {
+        r: Number.parseInt(normalized.slice(0, 2), 16),
+        g: Number.parseInt(normalized.slice(2, 4), 16),
+        b: Number.parseInt(normalized.slice(4, 6), 16),
+        a: alpha,
+    };
+}
+
+/**
+ * Converts authored hex colours into runtime RGBA objects.
+ * @param {AuthoredColorMap} authoredColors
+ * @param {number} alpha
+ * @returns {ColorMap}
+ */
+function normalizeAuthoredColorMap(authoredColors, alpha) {
+    return Object.fromEntries(
+        Object.entries(authoredColors).map(([key, value]) => [key, hexToRgbaColor(value, alpha)])
+    );
+}
+
+/**
+ * Converts authored palette hex colours into runtime RGBA objects.
+ * @param {string[]} authoredPalette
+ * @param {number} alpha
+ * @returns {RgbaColor[]}
+ */
+function normalizeAuthoredPalette(authoredPalette, alpha) {
+    return authoredPalette.map((value) => hexToRgbaColor(value, alpha));
+}
+
+/** @type {ColorMap} */
+const defaultNodeColors = normalizeAuthoredColorMap(defaultNodeColorHexes, 1.0);
+
+/** @type {ColorMap} */
+const defaultEdgeColors = normalizeAuthoredColorMap(defaultEdgeColorHexes, defaultLinkOpacity);
+
+/** @type {RgbaColor[]} */
+const palette = normalizeAuthoredPalette(paletteHexes, 1.0);
+
+/**
+ * Converts an RGBA colour object to a CSS rgba() string.
+ * @param {RgbaColor} color
+ * @returns {string}
+ */
+export function colorToCss(color) {
+    return `rgba(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)}, ${color.a})`;
+}
 
 /**
  * Returns the RGBA colour for a node type — checks user settings first,
@@ -174,20 +240,6 @@ export function getNodeColor(node_type) {
 }
 
 /**
- * Derives an RGBA colour from a hash value by extracting byte channels.
- * @param {number} hash
- * @returns {RgbaColor}
- */
-function colorByHash(hash) {
-    return {
-        r: (hash >> 0) & 0xFF,
-        g: (hash >> 8) & 0xFF,
-        b: (hash >> 16) & 0xFF,
-        a: 1.0,
-    }
-}
-
-/**
  * Returns the RGBA colour for an edge type — checks user settings first,
  * then curated defaults, then palette hash.
  * @param {string} edge_type
@@ -202,6 +254,24 @@ export function getEdgeColor(edge_type) {
     }
     const hash = fnv1a(edge_type);
     return { ...palette[hash % palette.length], a: defaultLinkOpacity };
+}
+
+/**
+ * Returns the CSS colour for a node type.
+ * @param {string} node_type
+ * @returns {string}
+ */
+export function getNodeCssColor(node_type) {
+    return colorToCss(getNodeColor(node_type));
+}
+
+/**
+ * Returns the CSS colour for an edge type.
+ * @param {string} edge_type
+ * @returns {string}
+ */
+export function getEdgeCssColor(edge_type) {
+    return colorToCss(getEdgeColor(edge_type));
 }
 
 /**

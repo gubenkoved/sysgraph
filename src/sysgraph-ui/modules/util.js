@@ -1,3 +1,5 @@
+import { UI_FONT_FAMILY } from './constants.js';
+
 /**
  * Computes the FNV-1a 32-bit hash of a string.
  * @param {string} str
@@ -34,7 +36,7 @@ export function showError(message, { durationMs = 8000 } = {}) {
         padding: '10px 20px',
         borderRadius: '8px',
         fontSize: '13px',
-        fontFamily: "'Ubuntu', 'Segoe UI', 'Arial', sans-serif",
+        fontFamily: UI_FONT_FAMILY,
         zIndex: '9999',
         boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
         cursor: 'pointer',

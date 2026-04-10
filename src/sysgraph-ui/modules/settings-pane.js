@@ -11,7 +11,7 @@ import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { emit, handle } from './event-bus.js';
 import { showError } from './util.js';
 import {
-    EVT_D3_PARAMS_CHANGED, EVT_SETTINGS_UPDATED, EVT_CURVATURE_UPDATED,
+    EVT_D3_PARAMS_CHANGED, EVT_SETTINGS_UPDATED, EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
     EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
     CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
 } from './constants.js';
@@ -423,14 +423,18 @@ export function updateDynamicGraphPanes() {
         if (!(key in nodeColors)) {
             nodeColors[key] = structuredClone(getNodeColor(key));
         }
-        nodeColorsFolder.addBinding(nodeColors, key);
+        nodeColorsFolder.addBinding(nodeColors, key).on('change', () => {
+            emit(EVT_COLORS_UPDATED, null);
+        });
     }
 
     for (const key of edgeTypes) {
         if (!(key in edgeColors)) {
             edgeColors[key] = structuredClone(getEdgeColor(key));
         }
-        edgeColorsFolder.addBinding(edgeColors, key);
+        edgeColorsFolder.addBinding(edgeColors, key).on('change', () => {
+            emit(EVT_COLORS_UPDATED, null);
+        });
     }
 
     for (const key of edgeTypes) {
