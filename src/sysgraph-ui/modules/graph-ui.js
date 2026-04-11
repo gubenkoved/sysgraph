@@ -4,6 +4,7 @@ import { bfs } from './graph-algs.js';
 import { getGraph } from './state.js';
 import { settings, highlightAlphaMultipliers, getNodeCssColor, getEdgeCssColor, getEdgeWidth } from './settings.js'
 import { showContextMenu } from './context-menu.js';
+import { labelHelpers } from './graph-ui-helpers.js';
 import { ColorScale } from './color-scale.js';
 import {
     EVT_NODE_CLICKED, EVT_LINK_CLICKED, EVT_BACKGROUND_CLICK,
@@ -36,8 +37,8 @@ function getNodeLabel(node) {
             return String(node.id);
         case 'expression':
             try {
-                const fn = new Function('node', `with(node){return String(${settings.nodeLabelExpression})}`);
-                return fn(node);
+                const fn = new Function('node', '__helpers', `with(__helpers){with(node){return String(${settings.nodeLabelExpression})}}`);
+                return fn(node, labelHelpers);
             } catch {
                 return `<expr error>`;
             }
