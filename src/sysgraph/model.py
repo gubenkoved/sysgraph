@@ -10,6 +10,9 @@ class Process:
     name: str | None = None
     cpu_user: float | None = None
     cpu_system: float | None = None
+    memory_rss: int | None = None
+    memory_vms: int | None = None
+    memory_shared: int | None = None
     environment: dict[str, str] | None = None
 
     def __repr__(self) -> str:

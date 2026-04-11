@@ -55,6 +55,7 @@ def discover_processes() -> list[Process]:
     ]
     for proc in psutil.process_iter(attrs):
         info = proc.info
+
         p = Process(pid=info["pid"])
         p.parent_pid = info["ppid"]
         p.user = info["username"]
@@ -65,6 +66,12 @@ def discover_processes() -> list[Process]:
         if cpu_times:
             p.cpu_user = cpu_times.user
             p.cpu_system = cpu_times.system
+
+        mem_info = proc.memory_info()
+        if mem_info:
+            p.memory_rss = mem_info.rss
+            p.memory_vms = mem_info.vms
+            p.memory_shared = mem_info.shared
 
         p.environment = info.get("environ")
 
@@ -256,6 +263,9 @@ def _add_process_nodes(
                 "name": proc.name,
                 "cpu_user": proc.cpu_user,
                 "cpu_system": proc.cpu_system,
+                "memory_rss": proc.memory_rss,
+                "memory_vms": proc.memory_vms,
+                "memory_shared": proc.memory_shared,
                 "environment": proc.environment,
             },
         )
