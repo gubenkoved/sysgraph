@@ -28,7 +28,7 @@ Only use local `npm` if the user explicitly confirms they have Node.js installed
 │  Browser (SPA)                                           │
 │  Built by Vite from src/sysgraph-ui/ → src/sysgraph/dist/  │
 │  Libraries (npm): force-graph, d3@6, tweakpane,          │
-│    fuse.js, @material/web, json-formatter-js, winbox     │
+│    fuse.js, @material/web, json-formatter-js             │
 │  Icons: Material Symbols Outlined (Google Fonts CDN)     │
 └──────────────┬───────────────────────────────────────────┘
                │  HTTP (fetch)
@@ -260,7 +260,6 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 - `tweakpane@4` — Settings panel UI
 - `fuse.js@7` — Fuzzy search engine
 - `json-formatter-js` — Collapsible JSON display in details panel
-- `winbox` — Draggable/resizable detail window
 
 **Dev dependencies**: `vite@6`, `@types/d3`
 
@@ -291,7 +290,7 @@ Key events:
 - Auto-curvature for parallel edges
 - Configurable d3 forces (charge, link distance/strength, collision, center, velocity decay)
 
-**Details Panel:** Uses WinBox for a draggable/resizable window with JSONFormatter for collapsible JSON display of node/link properties.
+**Details Panel:** Uses JSONFormatter for collapsible JSON display of node/link properties.
 
 **Settings (`settings.js` + `settings-pane.js`):** Tweakpane-based UI panel with:
 - D3 force parameters (tunable in real-time)
