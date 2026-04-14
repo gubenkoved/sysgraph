@@ -37,16 +37,22 @@
           <md-icon>help</md-icon>
         </md-icon-button>
         <div id="searchHelp" style="white-space: nowrap;">
-        <strong>Fuse.js Extended Search</strong><br>
-        <code>term</code> — fuzzy match<br>
+        <strong>Search Syntax</strong><br>
+        <code>term</code> — fuzzy match (all fields)<br>
+        <code>field:value</code> — match against specific field<br>
+        <code>properties.name:bash</code> — dot notation for nested fields<br>
+        <code>field:"val:ue"</code> — quotes for values with colons<br>
+        <code>"literal term"</code> — quotes suppress all special meaning<br>
+        <strong>AND</strong> / <strong>OR</strong> — logical operators (uppercase)<br>
+        <code>(A OR B) AND C</code> — parentheses for grouping<br>
+        Space between terms = implicit AND<br>
+        <hr style="border-color: #444; margin: 4px 0;">
+        <strong>Fuse.js Operators (in values)</strong><br>
         <code>=exact</code> — exact match<br>
         <code>'include</code> — include match<br>
         <code>!exclude</code> — inverse (not include)<br>
         <code>^prefix</code> — starts with<br>
         <code>.suffix$</code> — ends with<br>
-        <code>!^notprefix</code> — does not start with<br>
-        <code>!.suffix$</code> — does not end with<br>
-        <strong>Space</strong> = AND, <strong>|</strong> = OR<br>
         <a href="https://www.fusejs.io/extended-search.html" target="_blank" rel="noopener" style="color: #58a6ff;">Fuse.js docs &rarr;</a>
         </div>
       </span>

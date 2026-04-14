@@ -1,4 +1,7 @@
 import Fuse from 'fuse.js';
+import { parse, SearchSyntaxError } from './search-parser.js';
+
+export { SearchSyntaxError };
 
 
 /**
@@ -41,79 +44,133 @@ export class Match {
 
 
 /**
- * Performs a fuzzy search across all graph nodes using Fuse.js.
- * Multiple space-separated terms are AND-ed together.
+ * Build a Fuse.js instance for the given graph nodes, discovering all
+ * searchable keys at depth 2.
  * @param {import('./graph.js').Graph} graph
- * @param {string} expression
- * @returns {Match[]}
+ * @returns {{ fuse: Fuse, allKeys: Set<string> }}
  */
-export function search(graph, expression) {
+function buildFuse(graph) {
     const allKeys = new Set();
-
     for (const node of graph.getNodes()) {
-        const keys = extractKeys(node, 2);
-        for (const key of keys) {
+        for (const key of extractKeys(node, 2)) {
             allKeys.add(key);
         }
     }
 
-    console.log('all keys discovered: ', allKeys)
-
     const fuseOptions = {
-        // isCaseSensitive: false,
         includeScore: true,
-        // ignoreDiacritics: false,
-        // shouldSort: true,
         includeMatches: true,
         findAllMatches: true,
-        // minMatchCharLength: 1,
-        // location: 0,
         threshold: 0,
-        // distance: 100,
         useExtendedSearch: true,
         ignoreLocation: true,
-        // ignoreFieldNorm: false,
-        // fieldNormWeight: 1,
         keys: [...allKeys],
     };
 
-    const fuse = new Fuse(graph.getNodes(), fuseOptions);
+    return { fuse: new Fuse(graph.getNodes(), fuseOptions), allKeys };
+}
 
-    let matchesMap = null;
 
-    for (const term of expression.split(" ").map(x => x.trim())) {
-        if (!term) {
-            // skip empty
-            continue;
-        }
-
-        const searchResults = fuse.search(term);
-
-        console.log(`search results for term ${term}:`, searchResults);
-
-        const termMatchesMap = new Map();
-
-        for (const termSearchResultItem of searchResults) {
-            const nodeId = termSearchResultItem.item.id;
-            termMatchesMap.set(nodeId, new Match(nodeId, termSearchResultItem.score));
-        }
-
-        if (matchesMap === null) {
-            matchesMap = termMatchesMap;
-        } else {
-            for (const nodeId of matchesMap.keys()) {
-                const termMatch = termMatchesMap.get(nodeId);
-                if (!termMatch) {
-                    matchesMap.delete(nodeId);
-                    continue;
-                }
-                const currentMatch = matchesMap.get(nodeId);
-                currentMatch.score += termMatch.score;
-            }
+/**
+ * Find all discovered keys that contain the field specifier
+ * (case-insensitive substring match).
+ *
+ * Examples (specifier → matching keys):
+ *   "role"  → "role", "properties.role"
+ *   "ipv4"  → "properties.ipv4_subnet", "ipv4_address"
+ *
+ * @param {string} field
+ * @param {Set<string>} allKeys
+ * @returns {string[]}
+ */
+function resolveField(field, allKeys) {
+    const fieldLower = field.toLowerCase();
+    const matches = [];
+    for (const k of allKeys) {
+        if (k.toLowerCase().includes(fieldLower)) {
+            matches.push(k);
         }
     }
+    return matches;
+}
 
-    console.log('search matches', matchesMap);
 
-    return [...matchesMap.values()];
+/**
+ * Convert our parsed AST into a Fuse.js Expression object.
+ *
+ * Fuse.js Expression types:
+ *   - string                    → all-keys search
+ *   - { [key]: string }         → field-specific search
+ *   - { $and: Expression[] }    → logical AND
+ *   - { $or:  Expression[] }    → logical OR
+ *
+ * @param {import('./search-parser.js').AstNode} node
+ * @param {Set<string>} allKeys
+ * @returns {Object} A Fuse.js Expression object.
+ */
+function astToFuseExpression(node, allKeys) {
+    switch (node.type) {
+        case 'term': {
+            if (node.field) {
+                const keys = resolveField(node.field, allKeys);
+                if (keys.length === 0) {
+                    // No matching keys — return an expression that matches nothing.
+                    return { id: '=\x00__no_match__' };
+                }
+                if (keys.length === 1) {
+                    return { [keys[0]]: node.pattern };
+                }
+                // Multiple matching keys — OR them
+                return { $or: keys.map(k => ({ [k]: node.pattern })) };
+            }
+            // All-keys search: pass as plain string
+            return node.pattern;
+        }
+        case 'and': {
+            if (node.children.length === 1) {
+                return astToFuseExpression(node.children[0], allKeys);
+            }
+            return { $and: node.children.map(c => astToFuseExpression(c, allKeys)) };
+        }
+        case 'or': {
+            if (node.children.length === 1) {
+                return astToFuseExpression(node.children[0], allKeys);
+            }
+            return { $or: node.children.map(c => astToFuseExpression(c, allKeys)) };
+        }
+        default:
+            throw new Error(`Unknown AST node type: ${node.type}`);
+    }
+}
+
+
+/**
+ * Performs a search across all graph nodes using Fuse.js, supporting an
+ * advanced expression grammar with field specifiers, AND/OR operators,
+ * parenthesized grouping, and double-quote escaping.
+ *
+ * The parsed AST is converted into a Fuse.js logical Expression object
+ * so that Fuse handles AND/OR evaluation and score computation natively.
+ *
+ * @param {import('./graph.js').Graph} graph
+ * @param {string} expression
+ * @returns {Match[]}
+ * @throws {SearchSyntaxError} on malformed expressions.
+ */
+export function search(graph, expression) {
+    const { fuse, allKeys } = buildFuse(graph);
+    const ast = parse(expression);
+
+    console.log('search AST', ast);
+
+    const fuseExpr = astToFuseExpression(ast, allKeys);
+
+    console.log('fuse expression', fuseExpr);
+
+    const results = fuse.search(fuseExpr);
+    const matches = results.map(r => new Match(r.item.id, r.score ?? 0));
+
+    console.log('search matches', matches);
+
+    return matches;
 }

@@ -2,7 +2,7 @@ import { state, getGraph, updateGraph, resetState, setSearch } from './modules/s
 import { Graph } from './modules/graph.js';
 import { refreshGraphUI, refreshGraphColors, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
 import { on, emit, registerHandler } from './modules/event-bus.js';
-import { search } from './modules/search.js';
+import { search, SearchSyntaxError } from './modules/search.js';
 import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-io.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
@@ -42,16 +42,32 @@ on(EVT_FILTERS_UPDATED, async () => {
 
 on(EVT_SEARCH_CHANGED, (expression) => {
     if (expression && expression.trim()) {
-        const graph = getGraph();
-        const matches = search(graph, expression);
-        const matchesMap = new Map(matches.map(x => [x.nodeId, x]));
-        setSearch({
-            matchesMap,
-            matchColorsMap: computeMatchColors(matchesMap),
-        })
-        searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
-        searchMatchCountEl.style.display = 'inline';
-        addToSelectionBtn.disabled = matchesMap.size === 0;
+        try {
+            const graph = getGraph();
+            const matches = search(graph, expression);
+            const matchesMap = new Map(matches.map(x => [x.nodeId, x]));
+            setSearch({
+                matchesMap,
+                matchColorsMap: computeMatchColors(matchesMap),
+            })
+            searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
+            searchMatchCountEl.style.color = '#666';
+            searchMatchCountEl.style.display = 'inline';
+            addToSelectionBtn.disabled = matchesMap.size === 0;
+        } catch (err) {
+            if (err instanceof SearchSyntaxError) {
+                setSearch(null);
+                searchMatchCountEl.textContent = err.message;
+                searchMatchCountEl.style.color = '#e53935';
+                searchMatchCountEl.style.display = 'inline';
+                addToSelectionBtn.disabled = true;
+            } else {
+                console.error('search error:', err);
+                setSearch(null);
+                searchMatchCountEl.style.display = 'none';
+                addToSelectionBtn.disabled = true;
+            }
+        }
     } else {
         setSearch(null);
         searchMatchCountEl.style.display = 'none';
