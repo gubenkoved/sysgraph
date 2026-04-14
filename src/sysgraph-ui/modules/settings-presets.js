@@ -5,6 +5,22 @@ const STORAGE_VERSION = 1;
 
 /** @typedef {typeof settings} SettingsSnapshot */
 /** @typedef {{ version: number, presets: Record<string, unknown> }} SettingsPresetStore */
+/** @typedef {'predefined' | 'user'} PresetSource */
+/** @typedef {{ name: string, source: PresetSource }} PresetEntry */
+
+/**
+ * Predefined (built-in) presets. Keys are preset names, values are partial
+ * overrides applied on top of {@link createDefaultSettings}.
+ *
+ * @type {[string, Partial<SettingsSnapshot>][]}
+ */
+const PREDEFINED_PRESETS = [
+    ['default', {}],
+    ['simple', {
+        nodeLabelMode: 'expression',
+        nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
+    }],
+];
 
 /**
  * @param {unknown} value
@@ -101,6 +117,29 @@ export function listSettingsPresetNames() {
 }
 
 /**
+ * Returns all presets (predefined + user) as an ordered list.
+ * Predefined presets come first (in definition order), then user presets
+ * sorted alphabetically.
+ *
+ * @returns {PresetEntry[]}
+ */
+export function listAllPresets() {
+    /** @type {PresetEntry[]} */
+    const entries = [];
+
+    for (const [name] of PREDEFINED_PRESETS) {
+        entries.push({ name, source: 'predefined' });
+    }
+
+    const userNames = listSettingsPresetNames();
+    for (const name of userNames) {
+        entries.push({ name, source: 'user' });
+    }
+
+    return entries;
+}
+
+/**
  * @param {string} name
  */
 export function saveSettingsPreset(name) {
@@ -133,12 +172,34 @@ export function getSettingsPreset(name) {
 }
 
 /**
+ * Builds a full settings snapshot for a predefined preset by applying its
+ * partial overrides on top of freshly-created default settings.
+ *
  * @param {string} name
+ * @returns {SettingsSnapshot | null}
  */
-export function applySettingsPreset(name) {
-    const preset = getSettingsPreset(name);
+export function getPredefinedPreset(name) {
+    const entry = PREDEFINED_PRESETS.find(([n]) => n === name);
+    if (!entry) {
+        return null;
+    }
+
+    const base = createDefaultSettings();
+    Object.assign(base, cloneJsonValue(entry[1]));
+    return base;
+}
+
+/**
+ * @param {string} name
+ * @param {PresetSource} source
+ */
+export function applySettingsPreset(name, source) {
+    const preset = source === 'predefined'
+        ? getPredefinedPreset(name)
+        : getSettingsPreset(name);
+
     if (!preset) {
-        throw new Error(`Preset not found: ${name}`);
+        throw new Error(`Preset not found: ${name} (${source})`);
     }
 
     applyObjectInPlace(settings, preset, false);

@@ -1,6 +1,6 @@
 import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
 import {
-    listSettingsPresetNames,
+    listAllPresets,
     saveSettingsPreset,
     deleteSettingsPreset,
     applySettingsPreset,
@@ -52,8 +52,29 @@ const pane = new Pane({
 });
 
 const presetUiState = {
-    selectedPresetName: '',
+    /** @type {string} Composite key: "predefined:name" or "user:name" */
+    selectedPresetKey: '',
 };
+
+/**
+ * @param {{ name: string, source: import('./settings-presets.js').PresetSource }} entry
+ * @returns {string}
+ */
+function makePresetKey(entry) {
+    return `${entry.source}:${entry.name}`;
+}
+
+/**
+ * @param {string} key
+ * @returns {{ name: string, source: import('./settings-presets.js').PresetSource }}
+ */
+function parsePresetKey(key) {
+    const colonIndex = key.indexOf(':');
+    return {
+        source: /** @type {import('./settings-presets.js').PresetSource} */ (key.slice(0, colonIndex)),
+        name: key.slice(colonIndex + 1),
+    };
+}
 
 /**
  * @param {unknown} err
@@ -264,24 +285,31 @@ let edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: false })
 let presetsFolder = pane.addFolder({ title: "presets", expanded: true });
 
 /**
- * @param {string[]} names
+ * @param {string[]} keys
  */
-function updateSelectedPresetName(names) {
-    if (names.length === 0) {
-        presetUiState.selectedPresetName = '';
+function updateSelectedPresetKey(keys) {
+    if (keys.length === 0) {
+        presetUiState.selectedPresetKey = '';
         return;
     }
 
-    if (!names.includes(presetUiState.selectedPresetName)) {
-        presetUiState.selectedPresetName = names[0];
+    if (!keys.includes(presetUiState.selectedPresetKey)) {
+        presetUiState.selectedPresetKey = keys[0];
     }
 }
 
 function rebuildPresetsFolder() {
     const expanded = presetsFolder.expanded;
-    const presetNames = listSettingsPresetNames();
+    const allPresets = listAllPresets();
 
-    updateSelectedPresetName(presetNames);
+    const dropdownOptions = allPresets.map((entry) => ({
+        text: entry.source === 'predefined' ? `${entry.name} *` : entry.name,
+        value: makePresetKey(entry),
+    }));
+
+    const allKeys = dropdownOptions.map((opt) => opt.value);
+    updateSelectedPresetKey(allKeys);
+
     presetsFolder.dispose();
     presetsFolder = pane.addFolder({ title: "presets", expanded });
 
@@ -295,7 +323,7 @@ function rebuildPresetsFolder() {
 
         try {
             saveSettingsPreset(presetName);
-            presetUiState.selectedPresetName = presetName;
+            presetUiState.selectedPresetKey = makePresetKey({ name: presetName, source: 'user' });
             rebuildPresetsFolder();
         } catch (err) {
             console.error('save preset failed:', err);
@@ -305,22 +333,23 @@ function rebuildPresetsFolder() {
 
     presetsFolder.addBlade({ view: 'separator' });
 
-    if (presetNames.length > 0) {
-        presetsFolder.addBinding(presetUiState, 'selectedPresetName', {
+    if (dropdownOptions.length > 0) {
+        presetsFolder.addBinding(presetUiState, 'selectedPresetKey', {
             label: 'name',
             view: 'list',
-            options: presetNames.map((name) => ({ text: name, value: name })),
+            options: dropdownOptions,
         });
     }
 
     presetsFolder.addButton({ title: 'load' }).on('click', () => {
-        if (!presetUiState.selectedPresetName) {
-            showError('No saved presets available.');
+        if (!presetUiState.selectedPresetKey) {
+            showError('No presets available.');
             return;
         }
 
         try {
-            applySettingsPreset(presetUiState.selectedPresetName);
+            const { name, source } = parsePresetKey(presetUiState.selectedPresetKey);
+            applySettingsPreset(name, source);
             updateDynamicGraphPanes();
             syncStaticSettingsPane();
             emit(EVT_D3_PARAMS_CHANGED, null);
@@ -332,18 +361,25 @@ function rebuildPresetsFolder() {
     });
 
     presetsFolder.addButton({ title: 'delete' }).on('click', () => {
-        if (!presetUiState.selectedPresetName) {
-            showError('No saved presets available.');
+        if (!presetUiState.selectedPresetKey) {
+            showError('No presets available.');
             return;
         }
 
-        const shouldDelete = window.confirm(`Delete "${presetUiState.selectedPresetName}"?`);
+        const { name, source } = parsePresetKey(presetUiState.selectedPresetKey);
+
+        if (source === 'predefined') {
+            showError('Cannot delete a built-in preset.');
+            return;
+        }
+
+        const shouldDelete = window.confirm(`Delete "${name}"?`);
         if (!shouldDelete) {
             return;
         }
 
         try {
-            deleteSettingsPreset(presetUiState.selectedPresetName);
+            deleteSettingsPreset(name);
             rebuildPresetsFolder();
         } catch (err) {
             console.error('delete preset failed:', err);
