@@ -281,8 +281,9 @@ function drawDashedCircle(ctx, x, y, r, strokeWidth, strokeStyle, dashSegments, 
  * @param {string} fillStyle
  * @param {CanvasTextBaseline} [textBaseline='middle']
  * @param {CanvasTextAlign} [textAlign='left']
+ * @param {boolean} [dropEmptyLines=true]
  */
-function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle', textAlign = 'left') {
+function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle', textAlign = 'left', dropEmptyLines = true) {
     ctx.save();
     ctx.font = `${fontSize}px ${UI_FONT_FAMILY}`;
     ctx.textAlign = textAlign;
@@ -290,10 +291,21 @@ function drawText(ctx, text, x, y, fontSize, fillStyle, textBaseline = 'middle',
 
     ctx.fillStyle = fillStyle;
 
-    const lines = text.split('\n');
+    let lines = text.split('\n');
+    if (dropEmptyLines) {
+        lines = lines.filter(l => l.length > 0);
+    }
+
+    const multiline = lines.length > 1;
+    const lineHeight = fontSize * 1.2;
+    const blockHeight = (lines.length - 1) * lineHeight;
+    const startY = y - blockHeight / 2;
 
     for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], x, y + i * fontSize * 1.2);
+        ctx.font = (multiline && i === 0)
+            ? `bold ${fontSize}px ${UI_FONT_FAMILY}`
+            : `${fontSize}px ${UI_FONT_FAMILY}`;
+        ctx.fillText(lines[i], x, startY + i * lineHeight);
     }
 
     ctx.restore();
