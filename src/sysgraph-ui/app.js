@@ -1,4 +1,4 @@
-import { state, getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
+import { getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
 import { Graph } from './modules/graph.js';
 import { refreshGraphUI, refreshGraphColors, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
 import { on, emit, registerHandler } from './modules/event-bus.js';
@@ -7,7 +7,7 @@ import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
-import { showError } from './modules/util.js';
+import { showError, dismissError } from './modules/util.js';
 import './modules/details-panel.js';
 import {
     EVT_GRAPH_UPDATED, EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
@@ -50,17 +50,16 @@ on(EVT_SEARCH_CHANGED, (expression) => {
                 matchesMap,
                 matchColorsMap: computeMatchColors(matchesMap),
             })
+            dismissError('search-syntax');
             searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
-            searchMatchCountEl.style.color = '#666';
             searchMatchCountEl.style.display = 'inline';
             addToSelectionBtn.disabled = matchesMap.size === 0;
         } catch (err) {
             if (err instanceof SearchSyntaxError) {
                 setSearch(null);
-                searchMatchCountEl.textContent = err.message;
-                searchMatchCountEl.style.color = '#e53935';
-                searchMatchCountEl.style.display = 'inline';
+                searchMatchCountEl.style.display = 'none';
                 addToSelectionBtn.disabled = true;
+                showError(err.message, { id: 'search-syntax' });
             } else {
                 console.error('search error:', err);
                 setSearch(null);
@@ -70,6 +69,7 @@ on(EVT_SEARCH_CHANGED, (expression) => {
         }
     } else {
         setSearch(null);
+        dismissError('search-syntax');
         searchMatchCountEl.style.display = 'none';
         addToSelectionBtn.disabled = true;
     }
