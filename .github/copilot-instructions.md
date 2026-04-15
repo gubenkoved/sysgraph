@@ -2,12 +2,13 @@
 
 ## IMPORTANT: Build System
 
-**NEVER run node, npm, or npx commands directly on the host.**
-All frontend build/dev tasks MUST use the dockerized scripts in `scripts/`:
+Prefer the dockerized scripts in `scripts/` so no host Node.js installation is required:
 - `./scripts/build-ui.sh` — production build (outputs to `src/sysgraph/dist/`)
 - `./scripts/dev-ui.sh` — dev server with HMR (Vite on port 5173)
+- `./scripts/typecheck-ui.sh` — TypeScript type checking
+- `./scripts/lint-ui.sh` — Biome linter (pass `--fix` to auto-fix)
 
-Only use local `npm` if the user explicitly confirms they have Node.js installed and want to use it.
+If the user has Node.js 22 installed locally, `npm run build`, `npm run typecheck`, and `npm run lint` also work directly.
 
 **After any frontend/UI changes** (HTML, CSS, JS in `src/sysgraph-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/sysgraph/dist/`.
 
@@ -60,20 +61,24 @@ sysgraph/
 ├── requirements-dev.in     # Dev dependencies (pytest, ruff, httpx, etc.)
 ├── package.json            # Node.js deps & scripts (Vite build)
 ├── package-lock.json       # Locked npm deps
-├── vite.config.js          # Vite build config (root: src/sysgraph-ui)
+├── vite.config.ts          # Vite build config (root: src/sysgraph-ui)
+├── tsconfig.json           # TypeScript config (browser, strict, noEmit)
+├── tsconfig.node.json      # TypeScript config for vite.config.ts (Node types)
+├── biome.json              # Biome linter config
 ├── Dockerfile              # Multi-stage: Node.js build + Python runtime
 ├── MANIFEST.in             # Includes dist/ in Python package
-├── jsconfig.json           # JS/TS IDE config (checkJs enabled)
 ├── data/
 │   └── simplest-graph.json # Sample graph for import/testing
 ├── scripts/
 │   ├── build-image.sh      # Build Docker image
 │   ├── build-ui.sh         # Build frontend via Docker (no host Node.js needed)
 │   ├── dev-ui.sh           # Start Vite dev server via Docker
+│   ├── typecheck-ui.sh     # TypeScript type checking via Docker
+│   ├── lint-ui.sh          # Biome linter via Docker (--fix to auto-fix)
 │   ├── publish-image.sh    # Tag & push to Docker Hub (gubenkoved/sysgraph)
 │   ├── compile-requirements.sh  # pip-compile to lock deps
 │   ├── docker-entrypoint.sh     # Container entrypoint (uvicorn)
-│   └── lint.sh             # Run ruff + isort
+│   └── lint.sh             # Run ruff + isort (Python)
 ├── src/
 │   └── sysgraph/                 # Python backend package
 │       ├── __init__.py          # Exports __version__ (single source of truth)
@@ -88,22 +93,22 @@ sysgraph/
 │           └── test_discovery.py
 │   └── sysgraph-ui/             # Frontend source (Vite project root)
 │       ├── index.html           # SPA shell (toolbar, detail panel, settings pane)
-│       ├── app.js               # Frontend entry point
+│       ├── app.ts               # Frontend entry point
 │       └── modules/
-│           ├── state.js          # Centralized app state
-│           ├── event-bus.js      # Pub-sub event system
-│           ├── graph.js          # Frontend Graph class (adjacency index)
-│           ├── graph-ui.js       # force-graph rendering (largest module)
-│           ├── graph-algs.js     # BFS algorithm for highlights
-│           ├── data-io.js        # API fetch, JSON serialization/parsing
-│           ├── search.js         # Fuzzy search via Fuse.js
-│           ├── selection.js      # Rectangle selection overlay
-│           ├── toolbar.js        # Toolbar buttons & keyboard shortcuts
-│           ├── settings-pane.js  # Tweakpane settings UI (filters, colors, forces)
-│           ├── settings.js       # Default settings, color palettes
-│           ├── context-menu.js   # Right-click context menu
-│           ├── color-scale.js    # Color interpolation for search heatmap
-│           └── util.js           # FNV-1a hash helper
+│           ├── state.ts          # Centralized app state
+│           ├── event-bus.ts      # Pub-sub event system
+│           ├── graph.ts          # Frontend Graph class (adjacency index)
+│           ├── graph-ui.ts       # force-graph rendering (largest module)
+│           ├── graph-algs.ts     # BFS algorithm for highlights
+│           ├── data-io.ts        # API fetch, JSON serialization/parsing
+│           ├── search.ts         # Fuzzy search via Fuse.js
+│           ├── selection.ts      # Rectangle selection overlay
+│           ├── toolbar.ts        # Toolbar buttons & keyboard shortcuts
+│           ├── settings-pane.ts  # Tweakpane settings UI (filters, colors, forces)
+│           ├── settings.ts       # Default settings, color palettes
+│           ├── context-menu.ts   # Right-click context menu
+│           ├── color-scale.ts    # Color interpolation for search heatmap
+│           └── util.ts           # FNV-1a hash helper
 ```
 
 ## Development Setup
@@ -150,13 +155,6 @@ The frontend is built with **Vite** and outputs to `src/sysgraph/dist/`. Build s
 # → Run the FastAPI backend separately
 ```
 
-If you have Node.js installed locally, you can also run directly:
-```bash
-npm ci
-npm run dev      # Vite dev server
-npm run build    # Production build
-```
-
 ### Running Tests
 
 ```bash
@@ -167,12 +165,20 @@ Tests require running on Linux with access to `/proc` and `ss`.
 
 ### Linting
 
+**Python:**
 ```bash
 ./scripts/lint.sh
 # Runs: ruff check, ruff format, isort
 ```
-
 Ruff is configured in `pyproject.toml` with line-length=79, target Python 3.12.
+
+**Frontend (TypeScript):**
+```bash
+./scripts/lint-ui.sh          # check
+./scripts/lint-ui.sh --fix    # auto-fix
+# or locally: npm run lint / npm run lint:fix
+```
+Biome is configured in `biome.json` (recommended rules, formatter disabled).
 
 ### Docker
 
@@ -247,7 +253,7 @@ The `dist/` directory is included in the Python package via `MANIFEST.in` and `s
 
 The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/` and builds to `src/sysgraph/dist/`.
 
-**Vite config highlights** (`vite.config.js`):
+**Vite config highlights** (`vite.config.ts`):
 - `root`: `src/sysgraph-ui`
 - `build.outDir`: `src/sysgraph/dist` (inside the Python package)
 - Injects `__APP_VERSION__` into `index.html` from `__init__.py` `__version__`
@@ -261,11 +267,11 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 - `fuse.js@7` — Fuzzy search engine
 - `json-formatter-js` — Collapsible JSON display in details panel
 
-**Dev dependencies**: `vite@6`, `@types/d3`
+**Dev dependencies**: `vite@6`, `typescript@5`, `@types/d3`, `@types/node`, `@biomejs/biome`
 
 ### Module Architecture
 
-**State Management:** `state.js` holds centralized mutable state:
+**State Management:** `state.ts` holds centralized mutable state:
 - `state.graph` — Current `Graph` instance
 - `state.currentTool` — Active tool: `"pointer"` | `"rect-select"` | `"search"`
 - `state.selection` — Rectangle selection coordinates, selected node IDs
@@ -273,7 +279,7 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 - `state.adjacencyFilter` — Visible node/hidden count maps for adjacency filter
 - `state.search` — Match map and color map from fuzzy search
 
-**Event Bus:** `event-bus.js` provides `on(event, handler)` / `emit(event, data)` for decoupled communication.
+**Event Bus:** `event-bus.ts` provides generic `on<T>` / `emit<T>` / `registerHandler` / `handle` for decoupled communication.
 
 Key events:
 - `"node-clicked"`, `"link-clicked"`, `"background-click"` — UI interactions
@@ -283,7 +289,7 @@ Key events:
 - `"graph-updated"` — Emitted after loading a new graph (e.g., from API or file import)
 - `"graph-filters-updated"` — Emitted after changing type filters in settings
 
-**Rendering (`graph-ui.js`):** Uses the `force-graph` library (canvas-based) with d3 physics simulation. This is the largest module. Key features:
+**Rendering (`graph-ui.ts`):** Uses the `force-graph` library (canvas-based) with d3 physics simulation. This is the largest module. Key features:
 - Custom canvas drawing for nodes (circles with labels, selection indicators, search highlights)
 - BFS-based hover highlighting with distance-based opacity
 - Adjacency filtering (right-click → show only neighbors)
@@ -292,7 +298,7 @@ Key events:
 
 **Details Panel:** Uses JSONFormatter for collapsible JSON display of node/link properties.
 
-**Settings (`settings.js` + `settings-pane.js`):** Tweakpane-based UI panel with:
+**Settings (`settings.ts` + `settings-pane.ts`):** Tweakpane-based UI panel with:
 - D3 force parameters (tunable in real-time)
 - Node/edge type filters (toggle visibility per type)
 - Node/edge color pickers (per type, with sensible defaults)
@@ -300,9 +306,9 @@ Key events:
 - Export/import graph JSON
 - Pin/unpin all nodes
 
-**Search (`search.js`):** Fuzzy search via Fuse.js across all node properties. Space-separated terms are AND-ed. Results are color-coded on the graph using `ColorScale`.
+**Search (`search.ts`):** Fuzzy search via Fuse.js across all node properties. Space-separated terms are AND-ed. Results are color-coded on the graph using `ColorScale`.
 
-**Data I/O (`data-io.js`):** Handles API fetching and flexible JSON parsing. Supports:
+**Data I/O (`data-io.ts`):** Handles API fetching and flexible JSON parsing. Supports:
 - Nodes/edges as arrays or id-keyed maps
 - Alternate edge keys: `"relationships"`, `"links"`
 - Auto-generates missing edge IDs
@@ -328,47 +334,49 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 - Logging via `logging` + `coloredlogs`
 - No `__all__` exports convention
 
-### JavaScript
-- ES modules bundled by Vite (no framework)
-- JSDoc type annotations with `@typedef` and `@param` (checkJs enabled in jsconfig.json)
-- DOM elements cached at module level
+### TypeScript
+- ES modules bundled by Vite (no framework); strict TypeScript (`strict: true`, `noEmit: true`)
+- `moduleResolution: bundler` — `.js` extensions in imports resolve to `.ts` source files
+- Types defined per-module and exported with `export type`; no shared `types.ts`
+- DOM elements cast to specific types (`HTMLElement`, `HTMLButtonElement`, etc.)
 - Arrow functions preferred for short callbacks
 - `const` by default, `let` when mutation needed
 - npm packages imported by bare specifier (e.g., `import ForceGraph from 'force-graph'`)
+- Lint: `npm run lint` / `./scripts/lint-ui.sh`; type-check: `npm run typecheck` / `./scripts/typecheck-ui.sh`
 
 ## Common Development Tasks
 
 ### Adding a new API endpoint
 1. Add route in `src/sysgraph/app.py` with appropriate Pydantic request/response models
 2. Implement business logic in `discovery.py` or a new module
-3. Update frontend `data-io.js` if the frontend needs to call it
+3. Update frontend `data-io.ts` if the frontend needs to call it
 
 ### Adding a new node/edge type to the graph
 1. Create the discovery logic in `discovery.py` inside `build_graph()`
 2. Add model classes in `model.py` if needed
 3. The frontend auto-discovers new types and creates filter toggles and color pickers
-4. Optionally add hardcoded color overrides in `settings.js` (`overrideNodeColors`/`overrideEdgeColors`)
+4. Optionally add hardcoded color overrides in `settings.ts` (`overrideNodeColors`/`overrideEdgeColors`)
 
 ### Adding a new frontend module
-1. Create `src/sysgraph-ui/modules/your-module.js`
-2. Use ES module exports; import from other modules as needed
-3. Wire into the app via `event-bus.js` events or direct imports in `app.js`
-4. Install new npm packages with `npm install <package>` if needed
+1. Create `src/sysgraph-ui/modules/your-module.ts`
+2. Use ES module exports with TypeScript types; use `.js` extension in imports (bundler resolution maps to `.ts`)
+3. Wire into the app via `event-bus.ts` events or direct imports in `app.ts`
+4. Install new npm packages by adding them to `package.json` and rebuilding via `./scripts/build-ui.sh`
 
 ### Adding a new npm dependency
-1. `npm install <package>` (or add to `package.json` and `npm ci`)
+1. Add the package to `package.json` dependencies, then rebuild via `./scripts/build-ui.sh` (do NOT run `npm install` on the host)
 2. Import in your JS module with a bare specifier: `import X from 'package'`
 3. Vite will bundle it automatically
 
 ### Modifying the graph visualization
-- Node rendering: `graph-ui.js` → `nodeCanvasObject` callback
-- Link rendering: `graph-ui.js` → `linkCanvasObject` callback
-- Physics: Adjust defaults in `settings.js` or tune via settings pane at runtime
-- Colors: `settings.js` → `overrideNodeColors` / `overrideEdgeColors` / `palette`
+- Node rendering: `graph-ui.ts` → `nodeCanvasObject` callback
+- Link rendering: `graph-ui.ts` → `linkCanvasObject` callback
+- Physics: Adjust defaults in `settings.ts` or tune via settings pane at runtime
+- Colors: `settings.ts` → `overrideNodeColors` / `overrideEdgeColors` / `palette`
 
 ### Modifying the settings panel
-- Static settings: Edit `settings-pane.js` setup code
-- Dynamic per-type settings: Modify `updateDynamicGraphPanes()` in `settings-pane.js`
+- Static settings: Edit `settings-pane.ts` setup code
+- Dynamic per-type settings: Modify `updateDynamicGraphPanes()` in `settings-pane.ts`
 
 ### Testing
 - Backend tests are in `src/sysgraph/tests/` using `unittest`
@@ -380,8 +388,8 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 
 - **Linux only:** The discovery layer depends on `/proc` filesystem and the `ss` command. It will not work on macOS or Windows.
 - **Privileges:** Some process info (e.g., other users' `/proc/[pid]/fd`) requires root or appropriate capabilities. Run with `sudo` for full visibility.
-- **Frontend build required:** The backend serves pre-built Vite output from `src/sysgraph/dist/`. You must run `./scripts/build-ui.sh` (or `npm run build`) before the backend can serve the frontend. During development, use the Vite dev server (`./scripts/dev-ui.sh` or `npm run dev`) for HMR.
-- **No host Node.js needed:** The `build-ui.sh` and `dev-ui.sh` scripts run Node.js inside Docker, so no local Node.js installation is required.
+- **Frontend build required:** The backend serves pre-built Vite output from `src/sysgraph/dist/`. You must run `./scripts/build-ui.sh` before the backend can serve the frontend. During development, use the Vite dev server (`./scripts/dev-ui.sh`) for HMR.
+- **No host Node.js needed:** All `*-ui.sh` scripts run Node.js inside Docker. If Node.js 22 is available locally, `npm run build/typecheck/lint` also work.
 - **Version single source of truth:** The app version is defined in `src/sysgraph/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
 - **Graph size:** On busy systems the graph can have thousands of nodes. The force simulation may be slow; tune d3 parameters via the settings pane.
 - **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"external_ip::{ip}"`. Edge IDs are UUIDs.

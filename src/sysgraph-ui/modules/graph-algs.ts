@@ -1,24 +1,27 @@
+import type { Graph } from './graph.js';
+
+export interface BfsResult {
+    nodeDistancesMap: Map<string, number>;
+    edgeDistancesMap: Map<string, number>;
+}
+
 /**
  * Breadth-first search from a starting node up to a maximum distance.
- * @param {import('./graph.js').Graph} graph
- * @param {string} startNodeId
- * @param {number} maxDistance
- * @returns {{ nodeDistancesMap: Map<string, number>, edgeDistancesMap: Map<string, number> }}
  */
-export function bfs(graph, startNodeId, maxDistance) {
-    const nodeDistancesMap = new Map();
-    const edgeDistancesMap = new Map();
+export function bfs(graph: Graph, startNodeId: string, maxDistance: number): BfsResult {
+    const nodeDistancesMap = new Map<string, number>();
+    const edgeDistancesMap = new Map<string, number>();
 
-    const queue = [{ nodeId: startNodeId, distance: 0 }];
+    const queue: { nodeId: string; distance: number }[] = [{ nodeId: startNodeId, distance: 0 }];
     nodeDistancesMap.set(startNodeId, 0);
 
     while (queue.length > 0) {
-        const { nodeId, distance } = queue.shift();
+        const { nodeId, distance } = queue.shift()!;
 
         if (distance >= maxDistance)
             continue;
 
-        const edges = graph.adjacency.get(nodeId) || [];
+        const edges = graph.adjacency.get(nodeId) ?? [];
 
         for (const edge of edges) {
             if (edgeDistancesMap.has(edge.id))
@@ -35,8 +38,5 @@ export function bfs(graph, startNodeId, maxDistance) {
         }
     }
 
-    return {
-        nodeDistancesMap: nodeDistancesMap,
-        edgeDistancesMap: edgeDistancesMap,
-    }
+    return { nodeDistancesMap, edgeDistancesMap };
 }

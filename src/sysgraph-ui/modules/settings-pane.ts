@@ -1,4 +1,5 @@
 import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
+import type { SettingsShape } from './settings.js';
 import {
     listAllPresets,
     saveSettingsPreset,
@@ -6,6 +7,7 @@ import {
     applySettingsPreset,
     resetSettingsToDefaults,
 } from './settings-presets.js';
+import type { PresetSource, PresetEntry } from './settings-presets.js';
 import { getGraph } from './state.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { emit, handle } from './event-bus.js';
@@ -17,12 +19,9 @@ import {
 } from './constants.js';
 
 import { Pane } from 'tweakpane';
+import type { FolderApi } from 'tweakpane';
 
-/**
- * @param {string} id
- * @returns {HTMLElement}
- */
-function getRequiredElement(id) {
+function getRequiredElement(id: string): HTMLElement {
     const element = document.getElementById(id);
     if (!(element instanceof HTMLElement)) {
         throw new Error(`Missing element: ${id}`);
@@ -30,11 +29,7 @@ function getRequiredElement(id) {
     return element;
 }
 
-/**
- * @param {string} id
- * @returns {HTMLInputElement}
- */
-function getRequiredInputElement(id) {
+function getRequiredInputElement(id: string): HTMLInputElement {
     const element = document.getElementById(id);
     if (!(element instanceof HTMLInputElement)) {
         throw new Error(`Missing input element: ${id}`);
@@ -45,49 +40,35 @@ function getRequiredInputElement(id) {
 const settingsPaneElement = getRequiredElement('settingsPane');
 const importFileInput = getRequiredInputElement('importFile');
 
-/** @type {any} */
 const pane = new Pane({
     title: 'parameters',
     container: settingsPaneElement,
 });
 
 const presetUiState = {
-    /** @type {string} Composite key: "predefined:name" or "user:name" */
-    selectedPresetKey: '',
+    selectedPresetKey: '' as string,
 };
 
-/**
- * @param {{ name: string, source: import('./settings-presets.js').PresetSource }} entry
- * @returns {string}
- */
-function makePresetKey(entry) {
+function makePresetKey(entry: PresetEntry): string {
     return `${entry.source}:${entry.name}`;
 }
 
-/**
- * @param {string} key
- * @returns {{ name: string, source: import('./settings-presets.js').PresetSource }}
- */
-function parsePresetKey(key) {
+function parsePresetKey(key: string): { name: string; source: PresetSource } {
     const colonIndex = key.indexOf(':');
     return {
-        source: /** @type {import('./settings-presets.js').PresetSource} */ (key.slice(0, colonIndex)),
+        source: key.slice(0, colonIndex) as PresetSource,
         name: key.slice(colonIndex + 1),
     };
 }
 
-/**
- * @param {unknown} err
- * @returns {string}
- */
-function getErrorMessage(err) {
+function getErrorMessage(err: unknown): string {
     return err instanceof Error ? err.message : String(err);
 }
 
 // --- d3 simulation parameters (data-driven) ---
-const d3RenderingSettingsFolder = pane.addFolder({ title: "d3 forces settings", expanded: false });
+const d3RenderingSettingsFolder = pane.addFolder({ title: 'd3 forces settings', expanded: false });
 
-const d3Params = [
+const d3Params: { key: keyof SettingsShape; min: number; max: number; step: number }[] = [
     { key: 'd3Charge', min: -800, max: 100, step: 10 },
     { key: 'd3LinkDistance', min: 40, max: 300, step: 5 },
     { key: 'd3LinkStrength', min: 0.0, max: 1.0, step: 0.01 },
@@ -98,34 +79,38 @@ const d3Params = [
 ];
 
 for (const p of d3Params) {
-    d3RenderingSettingsFolder.addBinding(settings, p.key, p).on('change', () => {
+    d3RenderingSettingsFolder.addBinding(
+        settings as unknown as Record<string, unknown>,
+        p.key,
+        { min: p.min, max: p.max, step: p.step },
+    ).on('change', () => {
         emit(EVT_D3_PARAMS_CHANGED, null);
     });
 }
 
-d3RenderingSettingsFolder.addBinding(settings, 'd3CenterForce').on('change', () => {
+d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3CenterForce').on('change', () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
 });
 
 // --- graph display settings ---
-const displayOptionsFolder = pane.addFolder({ title: "display options", expanded: false });
+const displayOptionsFolder = pane.addFolder({ title: 'display options', expanded: false });
 
-displayOptionsFolder.addBinding(settings, 'showIsolated').on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showIsolated').on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings, 'showGrid').on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showGrid').on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
     emit(EVT_CURVATURE_UPDATED, null);
 });
 
 // --- label settings ---
 displayOptionsFolder.addBlade({ view: 'separator' });
 
-const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings, 'nodeLabelMode', {
+const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelMode', {
     label: 'node label',
     view: 'list',
     options: [
@@ -136,29 +121,27 @@ const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings, 'nodeLabe
     ],
 });
 
-const nodeLabelExpressionBinding = displayOptionsFolder.addBinding(settings, 'nodeLabelExpression', {
+const nodeLabelExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelExpression', {
     label: 'label expr',
 });
 
-// show/hide expression input based on mode
-function updateExpressionVisibility() {
+function updateExpressionVisibility(): void {
     nodeLabelExpressionBinding.hidden = settings.nodeLabelMode !== 'expression';
 }
 updateExpressionVisibility();
 
 nodeLabelModeBinding.on('change', () => {
     updateExpressionVisibility();
-    // emit("graph-ui-settings-updated", null);
 });
 
 nodeLabelExpressionBinding.on('change', () => {
-    // emit("graph-ui-settings-updated", null);
+    // expression changes are applied live on next render
 });
 
 // --- node sizing settings ---
 displayOptionsFolder.addBlade({ view: 'separator' });
 
-const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings, 'nodeSizingMode', {
+const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingMode', {
     label: 'node sizing',
     view: 'list',
     options: [
@@ -168,18 +151,18 @@ const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings, 'nodeSiz
     ],
 });
 
-const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings, 'nodeSizingConstant', {
+const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingConstant', {
     label: 'size',
     min: 1,
     max: 10,
     step: 0.5,
 });
 
-const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings, 'nodeSizingExpression', {
+const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingExpression', {
     label: 'size expr',
 });
 
-function updateSizingVisibility() {
+function updateSizingVisibility(): void {
     nodeSizingConstantBinding.hidden = settings.nodeSizingMode !== 'constant';
     nodeSizingExpressionBinding.hidden = settings.nodeSizingMode !== 'expression';
 }
@@ -198,15 +181,14 @@ nodeSizingExpressionBinding.on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-function syncStaticSettingsPane() {
+function syncStaticSettingsPane(): void {
     updateExpressionVisibility();
     updateSizingVisibility();
     pane.refresh();
 }
 
-const actionsFolder = pane.addFolder({ title: "actions", expanded: true });
+const actionsFolder = pane.addFolder({ title: 'actions', expanded: true });
 
-// --- refresh button ---
 actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
     try {
         await handle(CMD_RELOAD);
@@ -218,7 +200,6 @@ actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
 
 actionsFolder.addBlade({ view: 'separator' });
 
-// --- pin / unpin ---
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
     for (const node of graphData.nodes) {
@@ -235,13 +216,12 @@ actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
 
 actionsFolder.addBlade({ view: 'separator' });
 
-// --- clear / export / import ---
 actionsFolder.addButton({ title: 'clear' }).on('click', async () => {
     emit(EVT_CLEAR_CLICKED, null);
 });
 
 actionsFolder.addButton({ title: 'export data' }).on('click', () => {
-    const blob = handle(CMD_EXPORT);
+    const blob = handle<undefined, Blob>(CMD_EXPORT);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -255,8 +235,8 @@ actionsFolder.addButton({ title: 'import data' }).on('click', () => {
     importFileInput.click();
 });
 
-importFileInput.addEventListener('change', async (event) => {
-    const file = importFileInput.files && importFileInput.files[0];
+importFileInput.addEventListener('change', async () => {
+    const file = importFileInput.files?.[0];
     if (!file) return;
 
     try {
@@ -271,34 +251,31 @@ importFileInput.addEventListener('change', async (event) => {
 });
 
 // --- filter panes ---
-let nodeFiltersFolder = pane.addFolder({ title: "node filters", expanded: false });
-let edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: false });
+let nodeFiltersFolder: FolderApi = pane.addFolder({ title: 'node filters', expanded: false });
+let edgeFiltersFolder: FolderApi = pane.addFolder({ title: 'edge filters', expanded: false });
 
 // --- color panes ---
-let nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: true });
-let edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: true });
+let nodeColorsFolder: FolderApi = pane.addFolder({ title: 'node colors', expanded: true });
+let edgeColorsFolder: FolderApi = pane.addFolder({ title: 'edge colors', expanded: true });
 
 // --- edge width pane ---
-let edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: false });
+let edgeWidthsFolder: FolderApi = pane.addFolder({ title: 'edge widths', expanded: false });
 
 // --- presets pane ---
-let presetsFolder = pane.addFolder({ title: "presets", expanded: true });
+let presetsFolder: FolderApi = pane.addFolder({ title: 'presets', expanded: true });
 
-/**
- * @param {string[]} keys
- */
-function updateSelectedPresetKey(keys) {
+function updateSelectedPresetKey(keys: string[]): void {
     if (keys.length === 0) {
         presetUiState.selectedPresetKey = '';
         return;
     }
 
     if (!keys.includes(presetUiState.selectedPresetKey)) {
-        presetUiState.selectedPresetKey = keys[0];
+        presetUiState.selectedPresetKey = keys[0]!;
     }
 }
 
-function rebuildPresetsFolder() {
+function rebuildPresetsFolder(): void {
     const expanded = presetsFolder.expanded;
     const allPresets = listAllPresets();
 
@@ -311,15 +288,13 @@ function rebuildPresetsFolder() {
     updateSelectedPresetKey(allKeys);
 
     presetsFolder.dispose();
-    presetsFolder = pane.addFolder({ title: "presets", expanded });
+    presetsFolder = pane.addFolder({ title: 'presets', expanded });
 
     presetsFolder.addButton({ title: 'save' }).on('click', () => {
         const rawName = window.prompt('Preset name');
         const presetName = rawName ? rawName.trim() : '';
 
-        if (!presetName) {
-            return;
-        }
+        if (!presetName) return;
 
         try {
             saveSettingsPreset(presetName);
@@ -334,7 +309,7 @@ function rebuildPresetsFolder() {
     presetsFolder.addBlade({ view: 'separator' });
 
     if (dropdownOptions.length > 0) {
-        presetsFolder.addBinding(presetUiState, 'selectedPresetKey', {
+        presetsFolder.addBinding(presetUiState as unknown as Record<string, unknown>, 'selectedPresetKey', {
             label: 'name',
             view: 'list',
             options: dropdownOptions,
@@ -374,9 +349,7 @@ function rebuildPresetsFolder() {
         }
 
         const shouldDelete = window.confirm(`Delete "${name}"?`);
-        if (!shouldDelete) {
-            return;
-        }
+        if (!shouldDelete) return;
 
         try {
             deleteSettingsPreset(name);
@@ -407,7 +380,7 @@ rebuildPresetsFolder();
  * Rebuilds the dynamic filter and colour panes in the settings UI based on the
  * current graph's node/edge types.
  */
-export function updateDynamicGraphPanes() {
+export function updateDynamicGraphPanes(): void {
     const nfExpanded = nodeFiltersFolder.expanded;
     const efExpanded = edgeFiltersFolder.expanded;
     const ncExpanded = nodeColorsFolder.expanded;
@@ -420,11 +393,11 @@ export function updateDynamicGraphPanes() {
     edgeColorsFolder.dispose();
     edgeWidthsFolder.dispose();
 
-    nodeFiltersFolder = pane.addFolder({ title: "node filters", expanded: nfExpanded });
-    edgeFiltersFolder = pane.addFolder({ title: "edge filters", expanded: efExpanded });
-    nodeColorsFolder = pane.addFolder({ title: "node colors", expanded: ncExpanded });
-    edgeColorsFolder = pane.addFolder({ title: "edge colors", expanded: ecExpanded });
-    edgeWidthsFolder = pane.addFolder({ title: "edge widths", expanded: ewExpanded });
+    nodeFiltersFolder = pane.addFolder({ title: 'node filters', expanded: nfExpanded });
+    edgeFiltersFolder = pane.addFolder({ title: 'edge filters', expanded: efExpanded });
+    nodeColorsFolder = pane.addFolder({ title: 'node colors', expanded: ncExpanded });
+    edgeColorsFolder = pane.addFolder({ title: 'edge colors', expanded: ecExpanded });
+    edgeWidthsFolder = pane.addFolder({ title: 'edge widths', expanded: ewExpanded });
 
     const graph = getGraph();
     const nodeFilters = settings.nodeFilters;
@@ -440,7 +413,7 @@ export function updateDynamicGraphPanes() {
         if (!(key in nodeFilters)) {
             nodeFilters[key] = true;
         }
-        nodeFiltersFolder.addBinding(nodeFilters, key).on('change', () => {
+        nodeFiltersFolder.addBinding(nodeFilters as unknown as Record<string, unknown>, key).on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
     }
@@ -449,17 +422,16 @@ export function updateDynamicGraphPanes() {
         if (!(key in edgeFilters)) {
             edgeFilters[key] = true;
         }
-        edgeFiltersFolder.addBinding(edgeFilters, key).on('change', () => {
+        edgeFiltersFolder.addBinding(edgeFilters as unknown as Record<string, unknown>, key).on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
     }
 
-    // initialize colors and edge widths in settings
     for (const key of nodeTypes) {
         if (!(key in nodeColors)) {
             nodeColors[key] = structuredClone(getNodeColor(key));
         }
-        nodeColorsFolder.addBinding(nodeColors, key).on('change', () => {
+        nodeColorsFolder.addBinding(nodeColors as unknown as Record<string, unknown>, key).on('change', () => {
             emit(EVT_COLORS_UPDATED, null);
         });
     }
@@ -468,7 +440,7 @@ export function updateDynamicGraphPanes() {
         if (!(key in edgeColors)) {
             edgeColors[key] = structuredClone(getEdgeColor(key));
         }
-        edgeColorsFolder.addBinding(edgeColors, key).on('change', () => {
+        edgeColorsFolder.addBinding(edgeColors as unknown as Record<string, unknown>, key).on('change', () => {
             emit(EVT_COLORS_UPDATED, null);
         });
     }
@@ -477,7 +449,7 @@ export function updateDynamicGraphPanes() {
         if (!(key in edgeWidths)) {
             edgeWidths[key] = getEdgeWidth(key);
         }
-        edgeWidthsFolder.addBinding(edgeWidths, key, {
+        edgeWidthsFolder.addBinding(edgeWidths as unknown as Record<string, unknown>, key, {
             min: 0.5, max: 5, step: 0.5,
         });
     }

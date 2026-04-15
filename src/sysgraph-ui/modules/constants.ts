@@ -24,24 +24,20 @@ export const NODE_RADIUS_MULTIPLIER = 3;
 export const MAX_NODE_VAL = 10;
 export const NODE_LABEL_FONT_SIZE = 12;
 export const NODE_LABEL_OFFSET = 4;
-export const UI_FONT_FAMILY = "'Ubuntu', 'Segoe UI', 'Arial', sans-serif";
+export const UI_FONT_FAMILY = "'Ubuntu', 'Roboto', 'Segoe UI', 'Arial', sans-serif";
 
 /**
  * Computes the display radius for a node.
- * @param {{ val?: number }} node
- * @returns {number}
  */
-export function nodeRadius(node) {
-    return Math.max(MIN_NODE_RADIUS, (node.val || 1) * NODE_RADIUS_MULTIPLIER);
+export function nodeRadius(node: { val?: number }): number {
+    return Math.max(MIN_NODE_RADIUS, (node.val ?? 1) * NODE_RADIUS_MULTIPLIER);
 }
 
 /**
  * Computes the pointer hit-test radius for a node (slightly larger).
- * @param {{ val?: number }} node
- * @returns {number}
  */
-export function nodePointerRadius(node) {
-    return Math.max(MIN_POINTER_AREA_RADIUS, (node.val || 1) * NODE_RADIUS_MULTIPLIER);
+export function nodePointerRadius(node: { val?: number }): number {
+    return Math.max(MIN_POINTER_AREA_RADIUS, (node.val ?? 1) * NODE_RADIUS_MULTIPLIER);
 }
 
 // ── Grid ────────────────────────────────────────────────────

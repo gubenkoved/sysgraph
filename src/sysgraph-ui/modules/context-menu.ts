@@ -1,19 +1,15 @@
-/**
- * @typedef {Object} ContextMenuItem
- * @property {string} [label]
- * @property {() => void} [action]
- * @property {boolean} [divider]
- */
+export interface ContextMenuItem {
+    label?: string;
+    action?: () => void;
+    divider?: boolean;
+}
 
-const menu = document.getElementById('contextMenu');
+const menu = document.getElementById('contextMenu') as HTMLElement;
 
 /**
  * Shows a context menu at the given screen coordinates.
- * @param {number} x - Viewport X position.
- * @param {number} y - Viewport Y position.
- * @param {ContextMenuItem[]} items
  */
-export function showContextMenu(x, y, items) {
+export function showContextMenu(x: number, y: number, items: ContextMenuItem[]): void {
     menu.innerHTML = '';
 
     for (const item of items) {
@@ -25,11 +21,11 @@ export function showContextMenu(x, y, items) {
         }
         const el = document.createElement('div');
         el.className = 'context-menu-item';
-        el.textContent = item.label;
+        el.textContent = item.label ?? '';
         el.addEventListener('click', (e) => {
             e.stopPropagation();
             hideContextMenu();
-            item.action();
+            item.action?.();
         });
         menu.appendChild(el);
     }
@@ -51,7 +47,7 @@ export function showContextMenu(x, y, items) {
 }
 
 /** Hides the currently visible context menu. */
-export function hideContextMenu() {
+export function hideContextMenu(): void {
     menu.style.display = 'none';
 }
 

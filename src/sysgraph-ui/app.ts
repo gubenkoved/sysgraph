@@ -24,24 +24,26 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/textfield/outlined-text-field.js';
 
 // --- cached DOM elements ---
-const searchMatchCountEl = document.getElementById('searchMatchCount');
-const addToSelectionBtn = document.getElementById('addToSelection');
+const searchMatchCountEl = document.getElementById('searchMatchCount') as HTMLElement;
+const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 
 // --- event wiring ---
 on(EVT_GRAPH_UPDATED, async () => {
     updateDynamicGraphPanes();
     await refreshGraphUI();
 });
+
 on(EVT_CLEAR_CLICKED, async () => {
     resetState();
     emit(EVT_GRAPH_UPDATED, null);
 });
+
 on(EVT_FILTERS_UPDATED, async () => {
     await refreshGraphUI();
-})
+});
 
-on(EVT_SEARCH_CHANGED, (expression) => {
-    if (expression && expression.trim()) {
+on(EVT_SEARCH_CHANGED, (expression: string) => {
+    if (expression?.trim()) {
         try {
             const graph = getGraph();
             const matches = search(graph, expression);
@@ -49,7 +51,7 @@ on(EVT_SEARCH_CHANGED, (expression) => {
             setSearch({
                 matchesMap,
                 matchColorsMap: computeMatchColors(matchesMap),
-            })
+            });
             dismissError('search-syntax');
             searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
             searchMatchCountEl.style.display = 'inline';
@@ -77,13 +79,14 @@ on(EVT_SEARCH_CHANGED, (expression) => {
 
 on(EVT_SELECTION_CHANGED, () => updateSelectionInfo());
 
-// graph ui related handlers
 on(EVT_SETTINGS_UPDATED, async () => {
     await refreshGraphUI();
 });
+
 on(EVT_COLORS_UPDATED, () => {
     refreshGraphColors();
 });
+
 on(EVT_CURVATURE_UPDATED, autoAdjustCurvature);
 on(EVT_D3_PARAMS_CHANGED, applyD3Params);
 
@@ -93,15 +96,16 @@ registerHandler(CMD_EXPORT, () => {
     return new Blob([serializeGraph(graph)], { type: 'application/json' });
 });
 
-registerHandler(CMD_IMPORT, async (text) => {
+registerHandler(CMD_IMPORT, async (text?: string) => {
+    if (!text) return;
     try {
         const loadedData = parseGraphData(text);
         resetState();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
-        console.error("import failed:", err);
-        showError(`Import failed: ${err.message}`);
+        console.error('import failed:', err);
+        showError(`Import failed: ${(err as Error).message}`);
     }
 });
 
@@ -111,8 +115,8 @@ registerHandler(CMD_RELOAD, async () => {
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
-        console.error("reload failed:", err);
-        showError(`Reload failed: ${err.message}`);
+        console.error('reload failed:', err);
+        showError(`Reload failed: ${(err as Error).message}`);
     }
 });
 
@@ -122,15 +126,13 @@ initToolbar(selectionCanvas, canvas);
 
 // --- initial load ---
 window.addEventListener('load', async () => {
+    emit(EVT_D3_PARAMS_CHANGED, null);
     try {
-        console.log("initial loading...");
-        emit(EVT_D3_PARAMS_CHANGED, null);
         const loadedData = await loadDataFromApi();
-        const graph = new Graph(loadedData.nodes, loadedData.edges);
-        updateGraph(graph);
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
-        console.error("initial load failed:", err);
-        showError(`Failed to load graph: ${err.message}`);
+        console.error('initial load failed:', err);
+        showError(`Failed to load graph: ${(err as Error).message}`);
     }
 });

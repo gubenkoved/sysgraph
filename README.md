@@ -63,6 +63,37 @@ The `--pid=host` and `--net=host` flags allow the container to see host processe
 2. It builds a graph of processes (nodes) and their IPC channels (edges).
 3. The **browser frontend** fetches the graph via `GET /api/graph` and renders it using [force-graph](https://github.com/vasturiano/force-graph) with d3 physics simulation.
 
+## Development
+
+### Prerequisites
+- Python ≥ 3.12, Linux, Docker
+- Node.js 22 runs inside Docker; no host installation required
+
+### Backend
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e . && pip install -r requirements-dev.in
+python src/sysgraph/app.py   # → http://localhost:8000
+```
+
+### Frontend (TypeScript + Vite)
+```bash
+./scripts/build-ui.sh         # production build → src/sysgraph/dist/
+./scripts/dev-ui.sh           # Vite dev server with HMR on :5173
+./scripts/typecheck-ui.sh     # TypeScript type checking
+./scripts/lint-ui.sh          # Biome linter (pass --fix to auto-fix)
+```
+
+### Tests
+```bash
+pytest src/sysgraph/tests/    # requires Linux /proc
+```
+
+### Python linting
+```bash
+./scripts/lint.sh             # ruff check + ruff format + isort
+```
+
 ## License
 
 [MIT](LICENSE)

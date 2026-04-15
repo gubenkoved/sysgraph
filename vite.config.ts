@@ -1,11 +1,14 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 /**
  * Read the package version from src/sysgraph/__init__.py (single source of truth).
  */
-function readPythonVersion() {
+function readPythonVersion(): string {
   const initPy = readFileSync(
     resolve(__dirname, 'src/sysgraph/__init__.py'), 'utf-8',
   );
@@ -24,14 +27,14 @@ export default defineConfig({
   plugins: [
     {
       name: 'inject-python-version',
-      transformIndexHtml(html) {
+      transformIndexHtml(html: string) {
         return html.replace('__APP_VERSION__', readPythonVersion());
       },
     },
   ],
   server: {
     proxy: {
-      '/api': process.env.VITE_BACKEND_URL || 'http://localhost:8000',
+      '/api': process.env['VITE_BACKEND_URL'] || 'http://localhost:8000',
     },
   },
 });

@@ -4,26 +4,25 @@ import { deleteSelectedNodes } from './selection.js';
 import { EVT_SEARCH_CHANGED } from './constants.js';
 
 // cached DOM elements
-const toolPointerBtn = document.getElementById('toolPointer');
-const toolRectSelectBtn = document.getElementById('toolRectSelect');
-const toolSearchBtn = document.getElementById('toolSearch');
-const deleteBtn = document.getElementById('deleteSelected');
-const unselectBtn = document.getElementById('unselectAll');
-const selectionInfoEl = document.getElementById('selectionInfo');
-const searchInput = document.getElementById('searchInput');
-const searchHelpTrigger = document.getElementById('searchHelpTrigger');
-const searchHelpAnchor = document.getElementById('searchHelpAnchor');
-const searchHelpPopover = document.getElementById('searchHelp');
-const searchMatchCount = document.getElementById('searchMatchCount');
-const addToSelectionBtn = document.getElementById('addToSelection');
+const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
+const toolRectSelectBtn = document.getElementById('toolRectSelect') as HTMLElement;
+const toolSearchBtn = document.getElementById('toolSearch') as HTMLElement;
+const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
+const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
+const selectionInfoEl = document.getElementById('selectionInfo') as HTMLElement;
+const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+const searchHelpTrigger = document.getElementById('searchHelpTrigger') as HTMLElement;
+const searchHelpAnchor = document.getElementById('searchHelpAnchor') as HTMLElement;
+const searchHelpPopover = document.getElementById('searchHelp') as HTMLElement;
+const searchMatchCount = document.getElementById('searchMatchCount') as HTMLElement;
+const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
+
+type Tool = 'pointer' | 'rect-select' | 'search';
 
 /**
  * Activates the given tool and updates toolbar button states.
- * @param {'pointer' | 'rect-select' | 'search'} tool
- * @param {HTMLCanvasElement} selectionCanvas
- * @param {HTMLCanvasElement} canvas
  */
-export function setTool(tool, selectionCanvas, canvas) {
+export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement): void {
     setCurrentTool(tool);
 
     toolPointerBtn.classList.toggle('active', tool === 'pointer');
@@ -55,14 +54,14 @@ export function setTool(tool, selectionCanvas, canvas) {
         searchHelpPopover.classList.remove('open');
         searchMatchCount.style.display = 'none';
         addToSelectionBtn.style.display = 'none';
-        emit(EVT_SEARCH_CHANGED, "");
+        emit(EVT_SEARCH_CHANGED, '');
     }
 
     updateSelectionInfo();
 }
 
 /** Updates the selection info label and button visibility based on current state. */
-export function updateSelectionInfo() {
+export function updateSelectionInfo(): void {
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
     if (isSelectionTool) {
@@ -86,14 +85,12 @@ export function updateSelectionInfo() {
 
 /**
  * Wires up toolbar buttons, search input, and keyboard shortcuts.
- * @param {HTMLCanvasElement} selectionCanvas
- * @param {HTMLCanvasElement} canvas
  */
-export function initToolbar(selectionCanvas, canvas) {
+export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement): void {
     // search input
     searchInput.addEventListener('input', (event) => {
         event.stopPropagation();
-        emit(EVT_SEARCH_CHANGED, event.target.value);
+        emit(EVT_SEARCH_CHANGED, (event.target as HTMLInputElement).value);
     });
 
     // search help popover toggle
@@ -104,7 +101,7 @@ export function initToolbar(selectionCanvas, canvas) {
 
     // dismiss on outside click
     document.addEventListener('click', (e) => {
-        if (!searchHelpAnchor.contains(e.target)) {
+        if (!searchHelpAnchor.contains(e.target as Node)) {
             searchHelpPopover.classList.remove('open');
         }
     });
@@ -142,7 +139,7 @@ export function initToolbar(selectionCanvas, canvas) {
 
     // keyboard shortcuts
     document.addEventListener('keydown', async (event) => {
-        const el = event.target;
+        const el = event.target as HTMLElement;
 
         const isTyping =
             el.tagName === 'INPUT' ||

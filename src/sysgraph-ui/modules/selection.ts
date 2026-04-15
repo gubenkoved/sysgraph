@@ -1,5 +1,5 @@
 import { state, getGraph, updateGraph } from './state.js';
-import { filterGraph, } from './graph.js';
+import { filterGraph } from './graph.js';
 import { ForceGraphInstance } from './graph-ui.js';
 import { emit } from './event-bus.js';
 import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constants.js';
@@ -7,25 +7,18 @@ import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constant
 /**
  * Removes all currently selected nodes (and their connected edges) from the
  * graph and refreshes the UI.
- * @returns {Promise<void>}
  */
-export async function deleteSelectedNodes() {
+export async function deleteSelectedNodes(): Promise<void> {
     const graph = getGraph();
 
-    function nodeShouldBeIncludedFn(node) {
-        return !state.selection.selectedNodeIds.has(node.id);
-    }
+    const nodeShouldBeIncludedFn = (node: { id: string }) =>
+        !state.selection.selectedNodeIds.has(node.id);
 
-    function edgeShouldBeIncludedFn(edge) {
-        return (!state.selection.selectedNodeIds.has(edge.source_id) &&
-            !state.selection.selectedNodeIds.has(edge.target_id));
-    }
+    const edgeShouldBeIncludedFn = (edge: { source_id: string; target_id: string }) =>
+        !state.selection.selectedNodeIds.has(edge.source_id) &&
+        !state.selection.selectedNodeIds.has(edge.target_id);
 
-    const filteredGraph = filterGraph(
-        graph,
-        nodeShouldBeIncludedFn,
-        edgeShouldBeIncludedFn
-    )
+    const filteredGraph = filterGraph(graph, nodeShouldBeIncludedFn, edgeShouldBeIncludedFn);
 
     updateGraph(filteredGraph);
     emit(EVT_GRAPH_UPDATED, null);
@@ -34,13 +27,17 @@ export async function deleteSelectedNodes() {
     emit(EVT_SELECTION_CHANGED, null);
 }
 
+interface Rect {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+}
+
 /**
  * Tests whether a node's circle intersects a selection rectangle.
- * @param {{ x: number, y: number, val?: number }} node
- * @param {{ x1: number, y1: number, x2: number, y2: number }} rect
- * @returns {boolean}
  */
-function isNodeInRect(node, rect) {
+function isNodeInRect(node: { x: number; y: number; val?: number }, rect: Rect): boolean {
     const minX = Math.min(rect.x1, rect.x2);
     const maxX = Math.max(rect.x1, rect.x2);
     const minY = Math.min(rect.y1, rect.y2);
@@ -53,12 +50,10 @@ function isNodeInRect(node, rect) {
 /**
  * Creates the selection overlay canvas, wires mouse events for rectangular
  * selection, and sets up viewport resizing.
- * @returns {{ selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement }}
  */
-export function initSelection() {
-    const graphContainer = document.getElementById('graph');
+export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: HTMLCanvasElement } {
+    const graphContainer = document.getElementById('graph') as HTMLElement;
 
-    // custom overlay for drawing selection rectangle
     const selectionCanvas = document.createElement('canvas');
     selectionCanvas.style.position = 'absolute';
     selectionCanvas.style.top = '0';
@@ -70,7 +65,7 @@ export function initSelection() {
     selectionCanvas.style.background = 'transparent';
     graphContainer.appendChild(selectionCanvas);
 
-    function resizeGraphViewport() {
+    function resizeGraphViewport(): void {
         const rect = graphContainer.getBoundingClientRect();
         ForceGraphInstance.width(rect.width);
         ForceGraphInstance.height(rect.height);
@@ -84,8 +79,8 @@ export function initSelection() {
         resizeGraphViewport();
     });
 
-    function drawSelectionRectangle() {
-        const ctx = selectionCanvas.getContext('2d');
+    function drawSelectionRectangle(): void {
+        const ctx = selectionCanvas.getContext('2d')!;
         ctx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
 
         if (state.selection.isSelecting && state.selection.selectionStartCanvas && state.selection.selectionEndCanvas) {
@@ -108,8 +103,7 @@ export function initSelection() {
         }
     }
 
-    // get the force-graph canvas for event forwarding
-    const canvas = document.querySelector('#graph canvas');
+    const canvas = document.querySelector('#graph canvas') as HTMLCanvasElement;
 
     // forward wheel events to the force-graph canvas for zoom
     selectionCanvas.addEventListener('wheel', (event) => {
@@ -118,8 +112,8 @@ export function initSelection() {
     }, { passive: false });
 
     // --- middle-click panning (works in ALL tool modes) ---
-    let middleDrag = null;
-    let savedCursor = null;
+    let middleDrag: { lastX: number; lastY: number } | null = null;
+    let savedCursor: string | null = null;
 
     graphContainer.addEventListener('mousedown', (event) => {
         if (event.button === 1) {
@@ -147,7 +141,7 @@ export function initSelection() {
     window.addEventListener('mouseup', (event) => {
         if (middleDrag && event.button === 1) {
             const target = state.currentTool === 'rect-select' ? selectionCanvas : canvas;
-            target.style.cursor = savedCursor || '';
+            target.style.cursor = savedCursor ?? '';
             middleDrag = null;
             savedCursor = null;
         }
@@ -156,7 +150,6 @@ export function initSelection() {
     // mouse event handlers
     selectionCanvas.addEventListener('mousedown', (event) => {
         if (state.currentTool === 'rect-select') {
-            // only left-click starts rectangle selection
             if (event.button !== 0) return;
 
             const graphRect = graphContainer.getBoundingClientRect();
@@ -195,25 +188,23 @@ export function initSelection() {
             state.selection.selectionEndCanvas = { x: localX, y: localY };
             state.selection.isSelecting = false;
 
-            // find nodes in selection rectangle
-            const rect = {
-                x1: state.selection.selectionStart.x,
-                y1: state.selection.selectionStart.y,
-                x2: state.selection.selectionEnd.x,
-                y2: state.selection.selectionEnd.y,
+            const rect: Rect = {
+                x1: state.selection.selectionStart!.x,
+                y1: state.selection.selectionStart!.y,
+                x2: state.selection.selectionEnd!.x,
+                y2: state.selection.selectionEnd!.y,
             };
 
-            // replace current selection unless Shift key is pressed
             if (!event.shiftKey) {
                 state.selection.selectedNodeIds.clear();
             }
 
-            const nodes = ForceGraphInstance.graphData().nodes;
-            nodes.forEach(node => {
+            const nodes = ForceGraphInstance.graphData().nodes as Array<{ id: string; x: number; y: number; val?: number }>;
+            for (const node of nodes) {
                 if (isNodeInRect(node, rect)) {
                     state.selection.selectedNodeIds.add(node.id);
                 }
-            });
+            }
 
             emit(EVT_SELECTION_CHANGED, null);
             state.selection.selectionStartCanvas = null;

@@ -1,20 +1,27 @@
 import { settings, createDefaultSettings } from './settings.js';
+import type { SettingsShape } from './settings.js';
 
 const STORAGE_KEY = 'sysgraph:settings-presets';
 const STORAGE_VERSION = 1;
 
-/** @typedef {typeof settings} SettingsSnapshot */
-/** @typedef {{ version: number, presets: Record<string, unknown> }} SettingsPresetStore */
-/** @typedef {'predefined' | 'user'} PresetSource */
-/** @typedef {{ name: string, source: PresetSource }} PresetEntry */
+export type SettingsSnapshot = SettingsShape;
+export type PresetSource = 'predefined' | 'user';
+
+export interface PresetEntry {
+    name: string;
+    source: PresetSource;
+}
+
+interface SettingsPresetStore {
+    version: number;
+    presets: Record<string, unknown>;
+}
 
 /**
  * Predefined (built-in) presets. Keys are preset names, values are partial
  * overrides applied on top of {@link createDefaultSettings}.
- *
- * @type {[string, Partial<SettingsSnapshot>][]}
  */
-const PREDEFINED_PRESETS = [
+const PREDEFINED_PRESETS: [string, Partial<SettingsSnapshot>][] = [
     ['default', {}],
     ['simple', {
         nodeLabelMode: 'expression',
@@ -22,39 +29,29 @@ const PREDEFINED_PRESETS = [
     }],
 ];
 
-/**
- * @param {unknown} value
- * @returns {any}
- */
-function cloneJsonValue(value) {
-    return JSON.parse(JSON.stringify(value));
+function cloneJsonValue<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T;
 }
 
-/** @returns {SettingsPresetStore} */
-function createEmptyStore() {
+function createEmptyStore(): SettingsPresetStore {
     return {
         version: STORAGE_VERSION,
         presets: {},
     };
 }
 
-/**
- * @param {unknown} value
- * @returns {value is Record<string, unknown>}
- */
-function isObjectRecord(value) {
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
-/** @returns {SettingsPresetStore} */
-function readPresetStore() {
+function readPresetStore(): SettingsPresetStore {
     try {
         const raw = window.localStorage.getItem(STORAGE_KEY);
         if (!raw) {
             return createEmptyStore();
         }
 
-        const parsed = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
         if (!isObjectRecord(parsed) || !isObjectRecord(parsed.presets)) {
             return createEmptyStore();
         }
@@ -69,27 +66,22 @@ function readPresetStore() {
     }
 }
 
-/**
- * @param {SettingsPresetStore} store
- */
-function writePresetStore(store) {
+function writePresetStore(store: SettingsPresetStore): void {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: STORAGE_VERSION,
         presets: store.presets,
     }));
 }
 
-/** @returns {SettingsSnapshot} */
-function snapshotSettings() {
+function snapshotSettings(): SettingsSnapshot {
     return cloneJsonValue(settings);
 }
 
-/**
- * @param {any} target
- * @param {any} source
- * @param {boolean} deleteMissingKeys
- */
-function applyObjectInPlace(target, source, deleteMissingKeys) {
+function applyObjectInPlace(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>,
+    deleteMissingKeys: boolean,
+): void {
     if (deleteMissingKeys) {
         for (const key of Object.keys(target)) {
             if (!(key in source)) {
@@ -110,7 +102,7 @@ function applyObjectInPlace(target, source, deleteMissingKeys) {
     }
 }
 
-export function listSettingsPresetNames() {
+export function listSettingsPresetNames(): string[] {
     return Object.keys(readPresetStore().presets).sort((left, right) => {
         return left.localeCompare(right);
     });
@@ -120,12 +112,9 @@ export function listSettingsPresetNames() {
  * Returns all presets (predefined + user) as an ordered list.
  * Predefined presets come first (in definition order), then user presets
  * sorted alphabetically.
- *
- * @returns {PresetEntry[]}
  */
-export function listAllPresets() {
-    /** @type {PresetEntry[]} */
-    const entries = [];
+export function listAllPresets(): PresetEntry[] {
+    const entries: PresetEntry[] = [];
 
     for (const [name] of PREDEFINED_PRESETS) {
         entries.push({ name, source: 'predefined' });
@@ -139,19 +128,13 @@ export function listAllPresets() {
     return entries;
 }
 
-/**
- * @param {string} name
- */
-export function saveSettingsPreset(name) {
+export function saveSettingsPreset(name: string): void {
     const store = readPresetStore();
     store.presets[name] = snapshotSettings();
     writePresetStore(store);
 }
 
-/**
- * @param {string} name
- */
-export function deleteSettingsPreset(name) {
+export function deleteSettingsPreset(name: string): void {
     const store = readPresetStore();
     if (!(name in store.presets)) {
         throw new Error(`Preset not found: ${name}`);
@@ -161,24 +144,17 @@ export function deleteSettingsPreset(name) {
     writePresetStore(store);
 }
 
-/**
- * @param {string} name
- * @returns {SettingsSnapshot | null}
- */
-export function getSettingsPreset(name) {
+export function getSettingsPreset(name: string): SettingsSnapshot | null {
     const store = readPresetStore();
     const preset = store.presets[name];
-    return preset ? cloneJsonValue(preset) : null;
+    return preset ? cloneJsonValue(preset as SettingsSnapshot) : null;
 }
 
 /**
  * Builds a full settings snapshot for a predefined preset by applying its
  * partial overrides on top of freshly-created default settings.
- *
- * @param {string} name
- * @returns {SettingsSnapshot | null}
  */
-export function getPredefinedPreset(name) {
+export function getPredefinedPreset(name: string): SettingsSnapshot | null {
     const entry = PREDEFINED_PRESETS.find(([n]) => n === name);
     if (!entry) {
         return null;
@@ -189,11 +165,7 @@ export function getPredefinedPreset(name) {
     return base;
 }
 
-/**
- * @param {string} name
- * @param {PresetSource} source
- */
-export function applySettingsPreset(name, source) {
+export function applySettingsPreset(name: string, source: PresetSource): void {
     const preset = source === 'predefined'
         ? getPredefinedPreset(name)
         : getSettingsPreset(name);
@@ -202,9 +174,13 @@ export function applySettingsPreset(name, source) {
         throw new Error(`Preset not found: ${name} (${source})`);
     }
 
-    applyObjectInPlace(settings, preset, false);
+    applyObjectInPlace(settings as unknown as Record<string, unknown>, preset as unknown as Record<string, unknown>, false);
 }
 
-export function resetSettingsToDefaults() {
-    applyObjectInPlace(settings, createDefaultSettings(), true);
+export function resetSettingsToDefaults(): void {
+    applyObjectInPlace(
+        settings as unknown as Record<string, unknown>,
+        createDefaultSettings() as unknown as Record<string, unknown>,
+        true,
+    );
 }
