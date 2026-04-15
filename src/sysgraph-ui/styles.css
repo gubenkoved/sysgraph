@@ -200,11 +200,12 @@ md-outlined-button.danger {
   position: absolute;
   top: var(--spacing-md);
   left: var(--spacing-md);
-  width: 420px;
-  height: 350px;
+  width: fit-content;
+  max-width: 420px;
+  height: auto;
   min-width: 200px;
   min-height: 120px;
-  max-height: calc(100% - var(--spacing-lg));
+  max-height: min(350px, calc(100% - var(--spacing-lg)));
   z-index: var(--z-details-panel);
   background: var(--bg-panel);
   box-shadow: 0 2px 12px var(--shadow-sm);
@@ -253,6 +254,7 @@ md-outlined-button.danger {
 .details-panel .panel-body {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
   padding: var(--spacing-md);
   font-family: var(--font-family);
 }
