@@ -129,7 +129,7 @@ const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings, 'nodeLabe
     label: 'node label',
     view: 'list',
     options: [
-        { text: 'default', value: 'default' },
+        { text: 'none', value: 'none' },
         { text: 'type', value: 'type' },
         { text: 'id', value: 'id' },
         { text: 'expression', value: 'expression' },

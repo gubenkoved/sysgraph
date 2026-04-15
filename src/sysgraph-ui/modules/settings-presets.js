@@ -18,7 +18,7 @@ const PREDEFINED_PRESETS = [
     ['default', {}],
     ['simple', {
         nodeLabelMode: 'expression',
-        nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
+        nodeLabelExpression: '(properties.name || properties.label) || (type + " " + id)',
     }],
 ];
 

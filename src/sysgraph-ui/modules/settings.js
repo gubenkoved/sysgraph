@@ -56,10 +56,11 @@ export function createDefaultSettings() {
         // curvature interval per each link when there are multiple
         curvatureStep: 0.005,
 
-        // node label mode: 'default' | 'type' | 'id' | 'expression'
-        nodeLabelMode: 'default',
+        // node label mode: 'none' | 'type' | 'id' | 'expression'
+        nodeLabelMode: 'expression',
         // expression template used when nodeLabelMode === 'expression'
-        nodeLabelExpression: '(properties.name || properties.label) || (type + " " + id)',
+        nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
+
 
         // node sizing mode: 'degree' | 'constant' | 'expression'
         nodeSizingMode: 'degree',

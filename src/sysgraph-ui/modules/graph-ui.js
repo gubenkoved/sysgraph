@@ -31,6 +31,8 @@ import { filterGraph, computeNodeDegrees } from './graph.js';
  */
 function getNodeLabel(node) {
     switch (settings.nodeLabelMode) {
+        case 'none':
+            return '';
         case 'type':
             return node.type || node.id;
         case 'id':
@@ -42,10 +44,8 @@ function getNodeLabel(node) {
             } catch {
                 return `<expr error>`;
             }
-        default: {
-            const name = node.properties && (node.properties.name || node.properties.label);
-            return name ? name : (node.type ? `${node.type} ${node.id}` : node.id);
-        }
+        default:
+            return String(node.id);
     }
 }
 
