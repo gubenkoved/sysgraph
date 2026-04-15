@@ -4,7 +4,7 @@ FROM node:22-slim AS ui-build
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY vite.config.js ./
+COPY vite.config.ts tsconfig.json tsconfig.node.json ./
 COPY src/sysgraph-ui/ ./src/sysgraph-ui/
 COPY src/sysgraph/__init__.py ./src/sysgraph/__init__.py
 RUN npm run build
