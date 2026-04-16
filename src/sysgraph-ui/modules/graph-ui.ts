@@ -22,6 +22,7 @@ import {
 
 import ForceGraph from 'force-graph';
 import type { ForceGraphGeneric, NodeObject, LinkObject, GraphData } from 'force-graph';
+import { callFramePre, callFramePost } from './render-hooks.js';
 import * as d3 from 'd3';
 import { filterGraph, computeNodeDegrees } from './graph.js';
 import type { GraphNode, GraphEdge } from './graph.js';
@@ -535,6 +536,7 @@ ForceGraphInstance
     })
     .autoPauseRedraw(false)
     .onRenderFramePre((ctx, globalScale) => {
+        callFramePre();
         if (!settings.showGrid) return;
 
         const topLeft = ForceGraphInstance.screen2GraphCoords(0, 0);
@@ -583,6 +585,9 @@ ForceGraphInstance
         ctx.stroke();
 
         ctx.restore();
+    })
+    .onRenderFramePost(() => {
+        callFramePost();
     })
     .d3Force('charge', d3.forceManyBody().strength(D3_CHARGE_STRENGTH))
     .d3Force('link', d3.forceLink<FGNode, d3.SimulationLinkDatum<FGNode>>().distance(D3_LINK_DISTANCE).strength(D3_LINK_STRENGTH))

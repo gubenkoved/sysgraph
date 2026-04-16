@@ -13,6 +13,7 @@
   "dependencies": {
     "@material/web": "^2.4.1",
     "@tweakpane/core": "^2.0.5",
+    "@tweakpane/plugin-essentials": "^0.2.1",
     "d3": "^6.7.0",
     "force-graph": "^1.47.0",
     "fuse.js": "^7.1.0",

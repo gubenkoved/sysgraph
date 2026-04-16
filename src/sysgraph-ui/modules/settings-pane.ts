@@ -20,6 +20,9 @@ import {
 
 import { Pane } from 'tweakpane';
 import type { FolderApi } from 'tweakpane';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
+import type { FpsGraphBladeApi } from '@tweakpane/plugin-essentials';
+import { setFrameHooks } from './render-hooks.js';
 
 function getRequiredElement(id: string): HTMLElement {
     const element = document.getElementById(id);
@@ -44,6 +47,8 @@ const pane = new Pane({
     title: 'parameters',
     container: settingsPaneElement,
 });
+
+pane.registerPlugin(EssentialsPlugin);
 
 const presetUiState = {
     selectedPresetKey: '' as string,
@@ -91,6 +96,16 @@ for (const p of d3Params) {
 d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3CenterForce', { label: 'center force' }).on('change', () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
 });
+
+const fpsGraph = d3RenderingSettingsFolder.addBlade({
+    view: 'fpsgraph',
+    label: 'fps',
+    rows: 2,
+    min: 0,
+    max: 144,
+}) as unknown as FpsGraphBladeApi;
+
+setFrameHooks(() => fpsGraph.begin(), () => fpsGraph.end());
 
 // --- graph display settings ---
 const displayOptionsFolder = pane.addFolder({ title: 'display options', expanded: false });
