@@ -307,7 +307,7 @@ md-outlined-button.danger {
 }
 
 #settingsPane {
-  max-height: calc(100% - 20px);
+  max-height: calc(100% - 30px);
   position: absolute;
   overflow-y: auto;
   right: 10px;
