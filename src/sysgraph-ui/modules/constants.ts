@@ -8,6 +8,7 @@ export const EVT_SETTINGS_UPDATED = 'graph-ui-settings-updated';
 export const EVT_COLORS_UPDATED = 'graph-ui-colors-updated';
 export const EVT_CURVATURE_UPDATED = 'graph-ui-links-curvature-updated';
 export const EVT_D3_PARAMS_CHANGED = 'd3-simulation-parameters-changed';
+export const EVT_SEARCH_CYCLE = 'search-cycle';
 export const EVT_NODE_CLICKED = 'node-clicked';
 export const EVT_LINK_CLICKED = 'link-clicked';
 export const EVT_BACKGROUND_CLICK = 'background-click';

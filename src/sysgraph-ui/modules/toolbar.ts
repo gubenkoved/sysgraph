@@ -1,7 +1,7 @@
 import { state, setCurrentTool } from './state.js';
 import { emit } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
-import { EVT_SEARCH_CHANGED } from './constants.js';
+import { EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE } from './constants.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
@@ -95,6 +95,13 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     searchInput.addEventListener('input', (event) => {
         event.stopPropagation();
         emit(EVT_SEARCH_CHANGED, (event.target as HTMLInputElement).value);
+    });
+
+    searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            emit(EVT_SEARCH_CYCLE, { direction: e.shiftKey ? -1 : 1 });
+        }
     });
 
     // search help popover toggle

@@ -1,6 +1,6 @@
-import { getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
+import { state, getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
 import { Graph } from './modules/graph.js';
-import { refreshGraphUI, refreshGraphColors, computeMatchColors, autoAdjustCurvature, applyD3Params } from './modules/graph-ui.js';
+import { refreshGraphUI, refreshGraphColors, computeMatchColors, autoAdjustCurvature, applyD3Params, ForceGraphInstance } from './modules/graph-ui.js';
 import { on, emit, registerHandler } from './modules/event-bus.js';
 import { search, SearchSyntaxError } from './modules/search.js';
 import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-io.js';
@@ -12,7 +12,7 @@ import { showError, dismissError } from './modules/util.js';
 import './modules/details-panel.js';
 import {
     EVT_GRAPH_UPDATED, EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
-    EVT_SEARCH_CHANGED, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
+    EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
     EVT_COLORS_UPDATED,
     EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,
     CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
@@ -53,6 +53,8 @@ on(EVT_SEARCH_CHANGED, (expression: string) => {
             setSearch({
                 matchesMap,
                 matchColorsMap: computeMatchColors(matchesMap),
+                matches,
+                currentMatchIndex: -1,
             });
             dismissError('search-syntax');
             searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
@@ -80,6 +82,24 @@ on(EVT_SEARCH_CHANGED, (expression: string) => {
 });
 
 on(EVT_SELECTION_CHANGED, () => updateGraphInfo());
+
+on(EVT_SEARCH_CYCLE, ({ direction }: { direction: 1 | -1 }) => {
+    const search = state.search;
+    if (!search || search.matches.length === 0) return;
+    const total = search.matches.length;
+    const next = search.currentMatchIndex === -1 && direction === -1
+        ? total - 1
+        : ((search.currentMatchIndex + direction) % total + total) % total;
+    search.currentMatchIndex = next;
+    const nodeId = search.matches[next].nodeId;
+    const nodes = ForceGraphInstance.graphData().nodes as Array<{ id: string; x?: number; y?: number }>;
+    const node = nodes.find(n => n.id === nodeId);
+    if (node?.x != null && node?.y != null) {
+        ForceGraphInstance.centerAt(node.x, node.y, 500);
+    }
+    searchMatchCountEl.textContent = `${next + 1} / ${total} match${total !== 1 ? 'es' : ''}`;
+    searchMatchCountEl.style.display = 'inline';
+});
 
 on(EVT_SETTINGS_UPDATED, async () => {
     await refreshGraphUI();

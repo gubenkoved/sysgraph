@@ -21,8 +21,10 @@ export interface HighlightState {
 }
 
 export interface SearchState {
-    matchesMap: Map<string, Match>;
     matchColorsMap: Map<string, string>;
+    matches: Match[];
+    matchesMap: Map<string, Match>;
+    currentMatchIndex: number; // -1 = no match focused yet
 }
 
 export interface AppState {
