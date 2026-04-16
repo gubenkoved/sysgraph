@@ -313,15 +313,23 @@ function rebuildPresetsFolder(): void {
             label: 'name',
             view: 'list',
             options: dropdownOptions,
+        }).on('change', () => {
+            updatePresetButtonState();
         });
     }
 
-    presetsFolder.addButton({ title: 'load' }).on('click', () => {
-        if (!presetUiState.selectedPresetKey) {
-            showError('No presets available.');
-            return;
-        }
+    const loadBtn = presetsFolder.addButton({ title: 'load' });
+    const deleteBtn = presetsFolder.addButton({ title: 'delete' });
 
+    function updatePresetButtonState(): void {
+        const isEmpty = !presetUiState.selectedPresetKey;
+        const isPredefined = !isEmpty && parsePresetKey(presetUiState.selectedPresetKey).source === 'predefined';
+        loadBtn.disabled = isEmpty;
+        deleteBtn.disabled = isEmpty || isPredefined;
+    }
+    updatePresetButtonState();
+
+    loadBtn.on('click', () => {
         try {
             const { name, source } = parsePresetKey(presetUiState.selectedPresetKey);
             applySettingsPreset(name, source);
@@ -335,18 +343,8 @@ function rebuildPresetsFolder(): void {
         }
     });
 
-    presetsFolder.addButton({ title: 'delete' }).on('click', () => {
-        if (!presetUiState.selectedPresetKey) {
-            showError('No presets available.');
-            return;
-        }
-
-        const { name, source } = parsePresetKey(presetUiState.selectedPresetKey);
-
-        if (source === 'predefined') {
-            showError('Cannot delete a built-in preset.');
-            return;
-        }
+    deleteBtn.on('click', () => {
+        const { name } = parsePresetKey(presetUiState.selectedPresetKey);
 
         const shouldDelete = window.confirm(`Delete "${name}"?`);
         if (!shouldDelete) return;
