@@ -344,6 +344,16 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 - npm packages imported by bare specifier (e.g., `import ForceGraph from 'force-graph'`)
 - Lint: `npm run lint` / `./scripts/lint-ui.sh`; type-check: `npm run typecheck` / `./scripts/typecheck-ui.sh`
 
+### Material Design 3 (MD3) UI Paradigm
+The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-component implementation of Material Design 3. All interactive UI chrome (buttons, icon buttons, text fields) must use MD3 components:
+- `<md-outlined-button>` — toolbar/action buttons (with optional `<md-icon slot="icon">`)
+- `<md-icon-button>` — compact icon-only buttons (panel headers, floating controls)
+- `<md-outlined-text-field>` — text inputs (search bar)
+- `<md-icon>` — inline icons using Material Symbols Outlined names (e.g., `add`, `remove`, `close`)
+- **Custom properties** on MD3 elements (e.g., `--md-icon-button-icon-size`) control sizing; match the design-token scale in `styles.css` (`--button-height`, `--icon-button-size`, `--font-size-*`, `--radius-*`)
+- Import new component bundles in `app.ts` before use: `import '@material/web/iconbutton/icon-button.js'`
+- Icons come from Material Symbols Outlined — see [Google Fonts icons](https://fonts.google.com/icons) for names
+
 ## Common Development Tasks
 
 ### Adding a new API endpoint

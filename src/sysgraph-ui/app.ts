@@ -7,6 +7,7 @@ import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
+import { initZoomIndicator } from './modules/zoom-indicator.js';
 import { showError, dismissError } from './modules/util.js';
 import './modules/details-panel.js';
 import {
@@ -121,9 +122,10 @@ registerHandler(CMD_RELOAD, async () => {
     }
 });
 
-// --- initialize selection overlay & toolbar ---
+// --- initialize selection overlay, toolbar & zoom indicator ---
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
+initZoomIndicator();
 
 // --- initial load ---
 window.addEventListener('load', async () => {

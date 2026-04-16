@@ -8,6 +8,7 @@
   --z-details-panel: 50;
   --z-selection-overlay: 10;
   --z-version-badge: 10;
+  --z-zoom-indicator: 10;
 
   /* colors */
   --bg-toolbar: rgba(255, 255, 255, 0.95);
@@ -318,12 +319,54 @@ md-outlined-button.danger {
 #version-badge {
   position: fixed;
   bottom: var(--spacing-sm);
-  left: var(--spacing-md);
+  right: var(--spacing-md);
   font-size: var(--font-size-xs);
   color: rgba(0, 0, 0, 0.3);
   pointer-events: none;
   z-index: var(--z-version-badge);
   font-family: var(--font-family);
+}
+
+/* ── Zoom Indicator ──────────────────────────────────────── */
+
+#zoom-indicator {
+  position: fixed;
+  bottom: var(--spacing-md);
+  left: var(--spacing-md);
+  z-index: var(--z-zoom-indicator);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-toolbar);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 4px var(--shadow-xs);
+  padding: 0 var(--spacing-xs);
+}
+
+#zoom-indicator md-icon-button {
+  --md-icon-button-icon-size: 16px;
+  --md-icon-button-state-layer-height: var(--button-height);
+  --md-icon-button-state-layer-width: var(--button-height);
+  height: var(--button-height);
+  width: var(--button-height);
+}
+
+#zoomLevel {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family);
+  color: #555;
+  min-width: 34px;
+  text-align: center;
+  user-select: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 2px var(--spacing-xs);
+  transition: background 0.1s;
+}
+
+#zoomLevel:hover {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .muted {
