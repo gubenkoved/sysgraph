@@ -9,7 +9,7 @@ const toolRectSelectBtn = document.getElementById('toolRectSelect') as HTMLEleme
 const toolSearchBtn = document.getElementById('toolSearch') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
-const selectionInfoEl = document.getElementById('selectionInfo') as HTMLElement;
+const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
 const searchInput = document.getElementById('searchInput') as HTMLInputElement;
 const searchHelpTrigger = document.getElementById('searchHelpTrigger') as HTMLElement;
 const searchHelpAnchor = document.getElementById('searchHelpAnchor') as HTMLElement;
@@ -57,29 +57,33 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
         emit(EVT_SEARCH_CHANGED, '');
     }
 
-    updateSelectionInfo();
+    updateGraphInfo();
 }
 
 /** Updates the selection info label and button visibility based on current state. */
-export function updateSelectionInfo(): void {
+export function updateGraphInfo(): void {
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
     if (isSelectionTool) {
         deleteBtn.style.display = 'inline-block';
         unselectBtn.style.display = 'inline-block';
         if (state.selection.selectedNodeIds.size > 0) {
-            selectionInfoEl.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
+            graphInfoEl.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
             deleteBtn.disabled = false;
             unselectBtn.disabled = false;
         } else {
-            selectionInfoEl.textContent = '';
+            graphInfoEl.textContent = '';
             deleteBtn.disabled = true;
             unselectBtn.disabled = true;
         }
     } else {
-        selectionInfoEl.textContent = '';
         deleteBtn.style.display = 'none';
         unselectBtn.style.display = 'none';
+        const nodeCount = state.graph.nodesMap.size;
+        const edgeCount = state.graph.edgesMap.size;
+        graphInfoEl.textContent = nodeCount > 0
+            ? `${nodeCount} nodes · ${edgeCount} relationships`
+            : '';
     }
 }
 
@@ -125,7 +129,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
 
     unselectBtn.addEventListener('click', () => {
         state.selection.selectedNodeIds.clear();
-        updateSelectionInfo();
+        updateGraphInfo();
     });
 
     addToSelectionBtn.addEventListener('click', () => {
@@ -133,7 +137,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             for (const nodeId of state.search.matchesMap.keys()) {
                 state.selection.selectedNodeIds.add(nodeId);
             }
-            updateSelectionInfo();
+            updateGraphInfo();
         }
     });
 

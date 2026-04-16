@@ -5,7 +5,7 @@ import { on, emit, registerHandler } from './modules/event-bus.js';
 import { search, SearchSyntaxError } from './modules/search.js';
 import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-io.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
-import { initToolbar, updateSelectionInfo } from './modules/toolbar.js';
+import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
 import { initSelection } from './modules/selection.js';
 import { showError, dismissError } from './modules/util.js';
 import './modules/details-panel.js';
@@ -31,6 +31,7 @@ const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButto
 on(EVT_GRAPH_UPDATED, async () => {
     updateDynamicGraphPanes();
     await refreshGraphUI();
+    updateGraphInfo();
 });
 
 on(EVT_CLEAR_CLICKED, async () => {
@@ -77,7 +78,7 @@ on(EVT_SEARCH_CHANGED, (expression: string) => {
     }
 });
 
-on(EVT_SELECTION_CHANGED, () => updateSelectionInfo());
+on(EVT_SELECTION_CHANGED, () => updateGraphInfo());
 
 on(EVT_SETTINGS_UPDATED, async () => {
     await refreshGraphUI();
