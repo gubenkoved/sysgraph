@@ -68,42 +68,42 @@ function getErrorMessage(err: unknown): string {
 // --- d3 simulation parameters (data-driven) ---
 const d3RenderingSettingsFolder = pane.addFolder({ title: 'd3 forces settings', expanded: false });
 
-const d3Params: { key: keyof SettingsShape; min: number; max: number; step: number }[] = [
-    { key: 'd3Charge', min: -800, max: 100, step: 10 },
-    { key: 'd3LinkDistance', min: 40, max: 300, step: 5 },
-    { key: 'd3LinkStrength', min: 0.0, max: 1.0, step: 0.01 },
-    { key: 'd3CollisionMultiplier', min: 0.5, max: 2.0, step: 0.05 },
-    { key: 'd3AlphaTarget', min: 0.0, max: 0.5, step: 0.01 },
-    { key: 'd3VelocityDecay', min: 0.01, max: 0.99, step: 0.01 },
-    { key: 'd3ForceXYStrength', min: 0.00, max: 0.99, step: 0.01 },
+const d3Params: { key: keyof SettingsShape; label: string; min: number; max: number; step: number }[] = [
+    { key: 'd3Charge', label: 'charge force', min: -800, max: 100, step: 10 },
+    { key: 'd3LinkDistance', label: 'link distance', min: 40, max: 300, step: 5 },
+    { key: 'd3LinkStrength', label: 'link strength', min: 0.0, max: 1.0, step: 0.01 },
+    { key: 'd3CollisionMultiplier', label: 'collision', min: 0.5, max: 2.0, step: 0.05 },
+    { key: 'd3AlphaTarget', label: 'alpha target', min: 0.0, max: 0.5, step: 0.01 },
+    { key: 'd3VelocityDecay', label: 'velocity decay', min: 0.01, max: 0.99, step: 0.01 },
+    { key: 'd3ForceXYStrength', label: 'XY centering', min: 0.00, max: 0.99, step: 0.01 },
 ];
 
 for (const p of d3Params) {
     d3RenderingSettingsFolder.addBinding(
         settings as unknown as Record<string, unknown>,
         p.key,
-        { min: p.min, max: p.max, step: p.step },
+        { label: p.label, min: p.min, max: p.max, step: p.step },
     ).on('change', () => {
         emit(EVT_D3_PARAMS_CHANGED, null);
     });
 }
 
-d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3CenterForce').on('change', () => {
+d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3CenterForce', { label: 'center force' }).on('change', () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
 });
 
 // --- graph display settings ---
 const displayOptionsFolder = pane.addFolder({ title: 'display options', expanded: false });
 
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showIsolated').on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showIsolated', { label: 'show isolated' }).on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showGrid').on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showGrid', { label: 'show grid' }).on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { label: 'curvature step', min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
     emit(EVT_CURVATURE_UPDATED, null);
 });
 
