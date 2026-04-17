@@ -1,0 +1,3666 @@
+{
+  "nodes": [
+    {
+      "id": "chaos",
+      "type": "primordial",
+      "properties": {
+        "name": "Chaos",
+        "domain": "the void, creation",
+        "symbol": "void",
+        "gender": "unknown"
+      }
+    },
+    {
+      "id": "gaia",
+      "type": "primordial",
+      "properties": {
+        "name": "Gaia",
+        "domain": "earth, life",
+        "roman_name": "Terra",
+        "symbol": "earth",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "uranus",
+      "type": "primordial",
+      "properties": {
+        "name": "Uranus",
+        "domain": "sky, heavens",
+        "roman_name": "Caelus",
+        "symbol": "stars",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "nyx",
+      "type": "primordial",
+      "properties": {
+        "name": "Nyx",
+        "domain": "night",
+        "roman_name": "Nox",
+        "symbol": "black veil",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "erebus",
+      "type": "primordial",
+      "properties": {
+        "name": "Erebus",
+        "domain": "darkness, deep earth",
+        "symbol": "darkness",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "pontus",
+      "type": "primordial",
+      "properties": {
+        "name": "Pontus",
+        "domain": "sea",
+        "symbol": "sea",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "tartarus",
+      "type": "primordial",
+      "properties": {
+        "name": "Tartarus",
+        "domain": "underworld abyss",
+        "symbol": "bottomless pit",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "kronos",
+      "type": "titan",
+      "properties": {
+        "name": "Kronos",
+        "domain": "time, harvest",
+        "roman_name": "Saturn",
+        "symbol": "scythe",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "rhea",
+      "type": "titan",
+      "properties": {
+        "name": "Rhea",
+        "domain": "motherhood, fertility",
+        "roman_name": "Ops",
+        "symbol": "cornucopia",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "prometheus",
+      "type": "titan",
+      "properties": {
+        "name": "Prometheus",
+        "domain": "fire, foresight, humanity",
+        "symbol": "fire",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "epimetheus",
+      "type": "titan",
+      "properties": {
+        "name": "Epimetheus",
+        "domain": "afterthought",
+        "symbol": "box",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "atlas",
+      "type": "titan",
+      "properties": {
+        "name": "Atlas",
+        "domain": "endurance, astronomy",
+        "symbol": "globe",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hyperion",
+      "type": "titan",
+      "properties": {
+        "name": "Hyperion",
+        "domain": "light",
+        "symbol": "sun",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "helios",
+      "type": "titan",
+      "properties": {
+        "name": "Helios",
+        "domain": "sun",
+        "roman_name": "Sol",
+        "symbol": "sun chariot",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "selene",
+      "type": "titan",
+      "properties": {
+        "name": "Selene",
+        "domain": "moon",
+        "roman_name": "Luna",
+        "symbol": "crescent moon",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "eos",
+      "type": "titan",
+      "properties": {
+        "name": "Eos",
+        "domain": "dawn",
+        "roman_name": "Aurora",
+        "symbol": "sunrise",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "oceanus",
+      "type": "titan",
+      "properties": {
+        "name": "Oceanus",
+        "domain": "world-ocean",
+        "symbol": "river",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "tethys",
+      "type": "titan",
+      "properties": {
+        "name": "Tethys",
+        "domain": "fresh water",
+        "symbol": "waves",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "themis",
+      "type": "titan",
+      "properties": {
+        "name": "Themis",
+        "domain": "divine law, justice",
+        "roman_name": "Justitia",
+        "symbol": "scales",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "zeus",
+      "type": "olympian",
+      "properties": {
+        "name": "Zeus",
+        "domain": "sky, thunder, justice",
+        "roman_name": "Jupiter",
+        "symbol": "thunderbolt",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hera",
+      "type": "olympian",
+      "properties": {
+        "name": "Hera",
+        "domain": "marriage, women, family",
+        "roman_name": "Juno",
+        "symbol": "peacock",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "poseidon",
+      "type": "olympian",
+      "properties": {
+        "name": "Poseidon",
+        "domain": "sea, earthquakes, horses",
+        "roman_name": "Neptune",
+        "symbol": "trident",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "demeter",
+      "type": "olympian",
+      "properties": {
+        "name": "Demeter",
+        "domain": "agriculture, harvest, seasons",
+        "roman_name": "Ceres",
+        "symbol": "wheat sheaf",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "hestia",
+      "type": "olympian",
+      "properties": {
+        "name": "Hestia",
+        "domain": "hearth, home, state",
+        "roman_name": "Vesta",
+        "symbol": "hearth fire",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "hades",
+      "type": "olympian",
+      "properties": {
+        "name": "Hades",
+        "domain": "underworld, dead, wealth",
+        "roman_name": "Pluto",
+        "symbol": "helm of invisibility",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "athena",
+      "type": "olympian",
+      "properties": {
+        "name": "Athena",
+        "domain": "wisdom, warfare, crafts",
+        "roman_name": "Minerva",
+        "symbol": "owl",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "apollo",
+      "type": "olympian",
+      "properties": {
+        "name": "Apollo",
+        "domain": "sun, music, prophecy, medicine",
+        "roman_name": "Apollo",
+        "symbol": "lyre",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "artemis",
+      "type": "olympian",
+      "properties": {
+        "name": "Artemis",
+        "domain": "moon, hunt, wilderness",
+        "roman_name": "Diana",
+        "symbol": "bow and arrows",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "ares",
+      "type": "olympian",
+      "properties": {
+        "name": "Ares",
+        "domain": "war, violence, bloodshed",
+        "roman_name": "Mars",
+        "symbol": "spear and shield",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "aphrodite",
+      "type": "olympian",
+      "properties": {
+        "name": "Aphrodite",
+        "domain": "love, beauty, desire",
+        "roman_name": "Venus",
+        "symbol": "dove",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "hephaestus",
+      "type": "olympian",
+      "properties": {
+        "name": "Hephaestus",
+        "domain": "fire, forge, craftsmanship",
+        "roman_name": "Vulcan",
+        "symbol": "hammer and anvil",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hermes",
+      "type": "olympian",
+      "properties": {
+        "name": "Hermes",
+        "domain": "messenger, travel, commerce",
+        "roman_name": "Mercury",
+        "symbol": "caduceus",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "dionysus",
+      "type": "olympian",
+      "properties": {
+        "name": "Dionysus",
+        "domain": "wine, ecstasy, theater",
+        "roman_name": "Bacchus",
+        "symbol": "thyrsus",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "persephone",
+      "type": "olympian",
+      "properties": {
+        "name": "Persephone",
+        "domain": "spring, underworld, vegetation",
+        "roman_name": "Proserpina",
+        "symbol": "pomegranate",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "charon",
+      "type": "chthonic",
+      "properties": {
+        "name": "Charon",
+        "domain": "ferryman of the dead",
+        "symbol": "boat and oar",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "cerberus",
+      "type": "monster",
+      "properties": {
+        "name": "Cerberus",
+        "domain": "guardian of the underworld",
+        "symbol": "three heads",
+        "gender": "unknown"
+      }
+    },
+    {
+      "id": "thanatos",
+      "type": "chthonic",
+      "properties": {
+        "name": "Thanatos",
+        "domain": "death, peaceful end",
+        "roman_name": "Mors",
+        "symbol": "black wings",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hypnos",
+      "type": "chthonic",
+      "properties": {
+        "name": "Hypnos",
+        "domain": "sleep",
+        "roman_name": "Somnus",
+        "symbol": "poppy",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "minos",
+      "type": "mortal",
+      "properties": {
+        "name": "Minos",
+        "domain": "judge of the dead, king of Crete",
+        "symbol": "scales of judgment",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "eros",
+      "type": "minor_god",
+      "properties": {
+        "name": "Eros",
+        "domain": "love, desire, attraction",
+        "roman_name": "Cupid",
+        "symbol": "bow and arrows",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "nike",
+      "type": "minor_god",
+      "properties": {
+        "name": "Nike",
+        "domain": "victory, speed, strength",
+        "roman_name": "Victoria",
+        "symbol": "wings and laurel wreath",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "nemesis",
+      "type": "minor_god",
+      "properties": {
+        "name": "Nemesis",
+        "domain": "retribution, vengeance, balance",
+        "symbol": "sword and scales",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "iris",
+      "type": "minor_god",
+      "properties": {
+        "name": "Iris",
+        "domain": "rainbow, divine messenger",
+        "symbol": "rainbow",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "morpheus",
+      "type": "minor_god",
+      "properties": {
+        "name": "Morpheus",
+        "domain": "dreams, sleep visions",
+        "symbol": "poppy and wings",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "pan",
+      "type": "minor_god",
+      "properties": {
+        "name": "Pan",
+        "domain": "wild, shepherds, nature, panic",
+        "roman_name": "Faunus",
+        "symbol": "pan pipes",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "triton",
+      "type": "minor_god",
+      "properties": {
+        "name": "Triton",
+        "domain": "messenger of the sea",
+        "symbol": "conch shell",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "eris",
+      "type": "minor_god",
+      "properties": {
+        "name": "Eris",
+        "domain": "discord, strife, chaos",
+        "roman_name": "Discordia",
+        "symbol": "golden apple",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "tyche",
+      "type": "minor_god",
+      "properties": {
+        "name": "Tyche",
+        "domain": "fortune, luck, fate",
+        "roman_name": "Fortuna",
+        "symbol": "cornucopia and wheel",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "asclepius",
+      "type": "minor_god",
+      "properties": {
+        "name": "Asclepius",
+        "domain": "medicine, healing, rebirth",
+        "roman_name": "Aesculapius",
+        "symbol": "rod with serpent",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hecate",
+      "type": "minor_god",
+      "properties": {
+        "name": "Hecate",
+        "domain": "magic, crossroads, night, ghosts",
+        "roman_name": "Trivia",
+        "symbol": "torches and key",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "proteus",
+      "type": "minor_god",
+      "properties": {
+        "name": "Proteus",
+        "domain": "sea, change, prophecy",
+        "symbol": "water",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hymenaeus",
+      "type": "minor_god",
+      "properties": {
+        "name": "Hymenaeus",
+        "domain": "weddings, marriage songs",
+        "symbol": "wedding torch",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "heracles",
+      "type": "hero",
+      "properties": {
+        "name": "Heracles",
+        "domain": "strength, heroism, twelve labors",
+        "roman_name": "Hercules",
+        "symbol": "club and lion skin",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "achilles",
+      "type": "hero",
+      "properties": {
+        "name": "Achilles",
+        "domain": "war, speed, glory, tragic fate",
+        "symbol": "divine armor",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "odysseus",
+      "type": "hero",
+      "properties": {
+        "name": "Odysseus",
+        "domain": "cunning, endurance, long journey",
+        "roman_name": "Ulysses",
+        "symbol": "bow",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "perseus",
+      "type": "hero",
+      "properties": {
+        "name": "Perseus",
+        "domain": "monster-slaying, courage",
+        "symbol": "winged sandals",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "theseus",
+      "type": "hero",
+      "properties": {
+        "name": "Theseus",
+        "domain": "Athens, labyrinth, justice",
+        "symbol": "sword",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "jason",
+      "type": "hero",
+      "properties": {
+        "name": "Jason",
+        "domain": "quest, leadership, golden fleece",
+        "symbol": "golden fleece",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "orpheus",
+      "type": "hero",
+      "properties": {
+        "name": "Orpheus",
+        "domain": "music, poetry, underworld journey",
+        "symbol": "lyre",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "bellerophon",
+      "type": "hero",
+      "properties": {
+        "name": "Bellerophon",
+        "domain": "monster-slaying, riding Pegasus",
+        "symbol": "winged horse",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "atalanta",
+      "type": "hero",
+      "properties": {
+        "name": "Atalanta",
+        "domain": "hunt, speed, independence",
+        "symbol": "running shoes",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "oedipus",
+      "type": "hero",
+      "properties": {
+        "name": "Oedipus",
+        "domain": "fate, tragedy, riddles",
+        "symbol": "staff",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "agamemnon",
+      "type": "hero",
+      "properties": {
+        "name": "Agamemnon",
+        "domain": "war, leadership, king of Mycenae",
+        "symbol": "scepter",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "menelaus",
+      "type": "hero",
+      "properties": {
+        "name": "Menelaus",
+        "domain": "war, king of Sparta",
+        "symbol": "sword",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "ajax",
+      "type": "hero",
+      "properties": {
+        "name": "Ajax",
+        "domain": "war, strength, endurance",
+        "symbol": "giant shield",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "aeneas",
+      "type": "hero",
+      "properties": {
+        "name": "Aeneas",
+        "domain": "founding of Rome, piety, duty",
+        "symbol": "armor",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hector",
+      "type": "hero",
+      "properties": {
+        "name": "Hector",
+        "domain": "Troy, defense, honor",
+        "symbol": "helmet and spear",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "diomedes",
+      "type": "hero",
+      "properties": {
+        "name": "Diomedes",
+        "domain": "war, courage, cunning",
+        "symbol": "spear",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "meleager",
+      "type": "hero",
+      "properties": {
+        "name": "Meleager",
+        "domain": "the Calydonian hunt, courage, fate",
+        "symbol": "spear",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "patroclus",
+      "type": "hero",
+      "properties": {
+        "name": "Patroclus",
+        "domain": "war, friendship, sacrifice",
+        "symbol": "armor of Achilles",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "telemachus",
+      "type": "hero",
+      "properties": {
+        "name": "Telemachus",
+        "domain": "loyalty, coming of age",
+        "symbol": "sword",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "penthesilea",
+      "type": "hero",
+      "properties": {
+        "name": "Penthesilea",
+        "domain": "war, Amazon queen, courage",
+        "symbol": "axe and shield",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "medusa",
+      "type": "monster",
+      "properties": {
+        "name": "Medusa",
+        "domain": "gorgon, petrification, death",
+        "symbol": "snake hair",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "minotaur",
+      "type": "monster",
+      "properties": {
+        "name": "Minotaur",
+        "domain": "labyrinth, bull-man, tribute",
+        "symbol": "bull head",
+        "gender": "unknown"
+      }
+    },
+    {
+      "id": "hydra",
+      "type": "monster",
+      "properties": {
+        "name": "Hydra",
+        "domain": "regeneration, poison, nine heads",
+        "symbol": "nine heads",
+        "gender": "unknown"
+      }
+    },
+    {
+      "id": "chimera",
+      "type": "monster",
+      "properties": {
+        "name": "Chimera",
+        "domain": "fire-breathing hybrid beast",
+        "symbol": "lion-goat-serpent",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "sphinx",
+      "type": "monster",
+      "properties": {
+        "name": "Sphinx",
+        "domain": "riddles, death, mystery",
+        "symbol": "woman-lion body",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "polyphemus",
+      "type": "monster",
+      "properties": {
+        "name": "Polyphemus",
+        "domain": "cyclops, strength, sheep",
+        "symbol": "single eye",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "typhon",
+      "type": "monster",
+      "properties": {
+        "name": "Typhon",
+        "domain": "storms, volcanic eruptions, chaos",
+        "symbol": "serpent legs",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "echidna",
+      "type": "monster",
+      "properties": {
+        "name": "Echidna",
+        "domain": "mother of monsters",
+        "symbol": "half-woman half-serpent",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "ladon",
+      "type": "monster",
+      "properties": {
+        "name": "Ladon",
+        "domain": "guardian of golden apples",
+        "symbol": "dragon coils",
+        "gender": "unknown"
+      }
+    },
+    {
+      "id": "scylla",
+      "type": "monster",
+      "properties": {
+        "name": "Scylla",
+        "domain": "sea monster, devouring sailors",
+        "symbol": "six heads",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "geryon",
+      "type": "monster",
+      "properties": {
+        "name": "Geryon",
+        "domain": "triple-bodied giant, cattle herder",
+        "symbol": "three bodies",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "pegasus",
+      "type": "creature",
+      "properties": {
+        "name": "Pegasus",
+        "domain": "winged horse, inspiration, poetry",
+        "symbol": "white wings",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "ariadne",
+      "type": "mortal",
+      "properties": {
+        "name": "Ariadne",
+        "domain": "labyrinth, thread, wine",
+        "symbol": "golden thread",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "andromeda",
+      "type": "mortal",
+      "properties": {
+        "name": "Andromeda",
+        "domain": "sacrifice, rescue, beauty",
+        "symbol": "chains",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "helen",
+      "type": "mortal",
+      "properties": {
+        "name": "Helen",
+        "domain": "beauty, cause of the Trojan War",
+        "symbol": "golden hair",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "penelope",
+      "type": "mortal",
+      "properties": {
+        "name": "Penelope",
+        "domain": "loyalty, weaving, patience",
+        "symbol": "loom",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "circe",
+      "type": "minor_god",
+      "properties": {
+        "name": "Circe",
+        "domain": "magic, transformation, island",
+        "symbol": "wand",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "medea",
+      "type": "mortal",
+      "properties": {
+        "name": "Medea",
+        "domain": "magic, betrayal, vengeance",
+        "symbol": "cauldron",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "cassandra",
+      "type": "mortal",
+      "properties": {
+        "name": "Cassandra",
+        "domain": "prophecy, truth, tragedy",
+        "symbol": "laurel wreath",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "clytemnestra",
+      "type": "mortal",
+      "properties": {
+        "name": "Clytemnestra",
+        "domain": "betrayal, vengeance, murder",
+        "symbol": "axe",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "electra",
+      "type": "mortal",
+      "properties": {
+        "name": "Electra",
+        "domain": "loyalty, vengeance, grief",
+        "symbol": "urn",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "daedalus",
+      "type": "mortal",
+      "properties": {
+        "name": "Daedalus",
+        "domain": "invention, craftsmanship, flight",
+        "symbol": "wings",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "icarus",
+      "type": "mortal",
+      "properties": {
+        "name": "Icarus",
+        "domain": "flight, hubris, downfall",
+        "symbol": "wax wings",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "midas",
+      "type": "mortal",
+      "properties": {
+        "name": "Midas",
+        "domain": "golden touch, greed, folly",
+        "symbol": "golden hand",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "pandora",
+      "type": "mortal",
+      "properties": {
+        "name": "Pandora",
+        "domain": "curiosity, hope, evil, first woman",
+        "symbol": "box",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "antigone",
+      "type": "mortal",
+      "properties": {
+        "name": "Antigone",
+        "domain": "loyalty, duty, defiance, fate",
+        "symbol": "burial urn",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "paris",
+      "type": "mortal",
+      "properties": {
+        "name": "Paris",
+        "domain": "Troy, judgment, love, beauty",
+        "symbol": "golden apple",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "psyche",
+      "type": "mortal",
+      "properties": {
+        "name": "Psyche",
+        "domain": "soul, love, beauty, trials",
+        "symbol": "butterfly wings",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "iapetus",
+      "type": "titan",
+      "properties": {
+        "name": "Iapetus",
+        "domain": "mortality, craftsmanship, pain",
+        "symbol": "chains",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "leto",
+      "type": "titan",
+      "properties": {
+        "name": "Leto",
+        "domain": "motherhood, modesty, protection",
+        "roman_name": "Latona",
+        "symbol": "veil",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "mnemosyne",
+      "type": "titan",
+      "properties": {
+        "name": "Mnemosyne",
+        "domain": "memory, language, time",
+        "symbol": "writing tablet",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "clotho",
+      "type": "minor_god",
+      "properties": {
+        "name": "Clotho",
+        "domain": "fate, spinning the thread of life",
+        "roman_name": "Nona",
+        "symbol": "spindle",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "lachesis",
+      "type": "minor_god",
+      "properties": {
+        "name": "Lachesis",
+        "domain": "fate, measuring life's length",
+        "roman_name": "Decima",
+        "symbol": "measuring rod",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "atropos",
+      "type": "minor_god",
+      "properties": {
+        "name": "Atropos",
+        "domain": "fate, death, inevitability",
+        "roman_name": "Morta",
+        "symbol": "scissors",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "hebe",
+      "type": "minor_god",
+      "properties": {
+        "name": "Hebe",
+        "domain": "youth, spring, forgiveness",
+        "roman_name": "Juventas",
+        "symbol": "cup",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "calypso",
+      "type": "minor_god",
+      "properties": {
+        "name": "Calypso",
+        "domain": "isolation, immortality, longing",
+        "symbol": "island and veil",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "echo",
+      "type": "minor_god",
+      "properties": {
+        "name": "Echo",
+        "domain": "unrequited love, sound, longing",
+        "symbol": "voice",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "thetis",
+      "type": "minor_god",
+      "properties": {
+        "name": "Thetis",
+        "domain": "sea, divine protection, prophecy",
+        "symbol": "silver scales",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "peleus",
+      "type": "mortal",
+      "properties": {
+        "name": "Peleus",
+        "domain": "heroism, kingship, divine marriage",
+        "symbol": "sword",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "priam",
+      "type": "mortal",
+      "properties": {
+        "name": "Priam",
+        "domain": "Troy, wisdom, kingship, tragedy",
+        "symbol": "scepter",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "hecuba",
+      "type": "mortal",
+      "properties": {
+        "name": "Hecuba",
+        "domain": "Troy, sorrow, prophecy, loss",
+        "symbol": "mourning veil",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "semele",
+      "type": "mortal",
+      "properties": {
+        "name": "Semele",
+        "domain": "divine love, death by glory",
+        "symbol": "lightning bolt",
+        "gender": "female"
+      }
+    },
+    {
+      "id": "aegeus",
+      "type": "mortal",
+      "properties": {
+        "name": "Aegeus",
+        "domain": "Athens, fatherhood, sacrifice",
+        "symbol": "black sails",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "ganymede",
+      "type": "mortal",
+      "properties": {
+        "name": "Ganymede",
+        "domain": "beauty, divine favor, eternal youth",
+        "symbol": "golden cup",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "narcissus",
+      "type": "mortal",
+      "properties": {
+        "name": "Narcissus",
+        "domain": "self-love, vanity, reflection",
+        "symbol": "pool of water",
+        "gender": "male"
+      }
+    },
+    {
+      "id": "charybdis",
+      "type": "monster",
+      "properties": {
+        "name": "Charybdis",
+        "domain": "whirlpool, sea destruction, peril",
+        "symbol": "whirlpool",
+        "gender": "unknown"
+      }
+    },
+    {
+      "id": "talos",
+      "type": "creature",
+      "properties": {
+        "name": "Talos",
+        "domain": "bronze giant, guardian of Crete",
+        "symbol": "bronze body",
+        "gender": "unknown"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "a1afdd7a-bd0e-4db4-bb01-dc3173c6872e",
+      "source_id": "chaos",
+      "target_id": "gaia",
+      "type": "parent_of"
+    },
+    {
+      "id": "56d91b9f-b871-442d-8cea-66e02a3b0181",
+      "source_id": "chaos",
+      "target_id": "nyx",
+      "type": "parent_of"
+    },
+    {
+      "id": "997068d9-fa08-473e-a4dd-3a262a8c67d1",
+      "source_id": "chaos",
+      "target_id": "erebus",
+      "type": "parent_of"
+    },
+    {
+      "id": "52d6b7c4-e132-4d75-b04e-7a4639f1b541",
+      "source_id": "chaos",
+      "target_id": "tartarus",
+      "type": "parent_of"
+    },
+    {
+      "id": "840956ec-25ed-422a-978e-59b8b3911166",
+      "source_id": "gaia",
+      "target_id": "uranus",
+      "type": "parent_of"
+    },
+    {
+      "id": "3c9529a3-b30e-4f68-960e-c0ee1a8bb888",
+      "source_id": "gaia",
+      "target_id": "pontus",
+      "type": "parent_of"
+    },
+    {
+      "id": "f2bcb0d1-fc7f-4d16-907c-98f715f45acc",
+      "source_id": "gaia",
+      "target_id": "kronos",
+      "type": "parent_of"
+    },
+    {
+      "id": "d332505b-184d-4981-8bdf-e0af413fb706",
+      "source_id": "uranus",
+      "target_id": "kronos",
+      "type": "parent_of"
+    },
+    {
+      "id": "7333c3c8-215a-4a6a-ae79-278abe41e4dd",
+      "source_id": "gaia",
+      "target_id": "rhea",
+      "type": "parent_of"
+    },
+    {
+      "id": "4bb5ba1a-3e1a-4adc-b83f-4541b0d76b93",
+      "source_id": "uranus",
+      "target_id": "rhea",
+      "type": "parent_of"
+    },
+    {
+      "id": "46db5032-0ca6-4940-b1fb-8533e56f36a6",
+      "source_id": "gaia",
+      "target_id": "oceanus",
+      "type": "parent_of"
+    },
+    {
+      "id": "9282e4e0-0b6f-4891-85cc-ae4da935574a",
+      "source_id": "uranus",
+      "target_id": "oceanus",
+      "type": "parent_of"
+    },
+    {
+      "id": "810cb8cf-b37b-4fd0-a0ea-629456e246e7",
+      "source_id": "gaia",
+      "target_id": "tethys",
+      "type": "parent_of"
+    },
+    {
+      "id": "e4ac9e92-2f2a-4d82-a3ed-7b3d3f8c1189",
+      "source_id": "uranus",
+      "target_id": "tethys",
+      "type": "parent_of"
+    },
+    {
+      "id": "f64c5d34-50b2-4ee2-90db-17f534d4f7d7",
+      "source_id": "gaia",
+      "target_id": "hyperion",
+      "type": "parent_of"
+    },
+    {
+      "id": "ca3b420a-852e-4dec-b8e6-c29f0a94b1d3",
+      "source_id": "uranus",
+      "target_id": "hyperion",
+      "type": "parent_of"
+    },
+    {
+      "id": "9f616587-bb1c-4fe3-92a5-7bd476436048",
+      "source_id": "gaia",
+      "target_id": "themis",
+      "type": "parent_of"
+    },
+    {
+      "id": "1d512221-37de-4611-8848-41d61b438741",
+      "source_id": "uranus",
+      "target_id": "themis",
+      "type": "parent_of"
+    },
+    {
+      "id": "f8bfcf82-82d6-44a6-8df0-0d31a2482bc6",
+      "source_id": "hyperion",
+      "target_id": "helios",
+      "type": "parent_of"
+    },
+    {
+      "id": "3ddc85a3-46c4-44f9-8e56-ed551e300ced",
+      "source_id": "hyperion",
+      "target_id": "selene",
+      "type": "parent_of"
+    },
+    {
+      "id": "df1e22ed-24c6-40dd-9d09-abeedb05ddbd",
+      "source_id": "hyperion",
+      "target_id": "eos",
+      "type": "parent_of"
+    },
+    {
+      "id": "526f85b2-1865-4ba7-a43a-8244934ef93c",
+      "source_id": "kronos",
+      "target_id": "zeus",
+      "type": "parent_of"
+    },
+    {
+      "id": "f2beac1b-979f-4215-885e-c33123e2548d",
+      "source_id": "rhea",
+      "target_id": "zeus",
+      "type": "parent_of"
+    },
+    {
+      "id": "abb90d42-6d07-4937-83f1-7b89e8177a23",
+      "source_id": "kronos",
+      "target_id": "hera",
+      "type": "parent_of"
+    },
+    {
+      "id": "3bd9b34f-77ce-48b6-ab24-db0ea69d97c6",
+      "source_id": "rhea",
+      "target_id": "hera",
+      "type": "parent_of"
+    },
+    {
+      "id": "2ab6327f-a3da-479a-b9ba-b4758ce4d821",
+      "source_id": "kronos",
+      "target_id": "poseidon",
+      "type": "parent_of"
+    },
+    {
+      "id": "96ad793a-4b82-4705-8452-13643d133620",
+      "source_id": "rhea",
+      "target_id": "poseidon",
+      "type": "parent_of"
+    },
+    {
+      "id": "65950ba4-5078-470e-8bd0-41b6ca936742",
+      "source_id": "kronos",
+      "target_id": "demeter",
+      "type": "parent_of"
+    },
+    {
+      "id": "4d87d4f0-84e7-40d0-b896-332bfee4f53b",
+      "source_id": "rhea",
+      "target_id": "demeter",
+      "type": "parent_of"
+    },
+    {
+      "id": "9296c210-a31e-4cca-8395-cd098f62dc43",
+      "source_id": "kronos",
+      "target_id": "hestia",
+      "type": "parent_of"
+    },
+    {
+      "id": "48485c1e-22a8-42e4-9bec-fe11af17f2c1",
+      "source_id": "rhea",
+      "target_id": "hestia",
+      "type": "parent_of"
+    },
+    {
+      "id": "e95e3133-223c-4fce-8ea9-fc3c067491c3",
+      "source_id": "kronos",
+      "target_id": "hades",
+      "type": "parent_of"
+    },
+    {
+      "id": "462c9750-5700-426c-bf0f-0a4510afedb4",
+      "source_id": "rhea",
+      "target_id": "hades",
+      "type": "parent_of"
+    },
+    {
+      "id": "cf98938e-b5bd-43c2-bbd4-65050476be20",
+      "source_id": "zeus",
+      "target_id": "athena",
+      "type": "parent_of"
+    },
+    {
+      "id": "068959a8-fa5b-4d5d-80b9-ba240a10fe82",
+      "source_id": "zeus",
+      "target_id": "apollo",
+      "type": "parent_of"
+    },
+    {
+      "id": "ae8f2df5-393e-4613-a17f-c281cc75c435",
+      "source_id": "zeus",
+      "target_id": "artemis",
+      "type": "parent_of"
+    },
+    {
+      "id": "bffe6ac2-b7ff-45b4-9e01-e62b83010f3b",
+      "source_id": "zeus",
+      "target_id": "hermes",
+      "type": "parent_of"
+    },
+    {
+      "id": "b0fc9776-e2a3-4765-8241-5d7a37d94dbd",
+      "source_id": "zeus",
+      "target_id": "dionysus",
+      "type": "parent_of"
+    },
+    {
+      "id": "3d76cf6e-ea7a-4279-a699-c44b5b4cbb20",
+      "source_id": "zeus",
+      "target_id": "ares",
+      "type": "parent_of"
+    },
+    {
+      "id": "3d23c7d9-cca8-4c88-a7d0-0562c82ac9e3",
+      "source_id": "hera",
+      "target_id": "ares",
+      "type": "parent_of"
+    },
+    {
+      "id": "f07f08b6-ae19-4a6b-b887-cee712b518ed",
+      "source_id": "zeus",
+      "target_id": "hephaestus",
+      "type": "parent_of"
+    },
+    {
+      "id": "e0798c1e-0e8c-4a84-b811-bd84f533090d",
+      "source_id": "hera",
+      "target_id": "hephaestus",
+      "type": "parent_of"
+    },
+    {
+      "id": "1e452b08-70dd-4c8a-9720-e8a0367ebba0",
+      "source_id": "zeus",
+      "target_id": "perseus",
+      "type": "parent_of"
+    },
+    {
+      "id": "4248ab15-8e8d-4c82-b45d-022dae0ece2a",
+      "source_id": "zeus",
+      "target_id": "heracles",
+      "type": "parent_of"
+    },
+    {
+      "id": "f3072e4b-9600-450b-b749-9cec7f5c8423",
+      "source_id": "zeus",
+      "target_id": "helen",
+      "type": "parent_of"
+    },
+    {
+      "id": "5a30167c-0e6f-49a9-bb12-da7a26e070e7",
+      "source_id": "zeus",
+      "target_id": "minos",
+      "type": "parent_of"
+    },
+    {
+      "id": "03ae2a23-2e42-40bb-b46c-befa75f513b2",
+      "source_id": "zeus",
+      "target_id": "persephone",
+      "type": "parent_of"
+    },
+    {
+      "id": "6928de44-1100-4e39-b00e-4cdde1634182",
+      "source_id": "demeter",
+      "target_id": "persephone",
+      "type": "parent_of"
+    },
+    {
+      "id": "08e46167-1884-4020-bfcc-96630dba0275",
+      "source_id": "poseidon",
+      "target_id": "triton",
+      "type": "parent_of"
+    },
+    {
+      "id": "7ebd179d-4b31-44a9-95f9-b52babb11fdf",
+      "source_id": "poseidon",
+      "target_id": "polyphemus",
+      "type": "parent_of"
+    },
+    {
+      "id": "5969d60a-f495-400a-bc55-4d37e15905e8",
+      "source_id": "poseidon",
+      "target_id": "theseus",
+      "type": "parent_of"
+    },
+    {
+      "id": "38f70b32-8cc5-42f6-8dab-eecbf33f74ec",
+      "source_id": "poseidon",
+      "target_id": "pegasus",
+      "type": "parent_of"
+    },
+    {
+      "id": "610223c2-f528-489c-b663-c3d2bbd98963",
+      "source_id": "medusa",
+      "target_id": "pegasus",
+      "type": "parent_of"
+    },
+    {
+      "id": "50a009ea-113e-495a-b556-c77cd2545224",
+      "source_id": "apollo",
+      "target_id": "asclepius",
+      "type": "parent_of"
+    },
+    {
+      "id": "086e1299-1e9d-4171-b9cf-19305dde7f73",
+      "source_id": "apollo",
+      "target_id": "orpheus",
+      "type": "parent_of"
+    },
+    {
+      "id": "7360ae35-6a6a-4d02-9835-6fc2c5c883d3",
+      "source_id": "apollo",
+      "target_id": "hymenaeus",
+      "type": "parent_of"
+    },
+    {
+      "id": "a212bbda-2976-43e6-835c-659bf0f50561",
+      "source_id": "hermes",
+      "target_id": "pan",
+      "type": "parent_of"
+    },
+    {
+      "id": "52d23280-8b15-4c80-8c7c-de8ef403a08a",
+      "source_id": "ares",
+      "target_id": "penthesilea",
+      "type": "parent_of"
+    },
+    {
+      "id": "ce4ee4c9-f0bb-4323-9768-bc06e84612d3",
+      "source_id": "nyx",
+      "target_id": "thanatos",
+      "type": "parent_of"
+    },
+    {
+      "id": "01b2ae3a-3dd7-4fd0-b9a8-602b5c0cc3f8",
+      "source_id": "nyx",
+      "target_id": "hypnos",
+      "type": "parent_of"
+    },
+    {
+      "id": "76d7a3b1-65c9-4cc6-81bb-ad56e20908d6",
+      "source_id": "nyx",
+      "target_id": "morpheus",
+      "type": "parent_of"
+    },
+    {
+      "id": "b155f135-a1c1-4597-ac67-598d84acce22",
+      "source_id": "nyx",
+      "target_id": "nemesis",
+      "type": "parent_of"
+    },
+    {
+      "id": "3844cf9d-e24f-4653-a3ab-4639b4cd7b47",
+      "source_id": "nyx",
+      "target_id": "eris",
+      "type": "parent_of"
+    },
+    {
+      "id": "f757032f-ba8d-4d99-a4e9-40919033e690",
+      "source_id": "hypnos",
+      "target_id": "morpheus",
+      "type": "parent_of"
+    },
+    {
+      "id": "38890855-6e27-450a-afde-d458df9d84a0",
+      "source_id": "aphrodite",
+      "target_id": "eros",
+      "type": "parent_of"
+    },
+    {
+      "id": "9e2151d7-14d1-4599-b43c-a3d75ddf70b1",
+      "source_id": "ares",
+      "target_id": "eros",
+      "type": "parent_of"
+    },
+    {
+      "id": "309e6e56-6edc-4d4c-ab2a-3add23559ef3",
+      "source_id": "aphrodite",
+      "target_id": "aeneas",
+      "type": "parent_of"
+    },
+    {
+      "id": "9d075ee8-1e24-4851-9d2c-8f24df2e6fcd",
+      "source_id": "typhon",
+      "target_id": "cerberus",
+      "type": "parent_of"
+    },
+    {
+      "id": "e6075c71-f65d-49b8-aefc-b7bd057319c5",
+      "source_id": "echidna",
+      "target_id": "cerberus",
+      "type": "parent_of"
+    },
+    {
+      "id": "4f29967b-b415-4940-9b60-473abed40262",
+      "source_id": "typhon",
+      "target_id": "hydra",
+      "type": "parent_of"
+    },
+    {
+      "id": "ec77eb0d-8e51-406d-aba7-c612eda8579c",
+      "source_id": "echidna",
+      "target_id": "hydra",
+      "type": "parent_of"
+    },
+    {
+      "id": "a88d7585-5ae3-4c9d-9ea7-80c9a901fec3",
+      "source_id": "typhon",
+      "target_id": "chimera",
+      "type": "parent_of"
+    },
+    {
+      "id": "92ab905b-28bc-4fab-9bc5-646b14aff7b0",
+      "source_id": "echidna",
+      "target_id": "chimera",
+      "type": "parent_of"
+    },
+    {
+      "id": "a066ab3e-f8cc-4915-b8c2-fd716665cf47",
+      "source_id": "typhon",
+      "target_id": "sphinx",
+      "type": "parent_of"
+    },
+    {
+      "id": "2bf3b68a-9333-494b-93f6-24fc170f5fed",
+      "source_id": "echidna",
+      "target_id": "sphinx",
+      "type": "parent_of"
+    },
+    {
+      "id": "8544ad9b-9fb1-47de-95d1-d595a2443d44",
+      "source_id": "typhon",
+      "target_id": "ladon",
+      "type": "parent_of"
+    },
+    {
+      "id": "16665e95-df0a-44aa-ab66-c932f004fdc5",
+      "source_id": "echidna",
+      "target_id": "ladon",
+      "type": "parent_of"
+    },
+    {
+      "id": "d6155b87-ae0b-4dd7-9701-86c610e55eba",
+      "source_id": "daedalus",
+      "target_id": "icarus",
+      "type": "parent_of"
+    },
+    {
+      "id": "7abff20d-2604-4c86-b551-87d481384261",
+      "source_id": "odysseus",
+      "target_id": "telemachus",
+      "type": "parent_of"
+    },
+    {
+      "id": "6730667a-f086-47bc-9005-25ff47bdd567",
+      "source_id": "agamemnon",
+      "target_id": "electra",
+      "type": "parent_of"
+    },
+    {
+      "id": "a8c4167c-c558-495a-a974-0551935a849b",
+      "source_id": "clytemnestra",
+      "target_id": "electra",
+      "type": "parent_of"
+    },
+    {
+      "id": "151293ed-fda4-4906-a62a-dffc79b6351f",
+      "source_id": "agamemnon",
+      "target_id": "clytemnestra",
+      "type": "spouse_of"
+    },
+    {
+      "id": "e70d1545-5a01-4342-9e88-60be640143fc",
+      "source_id": "oedipus",
+      "target_id": "antigone",
+      "type": "parent_of"
+    },
+    {
+      "id": "8900642b-9a25-49a1-bf4a-b119713c2fea",
+      "source_id": "helios",
+      "target_id": "circe",
+      "type": "parent_of"
+    },
+    {
+      "id": "bfcd45a3-a755-42b9-9bd8-00a3724e46fd",
+      "source_id": "zeus",
+      "target_id": "hera",
+      "type": "sibling_of"
+    },
+    {
+      "id": "880a99e4-c033-4208-b89f-b393ea2ea956",
+      "source_id": "zeus",
+      "target_id": "poseidon",
+      "type": "sibling_of"
+    },
+    {
+      "id": "4969e295-8358-4e1a-a208-8d7bb7677def",
+      "source_id": "zeus",
+      "target_id": "demeter",
+      "type": "sibling_of"
+    },
+    {
+      "id": "efb13ed2-3140-4df4-af74-61bc630b4e9d",
+      "source_id": "zeus",
+      "target_id": "hestia",
+      "type": "sibling_of"
+    },
+    {
+      "id": "a4f87316-5b93-4ad9-b4d3-874052b6d950",
+      "source_id": "zeus",
+      "target_id": "hades",
+      "type": "sibling_of"
+    },
+    {
+      "id": "54380ee8-fd64-4c23-b6ea-f79a5606e3b2",
+      "source_id": "hera",
+      "target_id": "poseidon",
+      "type": "sibling_of"
+    },
+    {
+      "id": "78570bdd-96f3-4087-9d00-2863417587b3",
+      "source_id": "hera",
+      "target_id": "demeter",
+      "type": "sibling_of"
+    },
+    {
+      "id": "105f976f-30e9-47ae-8382-49c9f33f19ab",
+      "source_id": "hera",
+      "target_id": "hestia",
+      "type": "sibling_of"
+    },
+    {
+      "id": "14153fd6-cbfd-4c05-bf04-5f319ecec7eb",
+      "source_id": "hera",
+      "target_id": "hades",
+      "type": "sibling_of"
+    },
+    {
+      "id": "cd06e94d-465e-40ff-9b68-d942e7b0cb83",
+      "source_id": "apollo",
+      "target_id": "artemis",
+      "type": "sibling_of"
+    },
+    {
+      "id": "3912c543-afae-45ab-9716-786070528ed9",
+      "source_id": "helios",
+      "target_id": "selene",
+      "type": "sibling_of"
+    },
+    {
+      "id": "32a05529-cc49-4123-9a9f-0d20f9dbafc2",
+      "source_id": "helios",
+      "target_id": "eos",
+      "type": "sibling_of"
+    },
+    {
+      "id": "b8d8f0a7-70ae-407f-96f1-2256fbe5c171",
+      "source_id": "selene",
+      "target_id": "eos",
+      "type": "sibling_of"
+    },
+    {
+      "id": "c08acda9-ab55-442c-ae63-983dd37903fd",
+      "source_id": "prometheus",
+      "target_id": "epimetheus",
+      "type": "sibling_of"
+    },
+    {
+      "id": "eaf10277-206d-40ff-8af4-0b3fd7ffabe1",
+      "source_id": "prometheus",
+      "target_id": "atlas",
+      "type": "sibling_of"
+    },
+    {
+      "id": "92eafe8a-6173-4ed3-a27e-300f04d11bda",
+      "source_id": "epimetheus",
+      "target_id": "atlas",
+      "type": "sibling_of"
+    },
+    {
+      "id": "18fb2395-467a-4e88-b5b4-033ee8b93a32",
+      "source_id": "poseidon",
+      "target_id": "demeter",
+      "type": "sibling_of"
+    },
+    {
+      "id": "eb1de346-f6e0-49ba-9a62-05a7f8e018d2",
+      "source_id": "poseidon",
+      "target_id": "hestia",
+      "type": "sibling_of"
+    },
+    {
+      "id": "fb6a3796-6eef-498d-8eec-73c753705b80",
+      "source_id": "poseidon",
+      "target_id": "hades",
+      "type": "sibling_of"
+    },
+    {
+      "id": "9183f9eb-aee3-4e3b-bbc2-41db36e55898",
+      "source_id": "demeter",
+      "target_id": "hestia",
+      "type": "sibling_of"
+    },
+    {
+      "id": "b70f92e4-94aa-4f69-a682-f1f6004ff0eb",
+      "source_id": "demeter",
+      "target_id": "hades",
+      "type": "sibling_of"
+    },
+    {
+      "id": "de83fe4d-b350-4ac3-9fb9-0917014a4f7b",
+      "source_id": "hestia",
+      "target_id": "hades",
+      "type": "sibling_of"
+    },
+    {
+      "id": "f61ba33a-4cf8-413b-aa57-c7c4ccbb9c9d",
+      "source_id": "thanatos",
+      "target_id": "hypnos",
+      "type": "sibling_of"
+    },
+    {
+      "id": "79eaeb87-5bc1-43a7-8708-e3c5890bcf19",
+      "source_id": "agamemnon",
+      "target_id": "menelaus",
+      "type": "sibling_of"
+    },
+    {
+      "id": "f3760460-8833-4243-80ee-a560a56b2c7e",
+      "source_id": "helen",
+      "target_id": "clytemnestra",
+      "type": "sibling_of"
+    },
+    {
+      "id": "77eb3c64-19f9-497f-908a-15efb8ffa76b",
+      "source_id": "hector",
+      "target_id": "paris",
+      "type": "sibling_of"
+    },
+    {
+      "id": "78d82517-1b51-4a3f-8f38-c2549b0d0a16",
+      "source_id": "hector",
+      "target_id": "cassandra",
+      "type": "sibling_of"
+    },
+    {
+      "id": "c9abb036-63f7-416b-9acf-44eab1264e57",
+      "source_id": "paris",
+      "target_id": "cassandra",
+      "type": "sibling_of"
+    },
+    {
+      "id": "49d81678-60ec-467f-9340-f1ef5f1653a2",
+      "source_id": "nyx",
+      "target_id": "erebus",
+      "type": "sibling_of"
+    },
+    {
+      "id": "5c732c12-097b-4e32-82d9-9a47f788c79f",
+      "source_id": "clotho",
+      "target_id": "lachesis",
+      "type": "sibling_of"
+    },
+    {
+      "id": "30133531-0dca-45d9-b29f-e85e3e25e7e1",
+      "source_id": "lachesis",
+      "target_id": "atropos",
+      "type": "sibling_of"
+    },
+    {
+      "id": "269881c1-320d-4fde-9946-a144320c4afb",
+      "source_id": "clotho",
+      "target_id": "atropos",
+      "type": "sibling_of"
+    },
+    {
+      "id": "0931b2af-bfad-40cd-adcd-6c5dfc3b3298",
+      "source_id": "ares",
+      "target_id": "eris",
+      "type": "sibling_of"
+    },
+    {
+      "id": "264eccc9-0e97-430a-92ad-b9181ee7b13c",
+      "source_id": "zeus",
+      "target_id": "hera",
+      "type": "spouse_of"
+    },
+    {
+      "id": "de0b8210-960c-4543-8f39-f24d8f393aad",
+      "source_id": "zeus",
+      "target_id": "themis",
+      "type": "spouse_of"
+    },
+    {
+      "id": "f94bc7f3-4e9d-46af-9db8-beca53e74b8d",
+      "source_id": "hades",
+      "target_id": "persephone",
+      "type": "spouse_of"
+    },
+    {
+      "id": "1b1e6a78-19e2-4d38-aee1-5eb343d4f9e4",
+      "source_id": "oceanus",
+      "target_id": "tethys",
+      "type": "spouse_of"
+    },
+    {
+      "id": "0e3ab732-6967-448e-9862-423cdef4da68",
+      "source_id": "kronos",
+      "target_id": "rhea",
+      "type": "spouse_of"
+    },
+    {
+      "id": "98edb300-d4dc-4cce-a88b-19f418c5e599",
+      "source_id": "typhon",
+      "target_id": "echidna",
+      "type": "spouse_of"
+    },
+    {
+      "id": "cf779c36-eeef-4b9f-877a-4d7bf4379215",
+      "source_id": "hephaestus",
+      "target_id": "aphrodite",
+      "type": "spouse_of"
+    },
+    {
+      "id": "bdfb892e-85ab-40ce-bcf1-4050e126709a",
+      "source_id": "eros",
+      "target_id": "psyche",
+      "type": "spouse_of"
+    },
+    {
+      "id": "920635fa-94f7-4d33-a451-883498418b9b",
+      "source_id": "dionysus",
+      "target_id": "ariadne",
+      "type": "spouse_of"
+    },
+    {
+      "id": "520230c8-e206-4800-a3e3-aa0be792f079",
+      "source_id": "menelaus",
+      "target_id": "helen",
+      "type": "spouse_of"
+    },
+    {
+      "id": "101620e5-484c-434a-b505-cb7834128d8c",
+      "source_id": "odysseus",
+      "target_id": "penelope",
+      "type": "spouse_of"
+    },
+    {
+      "id": "2d41936e-1f21-4598-bb11-55eabbc8b297",
+      "source_id": "perseus",
+      "target_id": "andromeda",
+      "type": "spouse_of"
+    },
+    {
+      "id": "ba32c97f-92b5-4737-b497-82913b0aa9cf",
+      "source_id": "epimetheus",
+      "target_id": "pandora",
+      "type": "spouse_of"
+    },
+    {
+      "id": "83b6406e-c506-4566-a9cd-c7b4680aa501",
+      "source_id": "jason",
+      "target_id": "medea",
+      "type": "spouse_of"
+    },
+    {
+      "id": "e647e41f-e740-450f-b47d-ba974be74eb8",
+      "source_id": "ares",
+      "target_id": "aphrodite",
+      "type": "loved"
+    },
+    {
+      "id": "2afb7cde-6ca6-4434-bb58-c510fea183a0",
+      "source_id": "apollo",
+      "target_id": "cassandra",
+      "type": "loved"
+    },
+    {
+      "id": "75a0f0e5-f060-4bd8-98a5-1eeaf9830618",
+      "source_id": "poseidon",
+      "target_id": "medusa",
+      "type": "loved"
+    },
+    {
+      "id": "8049b111-0d75-4042-bf00-b1b1e7af6060",
+      "source_id": "hades",
+      "target_id": "persephone",
+      "type": "loved"
+    },
+    {
+      "id": "33260d3e-ad22-4b65-a54c-f8f142a65c7c",
+      "source_id": "eros",
+      "target_id": "psyche",
+      "type": "loved"
+    },
+    {
+      "id": "d7e80144-da2b-4094-bdcd-817df1a0d174",
+      "source_id": "dionysus",
+      "target_id": "ariadne",
+      "type": "loved"
+    },
+    {
+      "id": "76c4b3a6-13e2-4373-9db9-8256d6464d6c",
+      "source_id": "paris",
+      "target_id": "helen",
+      "type": "loved"
+    },
+    {
+      "id": "49021378-dde8-49ec-8094-49c04cde3b44",
+      "source_id": "theseus",
+      "target_id": "ariadne",
+      "type": "loved"
+    },
+    {
+      "id": "769b6c5d-729d-4451-968b-fd26e017d8e4",
+      "source_id": "apollo",
+      "target_id": "hymenaeus",
+      "type": "loved"
+    },
+    {
+      "id": "88f9f6d6-47ba-4117-918f-24305a12c0dd",
+      "source_id": "achilles",
+      "target_id": "patroclus",
+      "type": "loved"
+    },
+    {
+      "id": "80e0f89f-49eb-48b7-bb09-88ed8a81a8a1",
+      "source_id": "jason",
+      "target_id": "medea",
+      "type": "loved"
+    },
+    {
+      "id": "c6e20c15-5329-4cd2-9717-b1308cfa25e1",
+      "source_id": "zeus",
+      "target_id": "persephone",
+      "type": "loved"
+    },
+    {
+      "id": "887b7fd6-0ee2-4bbd-b7f2-e80f31bdd029",
+      "source_id": "zeus",
+      "target_id": "kronos",
+      "type": "enemy_of"
+    },
+    {
+      "id": "d9e8a8c2-9f61-4913-b5ae-f5307c8ffeb7",
+      "source_id": "zeus",
+      "target_id": "typhon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "939db6e5-3e31-4053-b3a1-6a455afe613d",
+      "source_id": "athena",
+      "target_id": "ares",
+      "type": "enemy_of"
+    },
+    {
+      "id": "0934ad2e-0ab6-46f5-bebd-d209cdd1f002",
+      "source_id": "athena",
+      "target_id": "poseidon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "b59576d3-3842-4a3f-b5ce-ae3809982a40",
+      "source_id": "hera",
+      "target_id": "heracles",
+      "type": "enemy_of"
+    },
+    {
+      "id": "88411332-7659-4129-867c-a52fc6f64310",
+      "source_id": "poseidon",
+      "target_id": "odysseus",
+      "type": "enemy_of"
+    },
+    {
+      "id": "041e492f-8c44-403b-b786-c9466797cb46",
+      "source_id": "perseus",
+      "target_id": "medusa",
+      "type": "enemy_of"
+    },
+    {
+      "id": "cd64d2db-b70c-4103-b8da-7a1546cf6ece",
+      "source_id": "heracles",
+      "target_id": "hydra",
+      "type": "enemy_of"
+    },
+    {
+      "id": "959bc945-c1c9-4a79-822c-1840a9cbddfd",
+      "source_id": "heracles",
+      "target_id": "geryon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "1602dd2f-71e1-428f-b37d-70bfb91d1153",
+      "source_id": "heracles",
+      "target_id": "ladon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "39f1f42b-07b5-41fb-98b2-c5baef092049",
+      "source_id": "odysseus",
+      "target_id": "polyphemus",
+      "type": "enemy_of"
+    },
+    {
+      "id": "1176e2e7-0af1-41e5-a18e-daaba55142b6",
+      "source_id": "oedipus",
+      "target_id": "sphinx",
+      "type": "enemy_of"
+    },
+    {
+      "id": "f2fbc2dd-3087-40a0-8450-c9f05557d85f",
+      "source_id": "theseus",
+      "target_id": "minotaur",
+      "type": "enemy_of"
+    },
+    {
+      "id": "ba6bc8c1-cdec-4190-b270-5100e0e727f0",
+      "source_id": "bellerophon",
+      "target_id": "chimera",
+      "type": "enemy_of"
+    },
+    {
+      "id": "6b12b98c-2241-4ad5-8f4e-dd9597273e45",
+      "source_id": "achilles",
+      "target_id": "hector",
+      "type": "enemy_of"
+    },
+    {
+      "id": "2868fbb9-2052-4b84-bfa3-90adf20adf4c",
+      "source_id": "agamemnon",
+      "target_id": "achilles",
+      "type": "enemy_of"
+    },
+    {
+      "id": "f8ca1408-890f-4230-8b4f-90fb6725c908",
+      "source_id": "electra",
+      "target_id": "clytemnestra",
+      "type": "enemy_of"
+    },
+    {
+      "id": "dff52e36-ac7e-4ddf-b45e-f75b1befa483",
+      "source_id": "medea",
+      "target_id": "jason",
+      "type": "enemy_of"
+    },
+    {
+      "id": "6391e013-0d09-4fac-890f-4efc948e201e",
+      "source_id": "paris",
+      "target_id": "menelaus",
+      "type": "enemy_of"
+    },
+    {
+      "id": "61d1a1eb-e80c-4ee7-96d8-55d9e165dddf",
+      "source_id": "aphrodite",
+      "target_id": "psyche",
+      "type": "enemy_of"
+    },
+    {
+      "id": "259054d3-8529-478b-93d1-fa6a35e2baa7",
+      "source_id": "kronos",
+      "target_id": "uranus",
+      "type": "enemy_of"
+    },
+    {
+      "id": "3cc14344-7225-4df6-af0e-7a085d1f6d9c",
+      "source_id": "apollo",
+      "target_id": "eros",
+      "type": "enemy_of"
+    },
+    {
+      "id": "2e28bb3f-e5ac-463f-a506-ada781901ba7",
+      "source_id": "hephaestus",
+      "target_id": "ares",
+      "type": "enemy_of"
+    },
+    {
+      "id": "6313f705-1489-446f-8537-aa2fd0e585be",
+      "source_id": "daedalus",
+      "target_id": "minos",
+      "type": "enemy_of"
+    },
+    {
+      "id": "35935657-3665-4a45-a704-220e815a7b47",
+      "source_id": "prometheus",
+      "target_id": "zeus",
+      "type": "enemy_of"
+    },
+    {
+      "id": "22839b53-31a6-4c1e-852c-efc4b272fd0d",
+      "source_id": "atlas",
+      "target_id": "zeus",
+      "type": "enemy_of"
+    },
+    {
+      "id": "d4e9fc34-89a3-4c69-bb1a-0342fbce88a4",
+      "source_id": "athena",
+      "target_id": "heracles",
+      "type": "ally_of"
+    },
+    {
+      "id": "d4a863a5-3af8-4f6f-ad8b-2b56e8478165",
+      "source_id": "athena",
+      "target_id": "odysseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "675b3c20-4193-4cda-a902-5e3bb269f7b4",
+      "source_id": "athena",
+      "target_id": "perseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "bd6c9c98-2b60-4b42-be1a-ff46e2491004",
+      "source_id": "athena",
+      "target_id": "aeneas",
+      "type": "ally_of"
+    },
+    {
+      "id": "1739a103-8b63-420d-b535-f5ce869f704b",
+      "source_id": "athena",
+      "target_id": "nike",
+      "type": "ally_of"
+    },
+    {
+      "id": "86371eae-7f33-42b0-b56c-8467d155cf98",
+      "source_id": "hermes",
+      "target_id": "odysseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "72f0f0ac-a60f-4c7d-8247-20a214fd3150",
+      "source_id": "hermes",
+      "target_id": "perseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "86555fd6-1d0f-42a3-a018-3e7da21d55a2",
+      "source_id": "hermes",
+      "target_id": "heracles",
+      "type": "ally_of"
+    },
+    {
+      "id": "3dc07985-83a3-4a98-ad9d-8866adfcb67e",
+      "source_id": "poseidon",
+      "target_id": "theseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "e5f0b89e-4727-4e99-a0f6-b72c404ada28",
+      "source_id": "ariadne",
+      "target_id": "theseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "520abfa1-a154-4b54-83ea-bd25d1fd3f24",
+      "source_id": "medea",
+      "target_id": "jason",
+      "type": "ally_of"
+    },
+    {
+      "id": "48f28d93-1a57-480d-ab39-1bdea9b803e8",
+      "source_id": "aphrodite",
+      "target_id": "aeneas",
+      "type": "ally_of"
+    },
+    {
+      "id": "a3a74c69-14cb-4b17-8288-c9199ffc7ea5",
+      "source_id": "aphrodite",
+      "target_id": "paris",
+      "type": "ally_of"
+    },
+    {
+      "id": "93e40fc2-e8db-4e33-83df-961a1ab1ad27",
+      "source_id": "hector",
+      "target_id": "aeneas",
+      "type": "ally_of"
+    },
+    {
+      "id": "acd2cc2b-c1cb-4f0e-870f-901cecf05a9a",
+      "source_id": "achilles",
+      "target_id": "patroclus",
+      "type": "ally_of"
+    },
+    {
+      "id": "db0fd1e5-c21c-4c57-9043-87252198a06f",
+      "source_id": "ajax",
+      "target_id": "achilles",
+      "type": "ally_of"
+    },
+    {
+      "id": "54d209b2-a400-4c25-b1f2-025f2216d812",
+      "source_id": "diomedes",
+      "target_id": "achilles",
+      "type": "ally_of"
+    },
+    {
+      "id": "56308658-15ba-414d-8e7c-65a5ad218ff2",
+      "source_id": "diomedes",
+      "target_id": "odysseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "a4fa0b7b-13bc-4dc1-9de3-309b1a89ae91",
+      "source_id": "ajax",
+      "target_id": "odysseus",
+      "type": "ally_of"
+    },
+    {
+      "id": "1a3dae93-cce7-43a1-85c7-ba403d4960a5",
+      "source_id": "atalanta",
+      "target_id": "meleager",
+      "type": "ally_of"
+    },
+    {
+      "id": "461d4914-da08-4439-91a2-4885c34c3113",
+      "source_id": "atalanta",
+      "target_id": "jason",
+      "type": "ally_of"
+    },
+    {
+      "id": "971b2903-a375-4517-b50f-8b4a60e0d349",
+      "source_id": "hecate",
+      "target_id": "persephone",
+      "type": "ally_of"
+    },
+    {
+      "id": "60cfac47-5f8c-4ed2-bbd6-d12d14c0484a",
+      "source_id": "hecate",
+      "target_id": "demeter",
+      "type": "ally_of"
+    },
+    {
+      "id": "bc36b704-c90c-4673-9413-cd0ace143a6d",
+      "source_id": "hermes",
+      "target_id": "persephone",
+      "type": "ally_of"
+    },
+    {
+      "id": "8a7cb8e3-bf9c-425f-82e8-5fa243095a3e",
+      "source_id": "pan",
+      "target_id": "dionysus",
+      "type": "ally_of"
+    },
+    {
+      "id": "b51ef240-e0dd-4e8e-924f-2cd82a538d02",
+      "source_id": "proteus",
+      "target_id": "menelaus",
+      "type": "ally_of"
+    },
+    {
+      "id": "7d28d767-861a-4f99-a8fc-c0c4a196972a",
+      "source_id": "zeus",
+      "target_id": "typhon",
+      "type": "slew"
+    },
+    {
+      "id": "d7262130-1d89-452d-8900-d0910fe1a7fd",
+      "source_id": "perseus",
+      "target_id": "medusa",
+      "type": "slew"
+    },
+    {
+      "id": "21bfc5ff-4898-4d84-8a0e-a5fc35e18de3",
+      "source_id": "theseus",
+      "target_id": "minotaur",
+      "type": "slew"
+    },
+    {
+      "id": "850ee382-1441-4699-85c2-7f05a1465208",
+      "source_id": "heracles",
+      "target_id": "hydra",
+      "type": "slew"
+    },
+    {
+      "id": "4b7a4e07-8e86-47db-9a65-ebb50c7f8894",
+      "source_id": "heracles",
+      "target_id": "geryon",
+      "type": "slew"
+    },
+    {
+      "id": "cd593f82-2952-42e0-97f1-41c7a9c03f0e",
+      "source_id": "heracles",
+      "target_id": "cerberus",
+      "type": "captured"
+    },
+    {
+      "id": "480a7a70-e12b-47f3-81bf-71e8b543c77f",
+      "source_id": "bellerophon",
+      "target_id": "chimera",
+      "type": "slew"
+    },
+    {
+      "id": "68f11d97-ce7a-464d-8a46-d3a6c2627617",
+      "source_id": "achilles",
+      "target_id": "hector",
+      "type": "slew"
+    },
+    {
+      "id": "e109c759-248b-4858-9397-38c8241d9c0c",
+      "source_id": "clytemnestra",
+      "target_id": "agamemnon",
+      "type": "slew"
+    },
+    {
+      "id": "3ef0dbcc-07d1-45b1-9c68-9925cfb067aa",
+      "source_id": "dionysus",
+      "target_id": "orpheus",
+      "type": "caused_death_of"
+    },
+    {
+      "id": "a269bfd6-509b-404e-a951-ae6607a80a13",
+      "source_id": "zeus",
+      "target_id": "asclepius",
+      "type": "slew"
+    },
+    {
+      "id": "62f9f769-809d-452a-af34-0ce596fdb131",
+      "source_id": "athena",
+      "target_id": "medusa",
+      "type": "transformed"
+    },
+    {
+      "id": "bbf77520-8b1f-4d1d-b098-75a28d306fc0",
+      "source_id": "apollo",
+      "target_id": "cassandra",
+      "type": "cursed"
+    },
+    {
+      "id": "2b1cf581-459d-4827-b85e-42378f2ced17",
+      "source_id": "circe",
+      "target_id": "scylla",
+      "type": "transformed"
+    },
+    {
+      "id": "37bb8b42-3519-4c66-8b86-bbf86393f824",
+      "source_id": "dionysus",
+      "target_id": "midas",
+      "type": "granted_wish_to"
+    },
+    {
+      "id": "45cc3b76-e87c-4cb0-98c5-c5439106fe94",
+      "source_id": "eros",
+      "target_id": "apollo",
+      "type": "cursed"
+    },
+    {
+      "id": "f02431ae-8ec0-4fb3-a83c-919de12e7232",
+      "source_id": "charon",
+      "target_id": "hades",
+      "type": "served"
+    },
+    {
+      "id": "2153a01f-2876-4267-b268-f8e1e80c81d7",
+      "source_id": "cerberus",
+      "target_id": "hades",
+      "type": "served"
+    },
+    {
+      "id": "be20ad79-3145-4bd0-af7f-09d4b90552e4",
+      "source_id": "thanatos",
+      "target_id": "hades",
+      "type": "served"
+    },
+    {
+      "id": "737ae6d0-a720-4e71-abb3-1880e8883dff",
+      "source_id": "minos",
+      "target_id": "hades",
+      "type": "served"
+    },
+    {
+      "id": "18e3b3af-69d1-488d-a165-ac377cb2def7",
+      "source_id": "iris",
+      "target_id": "hera",
+      "type": "served"
+    },
+    {
+      "id": "e4f52991-502a-4efb-953e-e556b9eb2ef2",
+      "source_id": "iris",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "2f62b7ad-ff2a-437d-af8c-8eb18a8dd7d5",
+      "source_id": "nike",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "f725f133-f6d5-40a9-a01b-4a65d9835ce2",
+      "source_id": "nemesis",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "2a0621eb-b0f1-4bf4-9726-e94f173c82b4",
+      "source_id": "tyche",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "2572ba4f-6c4f-403d-aa3f-51c8c9d2f029",
+      "source_id": "triton",
+      "target_id": "poseidon",
+      "type": "served"
+    },
+    {
+      "id": "f6972bd5-c6c4-45ce-96eb-e6176f915a70",
+      "source_id": "hermes",
+      "target_id": "charon",
+      "type": "cooperated_with"
+    },
+    {
+      "id": "449af726-b28f-4495-8c61-bee3634e6957",
+      "source_id": "hephaestus",
+      "target_id": "achilles",
+      "type": "assisted"
+    },
+    {
+      "id": "4db602dd-d382-445c-9a83-03964697fcc3",
+      "source_id": "hephaestus",
+      "target_id": "heracles",
+      "type": "assisted"
+    },
+    {
+      "id": "f100b5c6-39e4-4782-bc6a-1b4d15667727",
+      "source_id": "zeus",
+      "target_id": "prometheus",
+      "type": "punished"
+    },
+    {
+      "id": "3e660e3c-5e04-4711-8b8a-448c3260d32a",
+      "source_id": "zeus",
+      "target_id": "atlas",
+      "type": "punished"
+    },
+    {
+      "id": "64641549-76f1-45c0-a6cf-2a2a51e3385d",
+      "source_id": "minos",
+      "target_id": "daedalus",
+      "type": "imprisoned"
+    },
+    {
+      "id": "431fa9a3-7a04-4064-a7fe-f5af4fa15fec",
+      "source_id": "minos",
+      "target_id": "minotaur",
+      "type": "imprisoned"
+    },
+    {
+      "id": "f9b4f12b-c55a-4177-b364-13f16b467077",
+      "source_id": "daedalus",
+      "target_id": "minos",
+      "type": "served"
+    },
+    {
+      "id": "b65f91d2-ed3f-4d1c-a46e-c3b2139fdde0",
+      "source_id": "heracles",
+      "target_id": "prometheus",
+      "type": "freed"
+    },
+    {
+      "id": "363753c4-c572-4f86-86c5-80fd530c565f",
+      "source_id": "heracles",
+      "target_id": "atlas",
+      "type": "encountered"
+    },
+    {
+      "id": "43fde10a-1f36-4393-b0b5-6ae3f9ba37f2",
+      "source_id": "medea",
+      "target_id": "hecate",
+      "type": "worshipped"
+    },
+    {
+      "id": "4923aaa4-9f15-4cb6-9132-a4c613fb1990",
+      "source_id": "circe",
+      "target_id": "hecate",
+      "type": "worshipped"
+    },
+    {
+      "id": "ddb4cb32-80fb-40c3-b054-2c6dcb91ad68",
+      "source_id": "eris",
+      "target_id": "paris",
+      "type": "influenced"
+    },
+    {
+      "id": "ef8aa4b4-b213-4850-bfe6-adb0a617526c",
+      "source_id": "perseus",
+      "target_id": "andromeda",
+      "type": "rescued"
+    },
+    {
+      "id": "df0df894-86d4-4b03-b7c2-52e339e19757",
+      "source_id": "orpheus",
+      "target_id": "hades",
+      "type": "petitioned"
+    },
+    {
+      "id": "62a43d0d-ac3d-4a4c-a957-371e6f787e56",
+      "source_id": "orpheus",
+      "target_id": "persephone",
+      "type": "petitioned"
+    },
+    {
+      "id": "57584c0a-d3e4-4f81-b8ca-e4c805f2f047",
+      "source_id": "odysseus",
+      "target_id": "circe",
+      "type": "encountered"
+    },
+    {
+      "id": "dbb17715-3115-47d8-b88f-9239cffb3109",
+      "source_id": "odysseus",
+      "target_id": "scylla",
+      "type": "encountered"
+    },
+    {
+      "id": "4b262942-b042-42a1-8672-2b4345384140",
+      "source_id": "odysseus",
+      "target_id": "polyphemus",
+      "type": "blinded"
+    },
+    {
+      "id": "0f4528a6-9873-4f36-a1e0-5188fc6b4a85",
+      "source_id": "bellerophon",
+      "target_id": "pegasus",
+      "type": "rode"
+    },
+    {
+      "id": "d2702413-c987-4603-9201-1b0389d4a985",
+      "source_id": "icarus",
+      "target_id": "helios",
+      "type": "tempted_by"
+    },
+    {
+      "id": "1c009ecd-11f3-4182-abff-ffa3ed27fc61",
+      "source_id": "zeus",
+      "target_id": "eros",
+      "type": "assisted"
+    },
+    {
+      "id": "3ad92a68-3db7-4a84-99a0-10f91d62a490",
+      "source_id": "hephaestus",
+      "target_id": "pandora",
+      "type": "created"
+    },
+    {
+      "id": "0d08e66e-9aa5-49fa-a7ba-934ce9aab999",
+      "source_id": "prometheus",
+      "target_id": "epimetheus",
+      "type": "warned"
+    },
+    {
+      "id": "bae5ac49-3f22-4a07-8115-38c381441260",
+      "source_id": "zeus",
+      "target_id": "demeter",
+      "type": "loved"
+    },
+    {
+      "id": "3a26031e-015c-49cc-add6-970001677617",
+      "source_id": "zeus",
+      "target_id": "themis",
+      "type": "loved"
+    },
+    {
+      "id": "e545c36b-ea85-495e-8afa-034876242778",
+      "source_id": "poseidon",
+      "target_id": "demeter",
+      "type": "loved"
+    },
+    {
+      "id": "92f3816f-167d-4b93-bb77-9b907c759f05",
+      "source_id": "poseidon",
+      "target_id": "aphrodite",
+      "type": "loved"
+    },
+    {
+      "id": "e78027be-1091-4460-92bf-ec3a5a5e2a1e",
+      "source_id": "agamemnon",
+      "target_id": "cassandra",
+      "type": "captured"
+    },
+    {
+      "id": "7d10f243-c06b-4f1e-b048-4b504a6a62cc",
+      "source_id": "achilles",
+      "target_id": "penthesilea",
+      "type": "slew"
+    },
+    {
+      "id": "954c12a1-a913-49dc-95ed-aaf546c4fdf9",
+      "source_id": "paris",
+      "target_id": "achilles",
+      "type": "slew"
+    },
+    {
+      "id": "6f28f1c0-c80c-4225-83c4-9f00bb176c07",
+      "source_id": "hector",
+      "target_id": "patroclus",
+      "type": "slew"
+    },
+    {
+      "id": "199cd6cc-9e6c-4a76-81e0-20c31a0f8977",
+      "source_id": "aeneas",
+      "target_id": "diomedes",
+      "type": "enemy_of"
+    },
+    {
+      "id": "32191937-eff9-4880-a5d5-f69fe7c8d3f9",
+      "source_id": "agamemnon",
+      "target_id": "paris",
+      "type": "enemy_of"
+    },
+    {
+      "id": "20e8edef-c54f-4421-aaea-e71b1b8c39c9",
+      "source_id": "diomedes",
+      "target_id": "ares",
+      "type": "wounded"
+    },
+    {
+      "id": "f2799adb-ec6b-4e5e-9c6f-29dbd3eae3da",
+      "source_id": "diomedes",
+      "target_id": "aphrodite",
+      "type": "wounded"
+    },
+    {
+      "id": "0dcd212c-c032-442e-b9b7-a8886798092d",
+      "source_id": "athena",
+      "target_id": "diomedes",
+      "type": "ally_of"
+    },
+    {
+      "id": "a4309efc-06c0-4e1f-8a48-47a345b7e049",
+      "source_id": "jason",
+      "target_id": "athena",
+      "type": "ally_of"
+    },
+    {
+      "id": "c60483be-2283-4239-926a-933908282877",
+      "source_id": "jason",
+      "target_id": "aphrodite",
+      "type": "ally_of"
+    },
+    {
+      "id": "22f8cf9f-b79c-41ae-897f-9e752da17c76",
+      "source_id": "heracles",
+      "target_id": "atlas",
+      "type": "tricked"
+    },
+    {
+      "id": "7a3e0fd7-2c2b-4973-bb50-9301eb91cf75",
+      "source_id": "heracles",
+      "target_id": "ares",
+      "type": "enemy_of"
+    },
+    {
+      "id": "33d0c573-a37c-4299-9588-9a98007fdf69",
+      "source_id": "heracles",
+      "target_id": "poseidon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "81fcc52a-487a-431f-bdaa-a0d840a5116b",
+      "source_id": "theseus",
+      "target_id": "poseidon",
+      "type": "child_of"
+    },
+    {
+      "id": "240459c6-d48d-4be8-bb22-6ca87fbe722e",
+      "source_id": "theseus",
+      "target_id": "minos",
+      "type": "enemy_of"
+    },
+    {
+      "id": "9855b105-a709-4925-b918-1362990552bc",
+      "source_id": "minos",
+      "target_id": "daedalus",
+      "type": "ally_of"
+    },
+    {
+      "id": "9be4841a-1c41-460b-b2cd-ce3a5c9ac62d",
+      "source_id": "icarus",
+      "target_id": "daedalus",
+      "type": "child_of"
+    },
+    {
+      "id": "94f8a98b-2580-45ee-8a98-993483565f64",
+      "source_id": "odysseus",
+      "target_id": "hermes",
+      "type": "received_gift_from"
+    },
+    {
+      "id": "e6ceeabd-7f60-4a7b-bb16-d4e5f1f13411",
+      "source_id": "hephaestus",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "ae45947a-3cb7-40ab-b0a9-ea9af9934d7f",
+      "source_id": "hephaestus",
+      "target_id": "hera",
+      "type": "served"
+    },
+    {
+      "id": "91a184a7-1bd4-4592-9788-d582dbd2596a",
+      "source_id": "apollo",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "6db3a05a-4195-429f-830d-f1c89a05a42a",
+      "source_id": "hermes",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "8b6cbf88-a524-401a-a482-11fdde6fae6f",
+      "source_id": "artemis",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "97b458ef-c758-4945-9bf8-f343dacf6509",
+      "source_id": "athena",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "fa4363ce-d4f3-4987-a209-d10e32545f02",
+      "source_id": "poseidon",
+      "target_id": "zeus",
+      "type": "rival_of"
+    },
+    {
+      "id": "9d490f9e-342e-4d40-936b-59bf242b93e5",
+      "source_id": "hera",
+      "target_id": "zeus",
+      "type": "rival_of"
+    },
+    {
+      "id": "7781cd6f-d423-480c-b3ba-2bc585bc24b5",
+      "source_id": "eris",
+      "target_id": "agamemnon",
+      "type": "influenced"
+    },
+    {
+      "id": "a1a45f3e-18fe-4b9a-9555-2f265909774e",
+      "source_id": "eris",
+      "target_id": "hera",
+      "type": "antagonized"
+    },
+    {
+      "id": "9adf69e5-8239-42de-8b39-3fb890039886",
+      "source_id": "eris",
+      "target_id": "athena",
+      "type": "antagonized"
+    },
+    {
+      "id": "17462262-248d-41f3-bcc0-3b36f3786d2c",
+      "source_id": "eris",
+      "target_id": "aphrodite",
+      "type": "antagonized"
+    },
+    {
+      "id": "f65c9611-948c-4c5b-a5fe-7c5ba50b47dc",
+      "source_id": "nemesis",
+      "target_id": "paris",
+      "type": "punished"
+    },
+    {
+      "id": "08f70555-d0f8-4f48-9a0d-403d07817761",
+      "source_id": "nemesis",
+      "target_id": "agamemnon",
+      "type": "punished"
+    },
+    {
+      "id": "71c96738-697f-4179-8174-94e91d790885",
+      "source_id": "tyche",
+      "target_id": "jason",
+      "type": "influenced"
+    },
+    {
+      "id": "571aa92e-e56b-4611-94dd-07e17663edf5",
+      "source_id": "tyche",
+      "target_id": "odysseus",
+      "type": "influenced"
+    },
+    {
+      "id": "043f0c4e-392c-4ba8-84fc-c1a1eae37894",
+      "source_id": "heracles",
+      "target_id": "hades",
+      "type": "encountered"
+    },
+    {
+      "id": "798ec50c-a5ed-458f-92c4-1f075ead190f",
+      "source_id": "heracles",
+      "target_id": "persephone",
+      "type": "petitioned"
+    },
+    {
+      "id": "8aaa4bf2-1a76-44d5-9383-42d7912dad6a",
+      "source_id": "psyche",
+      "target_id": "persephone",
+      "type": "petitioned"
+    },
+    {
+      "id": "d28a015f-3ac6-4772-bfdd-a46d6ed9b71d",
+      "source_id": "psyche",
+      "target_id": "hades",
+      "type": "encountered"
+    },
+    {
+      "id": "52ba5675-3224-4818-9753-6f3ecc155243",
+      "source_id": "aeneas",
+      "target_id": "hades",
+      "type": "encountered"
+    },
+    {
+      "id": "5bf46b9a-fad9-42a1-8e23-63493569ff86",
+      "source_id": "aeneas",
+      "target_id": "charon",
+      "type": "encountered"
+    },
+    {
+      "id": "7ad0d8e6-8fc7-45a4-a79c-3182595fd14f",
+      "source_id": "odysseus",
+      "target_id": "hades",
+      "type": "visited"
+    },
+    {
+      "id": "19817311-097d-4a58-868d-46237825214c",
+      "source_id": "odysseus",
+      "target_id": "persephone",
+      "type": "petitioned"
+    },
+    {
+      "id": "82af5fcb-0bf9-4cd3-a1db-b723327bdce3",
+      "source_id": "charon",
+      "target_id": "tartarus",
+      "type": "guarded_entrance_to"
+    },
+    {
+      "id": "cd673fcf-35c8-4259-b45c-6dd24fdc6dd1",
+      "source_id": "cerberus",
+      "target_id": "tartarus",
+      "type": "guarded_entrance_to"
+    },
+    {
+      "id": "3572dd59-69d6-4d77-9fce-74417188dc9d",
+      "source_id": "poseidon",
+      "target_id": "polyphemus",
+      "type": "avenged"
+    },
+    {
+      "id": "d8d5aab0-48d3-4bfe-85c0-21f94c2f4d1e",
+      "source_id": "gaia",
+      "target_id": "typhon",
+      "type": "parent_of"
+    },
+    {
+      "id": "5f906d4c-d005-46ec-ab79-7cc9041e2ef0",
+      "source_id": "gaia",
+      "target_id": "echidna",
+      "type": "parent_of"
+    },
+    {
+      "id": "7d0ed3d4-25ae-4cba-a49e-5ab725c8f380",
+      "source_id": "hephaestus",
+      "target_id": "zeus",
+      "type": "crafted_for"
+    },
+    {
+      "id": "884094a5-2999-4613-95e4-c46994f90d0c",
+      "source_id": "hephaestus",
+      "target_id": "hermes",
+      "type": "crafted_for"
+    },
+    {
+      "id": "e47672f2-a8a8-4371-8748-fb76da708dde",
+      "source_id": "hephaestus",
+      "target_id": "artemis",
+      "type": "crafted_for"
+    },
+    {
+      "id": "1927983e-afc3-40df-bec4-94bdd016d12d",
+      "source_id": "hermes",
+      "target_id": "pandora",
+      "type": "escorted"
+    },
+    {
+      "id": "c0aa8d84-c215-4216-aa8a-ff09e26fa031",
+      "source_id": "athena",
+      "target_id": "pandora",
+      "type": "assisted"
+    },
+    {
+      "id": "eb637fd4-67f2-4ccb-b054-02ed770fd1b6",
+      "source_id": "apollo",
+      "target_id": "oedipus",
+      "type": "prophesied_about"
+    },
+    {
+      "id": "e363d9ff-ab8a-4dd6-92c4-35c1cb8d6af0",
+      "source_id": "apollo",
+      "target_id": "heracles",
+      "type": "prophesied_about"
+    },
+    {
+      "id": "e2629219-60bc-49fa-b07b-7a010b0b4d48",
+      "source_id": "apollo",
+      "target_id": "agamemnon",
+      "type": "prophesied_about"
+    },
+    {
+      "id": "f493c1aa-5aa8-4121-8fca-ca6eaaaae8ce",
+      "source_id": "themis",
+      "target_id": "zeus",
+      "type": "advised"
+    },
+    {
+      "id": "8bd229cb-c702-43af-a3c5-08bbef3fe710",
+      "source_id": "themis",
+      "target_id": "apollo",
+      "type": "assisted"
+    },
+    {
+      "id": "d70113c5-bbb2-4948-a128-4a619487e462",
+      "source_id": "gaia",
+      "target_id": "iapetus",
+      "type": "parent_of"
+    },
+    {
+      "id": "5f433d34-254a-482f-b1c4-d854c646705d",
+      "source_id": "uranus",
+      "target_id": "iapetus",
+      "type": "parent_of"
+    },
+    {
+      "id": "e0ec737d-2c40-43e8-accb-71fc98f5da0a",
+      "source_id": "iapetus",
+      "target_id": "prometheus",
+      "type": "parent_of"
+    },
+    {
+      "id": "7b3f4437-fe65-48f6-aa94-585791fe1ca6",
+      "source_id": "iapetus",
+      "target_id": "epimetheus",
+      "type": "parent_of"
+    },
+    {
+      "id": "cbe85539-228e-41e0-b228-a972948c35ca",
+      "source_id": "iapetus",
+      "target_id": "atlas",
+      "type": "parent_of"
+    },
+    {
+      "id": "6029dbef-d274-48cf-8169-ee2347a49571",
+      "source_id": "iapetus",
+      "target_id": "kronos",
+      "type": "sibling_of"
+    },
+    {
+      "id": "78a43ecf-dcb6-4ea4-badd-cbf2c4fe6108",
+      "source_id": "iapetus",
+      "target_id": "hyperion",
+      "type": "sibling_of"
+    },
+    {
+      "id": "933b92d9-a5de-4052-b7c7-fd266165381e",
+      "source_id": "iapetus",
+      "target_id": "oceanus",
+      "type": "sibling_of"
+    },
+    {
+      "id": "939c6f96-05b2-4eef-87e9-5feea9166e7f",
+      "source_id": "gaia",
+      "target_id": "leto",
+      "type": "parent_of"
+    },
+    {
+      "id": "026b480c-9061-46da-8490-cdb82c438b40",
+      "source_id": "zeus",
+      "target_id": "leto",
+      "type": "loved"
+    },
+    {
+      "id": "afaf13b3-2e9b-4e79-9427-53a9afbe6a1a",
+      "source_id": "leto",
+      "target_id": "apollo",
+      "type": "parent_of"
+    },
+    {
+      "id": "57501dd9-002c-46ec-bf64-e18a46b9a57c",
+      "source_id": "leto",
+      "target_id": "artemis",
+      "type": "parent_of"
+    },
+    {
+      "id": "e6376579-dcdc-4c0e-98b1-4ec44571cf84",
+      "source_id": "hera",
+      "target_id": "leto",
+      "type": "enemy_of"
+    },
+    {
+      "id": "51baaa7b-18a6-48c3-8d20-93fb2fc88c2f",
+      "source_id": "apollo",
+      "target_id": "leto",
+      "type": "protected"
+    },
+    {
+      "id": "02324f44-ccdd-4e86-a033-71dbea7a650a",
+      "source_id": "artemis",
+      "target_id": "leto",
+      "type": "protected"
+    },
+    {
+      "id": "fad26c80-e023-4125-92c9-634f65cbf69e",
+      "source_id": "gaia",
+      "target_id": "mnemosyne",
+      "type": "parent_of"
+    },
+    {
+      "id": "be3435b6-cf73-4ac6-840b-bf40a2dc63d6",
+      "source_id": "uranus",
+      "target_id": "mnemosyne",
+      "type": "parent_of"
+    },
+    {
+      "id": "ddb059de-ea55-4dab-a468-4e8a625e19bc",
+      "source_id": "zeus",
+      "target_id": "mnemosyne",
+      "type": "loved"
+    },
+    {
+      "id": "299cb5e1-1a60-4fcc-a235-512d7998162c",
+      "source_id": "mnemosyne",
+      "target_id": "apollo",
+      "type": "ally_of"
+    },
+    {
+      "id": "4ccd1d5f-d0ae-4d79-b58e-eed0beb5feb8",
+      "source_id": "iapetus",
+      "target_id": "mnemosyne",
+      "type": "sibling_of"
+    },
+    {
+      "id": "8166f115-fd6a-4933-bdd7-8f9820305168",
+      "source_id": "zeus",
+      "target_id": "semele",
+      "type": "loved"
+    },
+    {
+      "id": "07931257-e4a2-4caa-8100-77d13a255355",
+      "source_id": "semele",
+      "target_id": "dionysus",
+      "type": "parent_of"
+    },
+    {
+      "id": "e40987ae-22f8-430e-b084-694a7d42e049",
+      "source_id": "hera",
+      "target_id": "semele",
+      "type": "enemy_of"
+    },
+    {
+      "id": "e9ecfd23-38fd-4379-9959-844695dbc226",
+      "source_id": "zeus",
+      "target_id": "semele",
+      "type": "caused_death_of"
+    },
+    {
+      "id": "60e4eabb-5c78-4366-a1fd-eb8bd786366f",
+      "source_id": "dionysus",
+      "target_id": "semele",
+      "type": "rescued"
+    },
+    {
+      "id": "6bfed3a7-6959-4165-b0bf-478f8f3dc592",
+      "source_id": "thetis",
+      "target_id": "achilles",
+      "type": "parent_of"
+    },
+    {
+      "id": "98e4b0be-e261-4428-8171-9c2671ca7d97",
+      "source_id": "thetis",
+      "target_id": "zeus",
+      "type": "petitioned"
+    },
+    {
+      "id": "d139657b-afe0-47a7-9711-a0b042c71a1a",
+      "source_id": "thetis",
+      "target_id": "hephaestus",
+      "type": "petitioned"
+    },
+    {
+      "id": "0350caab-d277-45f0-a2ac-63b4510de23f",
+      "source_id": "hephaestus",
+      "target_id": "thetis",
+      "type": "crafted_for"
+    },
+    {
+      "id": "69b7cfaf-9f28-4ac8-b91c-bc01daa8ada4",
+      "source_id": "zeus",
+      "target_id": "thetis",
+      "type": "respected"
+    },
+    {
+      "id": "6b8e37be-2eca-4da6-ab89-96e2ba042e87",
+      "source_id": "hera",
+      "target_id": "thetis",
+      "type": "rival_of"
+    },
+    {
+      "id": "d44e83da-5b95-4539-b9a9-4934851a9f37",
+      "source_id": "thetis",
+      "target_id": "peleus",
+      "type": "spouse_of"
+    },
+    {
+      "id": "a61bd212-f62b-45c1-ae14-bd6f71d4ca3d",
+      "source_id": "peleus",
+      "target_id": "achilles",
+      "type": "parent_of"
+    },
+    {
+      "id": "22db62e9-f713-44c2-972b-0ea2c89098b5",
+      "source_id": "peleus",
+      "target_id": "atalanta",
+      "type": "ally_of"
+    },
+    {
+      "id": "54677a57-5421-49c0-8692-a34ba8a69b0f",
+      "source_id": "peleus",
+      "target_id": "thetis",
+      "type": "spouse_of"
+    },
+    {
+      "id": "97b26e3e-d481-4930-9865-cf332c4c3f49",
+      "source_id": "eris",
+      "target_id": "peleus",
+      "type": "influenced"
+    },
+    {
+      "id": "e3ef0ac0-3a3f-46c1-b5ba-3df71fd489aa",
+      "source_id": "eris",
+      "target_id": "thetis",
+      "type": "influenced"
+    },
+    {
+      "id": "c8425f2f-0577-4668-9c92-bb14fc275423",
+      "source_id": "priam",
+      "target_id": "hector",
+      "type": "parent_of"
+    },
+    {
+      "id": "97d6dae8-d52c-42b2-9511-b1f5ef923f04",
+      "source_id": "priam",
+      "target_id": "paris",
+      "type": "parent_of"
+    },
+    {
+      "id": "49dde944-af26-4ce6-b2bd-94de78f48b28",
+      "source_id": "priam",
+      "target_id": "cassandra",
+      "type": "parent_of"
+    },
+    {
+      "id": "fe9e68e1-6c6b-4ce6-8212-4be7ef47fc9b",
+      "source_id": "priam",
+      "target_id": "hector",
+      "type": "ally_of"
+    },
+    {
+      "id": "2cbcd4b5-2ab9-40e9-bcfd-bd05c4b9f9bf",
+      "source_id": "priam",
+      "target_id": "paris",
+      "type": "ally_of"
+    },
+    {
+      "id": "130487a0-8b7a-48de-919d-c685e2e14475",
+      "source_id": "priam",
+      "target_id": "aeneas",
+      "type": "ally_of"
+    },
+    {
+      "id": "c87b2539-5417-4d4f-a277-d602e61e87d8",
+      "source_id": "priam",
+      "target_id": "agamemnon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "7386b3c6-08a1-46a3-a27c-c4fe214800fa",
+      "source_id": "priam",
+      "target_id": "achilles",
+      "type": "enemy_of"
+    },
+    {
+      "id": "1d0817e0-54df-45a8-843d-2d355bc82963",
+      "source_id": "achilles",
+      "target_id": "priam",
+      "type": "respected"
+    },
+    {
+      "id": "61dcc098-0d03-46ce-9cca-24d9d679bf90",
+      "source_id": "hecuba",
+      "target_id": "hector",
+      "type": "parent_of"
+    },
+    {
+      "id": "f56f5add-2a65-45b0-96f5-48316045fb16",
+      "source_id": "hecuba",
+      "target_id": "paris",
+      "type": "parent_of"
+    },
+    {
+      "id": "49e838b6-ac79-4e9a-8dcc-77fadb3b9367",
+      "source_id": "hecuba",
+      "target_id": "cassandra",
+      "type": "parent_of"
+    },
+    {
+      "id": "e5894c78-f39a-455e-b302-e419a0508f69",
+      "source_id": "priam",
+      "target_id": "hecuba",
+      "type": "spouse_of"
+    },
+    {
+      "id": "c3568b69-a013-4099-9dd8-a8a5fd129a5f",
+      "source_id": "hecuba",
+      "target_id": "agamemnon",
+      "type": "enemy_of"
+    },
+    {
+      "id": "c63ec42c-d585-4595-a70c-08b5c70c1402",
+      "source_id": "hecuba",
+      "target_id": "achilles",
+      "type": "enemy_of"
+    },
+    {
+      "id": "a2558eaf-42de-4cdc-b97a-a06a6bd5fd28",
+      "source_id": "aegeus",
+      "target_id": "theseus",
+      "type": "parent_of"
+    },
+    {
+      "id": "a7b142d8-52db-458f-acfc-5eaf7b55726d",
+      "source_id": "theseus",
+      "target_id": "aegeus",
+      "type": "caused_death_of"
+    },
+    {
+      "id": "30867d2c-4422-4f86-9fd9-25bdafc67fcd",
+      "source_id": "aegeus",
+      "target_id": "minos",
+      "type": "enemy_of"
+    },
+    {
+      "id": "6fb54f47-b572-460c-98ac-f60665cf62c6",
+      "source_id": "zeus",
+      "target_id": "clotho",
+      "type": "parent_of"
+    },
+    {
+      "id": "29ff8fa7-522b-4f81-b957-d2b70db36a1e",
+      "source_id": "themis",
+      "target_id": "clotho",
+      "type": "parent_of"
+    },
+    {
+      "id": "d3b48aad-1c34-4706-a9a0-44c6002460c4",
+      "source_id": "zeus",
+      "target_id": "lachesis",
+      "type": "parent_of"
+    },
+    {
+      "id": "81bef155-78a7-4ed9-88f7-a7034fba7520",
+      "source_id": "themis",
+      "target_id": "lachesis",
+      "type": "parent_of"
+    },
+    {
+      "id": "d24ee7bf-dc74-4eb7-8c36-012f7e7e038f",
+      "source_id": "zeus",
+      "target_id": "atropos",
+      "type": "parent_of"
+    },
+    {
+      "id": "cb29ede2-b6e1-4f93-b5f8-b70b2af184d1",
+      "source_id": "themis",
+      "target_id": "atropos",
+      "type": "parent_of"
+    },
+    {
+      "id": "f3016553-caa1-43af-8beb-13350b3f1b10",
+      "source_id": "atropos",
+      "target_id": "meleager",
+      "type": "influenced"
+    },
+    {
+      "id": "bc2bf4e9-e6e4-437e-affe-b6fd78614d70",
+      "source_id": "clotho",
+      "target_id": "achilles",
+      "type": "influenced"
+    },
+    {
+      "id": "f55d070a-5b33-45a6-b271-33debb92b70a",
+      "source_id": "clotho",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "ab785518-3906-4358-b3a4-81f7c29fb929",
+      "source_id": "lachesis",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "083d5ddd-aa92-40e0-9fc8-1e80d8b1242e",
+      "source_id": "atropos",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "2e916235-4384-4bf3-83e2-fa466f3a20a5",
+      "source_id": "zeus",
+      "target_id": "hebe",
+      "type": "parent_of"
+    },
+    {
+      "id": "042e25f7-91ad-4889-938b-600ba315de3a",
+      "source_id": "hera",
+      "target_id": "hebe",
+      "type": "parent_of"
+    },
+    {
+      "id": "03810ab7-4fc1-497c-a9a1-78e262029229",
+      "source_id": "hebe",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "16f3f3cc-b568-451e-8e19-b68e960e4c06",
+      "source_id": "hebe",
+      "target_id": "hera",
+      "type": "served"
+    },
+    {
+      "id": "caa552e8-fd8d-4903-8277-c461fa32c377",
+      "source_id": "heracles",
+      "target_id": "hebe",
+      "type": "spouse_of"
+    },
+    {
+      "id": "c22b74c2-6439-41de-a567-15ad24c6d32a",
+      "source_id": "hebe",
+      "target_id": "heracles",
+      "type": "spouse_of"
+    },
+    {
+      "id": "31c3f5c5-f05d-42ff-83cd-953e7a39f8a1",
+      "source_id": "hebe",
+      "target_id": "ares",
+      "type": "sibling_of"
+    },
+    {
+      "id": "b2039a56-d769-4104-97c3-16eab64cabb3",
+      "source_id": "hebe",
+      "target_id": "hephaestus",
+      "type": "sibling_of"
+    },
+    {
+      "id": "34e11375-bb53-45f9-99e1-bf11cc67bc59",
+      "source_id": "zeus",
+      "target_id": "ganymede",
+      "type": "loved"
+    },
+    {
+      "id": "a796d33f-5ab8-40fa-991d-d3438a8e42b3",
+      "source_id": "zeus",
+      "target_id": "ganymede",
+      "type": "abducted"
+    },
+    {
+      "id": "37ca2776-f360-4604-bda4-ed75fa5f7320",
+      "source_id": "ganymede",
+      "target_id": "zeus",
+      "type": "served"
+    },
+    {
+      "id": "818e7622-b308-41b3-8009-9c9b07810445",
+      "source_id": "hebe",
+      "target_id": "ganymede",
+      "type": "rival_of"
+    },
+    {
+      "id": "9d5b0ed2-1d86-4c9f-ade3-e83fd0d1dda6",
+      "source_id": "priam",
+      "target_id": "ganymede",
+      "type": "parent_of"
+    },
+    {
+      "id": "fcd8fb8c-83d8-438a-ab3c-e48b1d668c71",
+      "source_id": "calypso",
+      "target_id": "odysseus",
+      "type": "loved"
+    },
+    {
+      "id": "2f6046f9-185d-4063-9906-6c2305bf4a1e",
+      "source_id": "odysseus",
+      "target_id": "calypso",
+      "type": "encountered"
+    },
+    {
+      "id": "9362940f-b8df-47b7-a6d0-9b313aaf3188",
+      "source_id": "zeus",
+      "target_id": "calypso",
+      "type": "ordered"
+    },
+    {
+      "id": "99423a5b-b0a5-49a0-a564-9c23a19c9bcc",
+      "source_id": "hermes",
+      "target_id": "calypso",
+      "type": "delivered_message_to"
+    },
+    {
+      "id": "ac3b928c-9172-4572-a372-9fb31f09b41b",
+      "source_id": "helios",
+      "target_id": "calypso",
+      "type": "parent_of"
+    },
+    {
+      "id": "6eb67d90-2411-4ea2-8b29-aff10c216371",
+      "source_id": "odysseus",
+      "target_id": "charybdis",
+      "type": "encountered"
+    },
+    {
+      "id": "988422a6-9399-40c5-bbf4-f26b0fa0bde8",
+      "source_id": "odysseus",
+      "target_id": "scylla",
+      "type": "enemy_of"
+    },
+    {
+      "id": "aca00de9-d9d9-4c8a-82a2-955288ca463c",
+      "source_id": "scylla",
+      "target_id": "charybdis",
+      "type": "ally_of"
+    },
+    {
+      "id": "04993d80-5364-4730-8aac-69a194fd4a8a",
+      "source_id": "poseidon",
+      "target_id": "charybdis",
+      "type": "parent_of"
+    },
+    {
+      "id": "66028836-160a-432d-9b74-50cd15e72664",
+      "source_id": "gaia",
+      "target_id": "charybdis",
+      "type": "parent_of"
+    },
+    {
+      "id": "ebae74a8-4f77-4e18-af51-6d925c0f217c",
+      "source_id": "hephaestus",
+      "target_id": "talos",
+      "type": "created"
+    },
+    {
+      "id": "441221ae-e5b2-4672-a807-2200e633bce3",
+      "source_id": "minos",
+      "target_id": "talos",
+      "type": "commanded"
+    },
+    {
+      "id": "a795b678-0110-4e23-a147-ab319353be9c",
+      "source_id": "jason",
+      "target_id": "talos",
+      "type": "enemy_of"
+    },
+    {
+      "id": "584a6a8f-b356-49fd-b775-e0658bee93d2",
+      "source_id": "medea",
+      "target_id": "talos",
+      "type": "slew"
+    },
+    {
+      "id": "b88aabc6-3b86-4955-acf6-8e8744afd262",
+      "source_id": "hera",
+      "target_id": "echo",
+      "type": "punished"
+    },
+    {
+      "id": "9f96236f-7832-4c7a-a9bf-aea15814deae",
+      "source_id": "echo",
+      "target_id": "narcissus",
+      "type": "loved"
+    },
+    {
+      "id": "ad4e246e-f6e9-43b9-b43a-98eab4978ad3",
+      "source_id": "narcissus",
+      "target_id": "echo",
+      "type": "rejected"
+    },
+    {
+      "id": "df1e80e3-f0f4-4175-81a4-2f0b65b6fc40",
+      "source_id": "nemesis",
+      "target_id": "narcissus",
+      "type": "punished"
+    },
+    {
+      "id": "f3fd7c75-85bf-4293-8db9-5f8d4b5ca6ea",
+      "source_id": "aphrodite",
+      "target_id": "narcissus",
+      "type": "cursed"
+    }
+  ]
+}
