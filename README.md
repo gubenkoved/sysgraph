@@ -1,26 +1,30 @@
 # sysgraph
 
-Real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
+An interactive force-directed **network graph visualizer** for the browser — with two modes:
+
+- **Import any graph** — load any JSON graph (nodes + edges) to explore and visualize it interactively, no Linux or special privileges required
+- **Live process graph** — discover running OS processes and their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP connections) in real time (Linux only)
 
 ![Python](https://img.shields.io/badge/python-%3E%3D3.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
-- **Process discovery** — enumerates all running OS processes and their parent-child relationships
-- **IPC visualization** — discovers pipes, Unix domain sockets, and TCP/UDP connections between processes
+- **Import any graph** — load a JSON file with nodes and edges to visualize any network, social graph, dependency tree, or dataset
+- **Export/Import** — save and reload graph snapshots as JSON; use the sample at [`data/simplest-graph.json`](data/simplest-graph.json) as a format reference
 - **Interactive graph** — force-directed graph rendered in the browser with zoom, pan, drag, and search
-- **Real-time** — fetch the latest process graph on demand via the web UI
-- **Fuzzy search** — find processes by name, PID, command line, or any property
+- **Fuzzy search** — find nodes by any property
 - **Adjacency filtering** — right-click a node to show only its neighbors
-- **Configurable** — tune d3 force parameters, colors, and filters via the settings panel
-- **Export/Import** — save and load graph snapshots as JSON
+- **Configurable** — tune d3 force parameters, colors, and type filters via the settings panel
+- **Process discovery** *(Linux only)* — enumerates running OS processes and their parent-child relationships
+- **IPC visualization** *(Linux only)* — discovers pipes, Unix domain sockets, and TCP/UDP connections between processes
+- **Real-time** *(Linux only)* — fetch the latest process graph on demand via the web UI
 
 ## Requirements
 
-- **Linux** (relies on `/proc` filesystem and the `ss` command)
 - **Python ≥ 3.12**
-- Root/sudo recommended for full visibility into all processes
+- **Linux** is required only for live process-graph discovery (relies on `/proc` and `ss`); importing and visualizing your own graphs works on any platform
+- Root/sudo recommended for full process visibility (Linux only)
 
 ## Installation
 
@@ -41,7 +45,27 @@ sysgraph --port 9000
 python -m sysgraph
 ```
 
-Open your browser to the displayed URL to see the interactive process graph.
+Open your browser to the displayed URL.
+
+### Visualize your own graph
+
+Use the **Import** button in the UI to load any JSON file in the following format:
+
+```json
+{
+  "nodes": [
+    {"id": "1", "type": "person", "properties": {"name": "Alice"}},
+    {"id": "2", "type": "person", "properties": {"name": "Bob"}}
+  ],
+  "edges": [
+    {"source_id": "1", "target_id": "2", "type": "knows", "properties": {}}
+  ]
+}
+```
+
+See [`data/simplest-graph.json`](data/simplest-graph.json) for a minimal example.
+
+### Live process graph (Linux only)
 
 For full visibility into all processes and their connections, run with elevated privileges:
 
@@ -59,9 +83,9 @@ The `--pid=host` and `--net=host` flags allow the container to see host processe
 
 ## How It Works
 
-1. The **FastAPI backend** uses `psutil` and Linux-specific APIs (`/proc`, `ss`) to discover processes, pipes, Unix domain sockets, and network connections.
-2. It builds a graph of processes (nodes) and their IPC channels (edges).
-3. The **browser frontend** fetches the graph via `GET /api/graph` and renders it using [force-graph](https://github.com/vasturiano/force-graph) with d3 physics simulation.
+1. The **browser frontend** renders interactive force-directed graphs using [force-graph](https://github.com/vasturiano/force-graph) with d3 physics simulation.
+2. Graphs can be **imported from JSON** directly in the browser, or fetched live from the backend.
+3. The **FastAPI backend** uses `psutil` and Linux-specific APIs (`/proc`, `ss`) to discover processes, pipes, Unix domain sockets, and network connections, building a graph served via `GET /api/graph`.
 
 ## Development
 
