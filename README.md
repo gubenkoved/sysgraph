@@ -20,6 +20,10 @@ An interactive force-directed **network graph visualizer** for the browser — w
 - **IPC visualization** *(Linux only)* — discovers pipes, Unix domain sockets, and TCP/UDP connections between processes
 - **Real-time** *(Linux only)* — fetch the latest process graph on demand via the web UI
 
+## Demo
+
+[Demo](https://github.com/user-attachments/assets/7d19daca-042c-43f1-bedd-4d74344e1e89)
+
 ## Requirements
 
 - **Python ≥ 3.12**
