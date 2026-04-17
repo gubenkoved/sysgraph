@@ -2,6 +2,51 @@
 requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "sysgraph"
+dynamic = ["version"]
+description = "Visualizer for processes and their interconnections"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Eugene Gubenkov", email = "gubenkoved@gmail.com" }]
+requires-python = ">=3.12"
+keywords = ["process", "visualization", "graph", "ipc", "system", "monitoring", "linux", "procfs"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+]
+dependencies = [
+    "psutil",
+    "coloredlogs",
+    "fastapi>=0.95",
+    "uvicorn[standard]>=0.20",
+]
+
+[project.urls]
+Source = "https://github.com/gubenkoved/sysgraph"
+Issues = "https://github.com/gubenkoved/sysgraph/issues"
+
+[project.scripts]
+sysgraph = "sysgraph.app:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "sysgraph.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sysgraph = ["dist/*", "dist/**/*"]
+
 [tool.ruff]
 line-length = 79
 target-version = "py312"
