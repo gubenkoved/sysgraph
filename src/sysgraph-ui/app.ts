@@ -27,6 +27,7 @@ import '@material/web/textfield/outlined-text-field.js';
 // --- cached DOM elements ---
 const searchMatchCountEl = document.getElementById('searchMatchCount') as HTMLElement;
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
+const loadingOverlay = document.getElementById('loading-overlay') as HTMLElement;
 
 // --- event wiring ---
 on(EVT_GRAPH_UPDATED, async () => {
@@ -132,6 +133,7 @@ registerHandler(CMD_IMPORT, async (text?: string) => {
 });
 
 registerHandler(CMD_RELOAD, async () => {
+    loadingOverlay.classList.add('visible');
     try {
         const loadedData = await loadDataFromApi();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
@@ -139,6 +141,8 @@ registerHandler(CMD_RELOAD, async () => {
     } catch (err) {
         console.error('reload failed:', err);
         showError(`Reload failed: ${(err as Error).message}`);
+    } finally {
+        loadingOverlay.classList.remove('visible');
     }
 });
 
@@ -150,6 +154,7 @@ initZoomIndicator();
 // --- initial load ---
 window.addEventListener('load', async () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
+    loadingOverlay.classList.add('visible');
     try {
         const loadedData = await loadDataFromApi();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
@@ -157,5 +162,7 @@ window.addEventListener('load', async () => {
     } catch (err) {
         console.error('initial load failed:', err);
         showError(`Failed to load graph: ${(err as Error).message}`);
+    } finally {
+        loadingOverlay.classList.remove('visible');
     }
 });

@@ -5,6 +5,7 @@
   --z-toolbar: 100;
   --z-search-help: 150;
   --z-context-menu: 200;
+  --z-loading-overlay: 300;
   --z-details-panel: 50;
   --z-selection-overlay: 10;
   --z-version-badge: 10;
@@ -297,6 +298,28 @@ md-outlined-button.danger {
   height: 1px;
   margin: var(--spacing-xs) 0;
   background: var(--border-medium);
+}
+
+/* ── Loading Overlay ─────────────────────────────────────── */
+
+#loading-overlay {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--z-loading-overlay);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  pointer-events: none;
+}
+
+#loading-overlay.visible {
+  display: block;
 }
 
 /* ── Settings Pane (Tweakpane) ───────────────────────────── */
