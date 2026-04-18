@@ -30,7 +30,7 @@ dependencies = [
     "psutil",
     "coloredlogs",
     "fastapi>=0.95",
-    "uvicorn[standard]>=0.20",
+    "uvicorn>=0.20",
 ]
 
 [project.urls]

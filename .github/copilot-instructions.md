@@ -12,6 +12,8 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
 
 **After any frontend/UI changes** (HTML, CSS, JS in `src/sysgraph-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/sysgraph/dist/`.
 
+**After any changes to Python dependencies** (adding, removing, or changing versions in `pyproject.toml`), always relock `requirements.txt` by running `pip-compile` (requires `pip-tools`). The locked file must stay in sync with `pyproject.toml`.
+
 ## Project Overview
 
 **sysgraph** is a real-time process-graph visualizer that discovers running OS processes, their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP network connections), and renders them as an interactive force-directed graph in the browser.
