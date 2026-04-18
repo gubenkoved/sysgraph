@@ -57,7 +57,8 @@ function buildFuse(graph: Graph): { fuse: Fuse<GraphNode>; allKeys: Set<string> 
         includeScore: true,
         includeMatches: true,
         findAllMatches: true,
-        threshold: 0,
+        // controls fuzziness - 0 = exact match, higher = more fuzzy
+        threshold: 0.1,
         useExtendedSearch: true,
         ignoreLocation: true,
         keys: [...allKeys],

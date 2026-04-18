@@ -5,6 +5,7 @@ An interactive force-directed **network graph visualizer** for the browser — w
 - **Import any graph** — load any JSON graph (nodes + edges) to explore and visualize it interactively, no Linux or special privileges required
 - **Live process graph** — discover running OS processes and their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP connections) in real time (Linux only)
 
+[![PyPI](https://img.shields.io/pypi/v/sysgraph)](https://pypi.org/project/sysgraph/)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
