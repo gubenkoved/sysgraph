@@ -10,13 +10,15 @@ readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Eugene Gubenkov", email = "gubenkoved@gmail.com" }]
 requires-python = ">=3.12"
-keywords = ["process", "visualization", "graph", "ipc", "system", "monitoring", "linux", "procfs"]
+keywords = ["process", "visualization", "graph", "ipc", "system", "monitoring", "cross-platform", "macos", "linux"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
     "Topic :: System :: Monitoring",
     "Topic :: System :: Systems Administration",
     "Environment :: Web Environment",

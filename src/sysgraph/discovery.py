@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -72,7 +73,7 @@ def discover_processes() -> list[Process]:
         if mem_info:
             p.memory_rss = mem_info.rss
             p.memory_vms = mem_info.vms
-            p.memory_shared = mem_info.shared
+            p.memory_shared = getattr(mem_info, "shared", None)
 
         p.environment = info.get("environ")
 
@@ -82,15 +83,18 @@ def discover_processes() -> list[Process]:
 
 
 def discover_unix_sockets() -> list[UnixDomainSocket]:
-    """Discover Unix Domain Sockets as reported by kernel.
+    """Discover Unix Domain Sockets by parsing ``ss -xp`` output.
 
-    Note however that connection with UDS will have at least 2 records reported
-    with opposite local/peer inodes. They can be further groupped to
-    find connected pairs of processes.
+    This is a Linux-only feature.  On other platforms an empty list is
+    returned without raising an error.
 
     Returns:
-        list[UnixDomainSocket]: _description_
+        list[UnixDomainSocket]: Discovered UDS sockets.
     """
+    if sys.platform != "linux":
+        LOGGER.debug("UDS discovery skipped (only supported on Linux)")
+        return []
+
     result = subprocess.run(
         ["ss", "-xp"], capture_output=True, text=True, check=False
     )
@@ -99,11 +103,15 @@ def discover_unix_sockets() -> list[UnixDomainSocket]:
 
     # example line:
     # users:(("dbus-daemon",pid=1950,fd=12))
-    def parse_proccess(s: str) -> list[UnixDomainSocketProcRef]:
+    def parse_proccess(
+        s: str,
+    ) -> list[UnixDomainSocketProcRef]:
         processes = []
 
         for match in re.finditer(
-            r'\("(?P<name>[^"]+)",pid=(?P<pid>[0-9]+),fd=(?P<fd>[0-9]+)\)', s
+            r'\("(?P<name>[^"]+)",pid=(?P<pid>[0-9]+),'
+            r"fd=(?P<fd>[0-9]+)\)",
+            s,
         ):
             ref = UnixDomainSocketProcRef(pid=int(match.group("pid")))
             ref.name = match.group("name")
@@ -141,7 +149,8 @@ def discover_connected_uds(
 ) -> list[UnixDomainSocketConnection]:
     """Discover connected UDS pairs from the list of discovered UDS sockets.
 
-    Each connection will have two UDS sockets with opposite local/peer inodes.
+    Each connection will have two UDS sockets with opposite local/peer
+    inodes.
 
     Args:
         sockets (list[UnixDomainSocket]): List of discovered UDS sockets.
@@ -159,7 +168,10 @@ def discover_connected_uds(
     for uds in sockets:
         if (uds.peer_inode, uds.local_inode) in inode_map:
             peer_uds = inode_map[(uds.peer_inode, uds.local_inode)]
-            if (uds.local_inode, uds.peer_inode) not in visited and (
+            if (
+                uds.local_inode,
+                uds.peer_inode,
+            ) not in visited and (
                 uds.peer_inode,
                 uds.local_inode,
             ) not in visited:
@@ -175,8 +187,18 @@ def discover_connected_uds(
 
 
 def get_processes_open_files() -> dict[int, list[ProcessOpenFile]]:
-    """Read open file descriptors directly from /proc instead of spawning lsof."""
+    """Read open file descriptors from /proc to discover pipes.
+
+    This is a Linux-only feature that reads ``/proc/[pid]/fd`` and
+    ``/proc/[pid]/fdinfo``.  On other platforms an empty mapping is
+    returned without raising an error.
+    """
     result_map: dict[int, list[ProcessOpenFile]] = defaultdict(list)
+
+    if sys.platform != "linux":
+        LOGGER.debug("pipe discovery skipped (only supported on Linux)")
+        return result_map
+
     proc_path = Path("/proc")
 
     for pid_dir in proc_path.iterdir():
@@ -306,7 +328,7 @@ def _add_uds_nodes(
             label = f"uds:[{inode}]"
 
         node = graph.add_node(
-            uds_node_id(inode),
+            uds_node_id(str(inode)),
             NODE_UDS,
             properties={
                 "label": label,

@@ -46,7 +46,7 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
                ▼
 ┌──────────────────────────────────────────────────────────┐
 │  discovery.py — OS introspection layer                   │
-│  Uses: psutil, /proc filesystem, `ss` command            │
+│  Uses: psutil (cross-platform), /proc & ss (Linux only) │
 │  Discovers: processes, pipes, UDS, TCP/UDP connections   │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -115,7 +115,7 @@ sysgraph/
 
 ### Prerequisites
 - Python ≥ 3.12
-- Linux (the discovery layer reads `/proc` and runs `ss`)
+- Linux, macOS, or Windows (process + network discovery is cross-platform; UDS and pipes require Linux)
 - Docker (for frontend builds — no host Node.js installation required)
 - Virtual environment recommended
 
@@ -161,7 +161,7 @@ The frontend is built with **Vite** and outputs to `src/sysgraph/dist/`. Build s
 pytest src/sysgraph/tests/
 ```
 
-Tests require running on Linux with access to `/proc` and `ss`.
+Tests require running on Linux for full coverage (pipe discovery tests need `/proc`).
 
 ### Linting
 
@@ -226,11 +226,11 @@ The `dist/` directory is included in the Python package via `MANIFEST.in` and `s
 - `external_socket` — External IP→socket connection
 
 ### Key Discovery Functions
-- `discover_processes()` — Uses `psutil.process_iter()` to enumerate all processes
-- `discover_unix_sockets()` — Parses `ss -xp` output to find UDS sockets
+- `discover_processes()` — Uses `psutil.process_iter()` to enumerate all processes (cross-platform)
+- `discover_unix_sockets()` — Parses `ss -xp` output to find UDS sockets (Linux only; returns empty list on other platforms)
 - `discover_connected_uds()` — Pairs UDS by matching local/peer inodes
-- `get_processes_open_files()` — Reads `/proc/[pid]/fd` and `/proc/[pid]/fdinfo` for pipe FDs
-- `get_all_net_connections()` — Uses `psutil.net_connections(kind="inet")` for TCP/UDP
+- `get_processes_open_files()` — Reads `/proc/[pid]/fd` and `/proc/[pid]/fdinfo` for pipe FDs (Linux only; returns empty dict on other platforms)
+- `get_all_net_connections()` — Uses `psutil.net_connections(kind="inet")` for TCP/UDP (cross-platform)
 - `build_graph()` — Orchestrates all discovery in parallel via `ThreadPoolExecutor`, builds complete graph
 
 ### API Response Format
@@ -391,15 +391,15 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 ### Testing
 - Backend tests are in `src/sysgraph/tests/` using `unittest`
 - Run with `pytest src/sysgraph/tests/`
-- Tests require Linux `/proc` filesystem access
+- Tests run on all platforms; pipe-related tests need Linux `/proc` filesystem
 - Frontend has no automated tests; test manually in browser
 
 ## Important Caveats
 
-- **Linux only:** The discovery layer depends on `/proc` filesystem and the `ss` command. It will not work on macOS or Windows.
-- **Privileges:** Some process info (e.g., other users' `/proc/[pid]/fd`) requires root or appropriate capabilities. Run with `sudo` for full visibility.
+- **Cross-platform discovery:** Process and network discovery works on Linux, macOS, and Windows via psutil. UDS discovery works on Linux only (requires `ss` command). Pipe discovery is Linux-only (reads `/proc`). On unsupported platforms, these features gracefully return empty data.
+- **Privileges:** Some process info (e.g., other users' processes) requires root/admin privileges. Run with `sudo` on Linux/macOS for full visibility.
 - **Frontend build required:** The backend serves pre-built Vite output from `src/sysgraph/dist/`. You must run `./scripts/build-ui.sh` before the backend can serve the frontend. During development, use the Vite dev server (`./scripts/dev-ui.sh`) for HMR.
 - **No host Node.js needed:** All `*-ui.sh` scripts run Node.js inside Docker. If Node.js 22 is available locally, `npm run build/typecheck/lint` also work.
 - **Version single source of truth:** The app version is defined in `src/sysgraph/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
 - **Graph size:** On busy systems the graph can have thousands of nodes. The force simulation may be slow; tune d3 parameters via the settings pane.
-- **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"external_ip::{ip}"`. Edge IDs are UUIDs.
+- **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"uds::{inode}"`, `"external_ip::{ip}"`. Edge IDs are UUIDs.

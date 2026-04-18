@@ -18,7 +18,7 @@ WORKDIR /app
 # Install small set of system deps needed for building psutil and for `ss`
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       build-essential gcc libffi-dev iproute2 lsof \
+       build-essential gcc libffi-dev iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install build tools

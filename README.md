@@ -2,8 +2,8 @@
 
 An interactive force-directed **network graph visualizer** for the browser — with two modes:
 
-- **Import any graph** — load any JSON graph (nodes + edges) to explore and visualize it interactively, no Linux or special privileges required
-- **Live process graph** — discover running OS processes and their inter-process communication channels (pipes, Unix domain sockets, TCP/UDP connections) in real time (Linux only)
+- **Import any graph** — load any JSON graph (nodes + edges) to explore and visualize it interactively
+- **Live process graph** — discover running OS processes and their inter-process communication channels in real time (cross-platform; richest on Linux)
 
 [![PyPI](https://img.shields.io/pypi/v/sysgraph)](https://pypi.org/project/sysgraph/)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.12-blue)
@@ -17,9 +17,9 @@ An interactive force-directed **network graph visualizer** for the browser — w
 - **Fuzzy search** — find nodes by any property
 - **Adjacency filtering** — right-click a node to show only its neighbors
 - **Configurable** — tune d3 force parameters, colors, and type filters via the settings panel
-- **Process discovery** *(Linux only)* — enumerates running OS processes and their parent-child relationships
-- **IPC visualization** *(Linux only)* — discovers pipes, Unix domain sockets, and TCP/UDP connections between processes
-- **Real-time** *(Linux only)* — fetch the latest process graph on demand via the web UI
+- **Process discovery** — enumerates running OS processes and their parent-child relationships (cross-platform via psutil)
+- **IPC visualization** — discovers TCP/UDP connections (all platforms), Unix domain sockets and pipes (Linux only)
+- **Real-time** — fetch the latest process graph on demand via the web UI
 
 ## Demo
 
@@ -28,8 +28,8 @@ An interactive force-directed **network graph visualizer** for the browser — w
 ## Requirements
 
 - **Python ≥ 3.12**
-- **Linux** is required only for live process-graph discovery (relies on `/proc` and `ss`); importing and visualizing your own graphs works on any platform
-- Root/sudo recommended for full process visibility (Linux only)
+- **Linux, macOS, or Windows** — process and network discovery works on all platforms via psutil; Unix domain sockets and pipe discovery require Linux
+- Root/sudo recommended for full process visibility on Linux/macOS
 
 ## Installation
 
@@ -70,9 +70,9 @@ Use the **Import** button in the UI to load any JSON file in the following forma
 
 See [`data/simplest-graph.json`](data/simplest-graph.json) for a minimal example.
 
-### Live process graph (Linux only)
+### Live process graph
 
-For full visibility into all processes and their connections, run with elevated privileges:
+For full visibility into all processes and their connections, run with elevated privileges (Linux/macOS):
 
 ```bash
 sudo sysgraph
@@ -90,12 +90,12 @@ The `--pid=host` and `--net=host` flags allow the container to see host processe
 
 1. The **browser frontend** renders interactive force-directed graphs using [force-graph](https://github.com/vasturiano/force-graph) with d3 physics simulation.
 2. Graphs can be **imported from JSON** directly in the browser, or fetched live from the backend.
-3. The **FastAPI backend** uses `psutil` and Linux-specific APIs (`/proc`, `ss`) to discover processes, pipes, Unix domain sockets, and network connections, building a graph served via `GET /api/graph`.
+3. The **FastAPI backend** uses `psutil` to discover processes and network connections (cross-platform), plus Linux-specific APIs (`/proc`, `ss`) for pipe and Unix domain socket discovery, building a graph served via `GET /api/graph`.
 
 ## Development
 
 ### Prerequisites
-- Python ≥ 3.12, Linux, Docker
+- Python ≥ 3.12, Docker (for frontend builds)
 - Node.js 22 runs inside Docker; no host installation required
 
 ### Backend
@@ -115,7 +115,7 @@ python src/sysgraph/app.py   # → http://localhost:8000
 
 ### Tests
 ```bash
-pytest src/sysgraph/tests/    # requires Linux /proc
+pytest src/sysgraph/tests/
 ```
 
 ### Python linting

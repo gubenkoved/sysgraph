@@ -20,8 +20,8 @@ def process_node_id(pid: int) -> str:
     return f"{NODE_PROCESS}::{pid}"
 
 
-def uds_node_id(inode: int) -> str:
-    return f"{NODE_UDS}::{inode}"
+def uds_node_id(key: str) -> str:
+    return f"{NODE_UDS}::{key}"
 
 
 def pipe_node_id(inode: str) -> str:
