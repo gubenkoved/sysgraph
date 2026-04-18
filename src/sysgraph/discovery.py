@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import subprocess
+import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -513,6 +514,8 @@ def _add_network_nodes(
 
 
 def build_graph(discover_uds_connectivity: bool = True) -> Graph:
+    started_at = time.monotonic()
+
     graph = Graph()
 
     # run independent discovery steps in parallel (all I/O-bound)
@@ -531,5 +534,9 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
     _add_uds_nodes(graph, uds, pid_to_node, discover_uds_connectivity)
     _add_pipe_nodes(graph, open_files_map, pid_to_node)
     _add_network_nodes(graph, processes, all_net_connections, pid_to_node)
+
+    LOGGER.info(
+        f"discovery completed in {time.monotonic() - started_at:.2f} seconds"
+    )
 
     return graph

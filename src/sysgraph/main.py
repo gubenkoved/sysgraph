@@ -10,7 +10,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def main():
-    coloredlogs.install(level="DEBUG")
+    coloredlogs.install(
+        level="DEBUG",
+        fmt="%(asctime)s.%(msecs)03d %(name)s[%(process)d] %(levelname)s %(message)s",
+    )
 
     processes = discovery.discover_processes()
     for proc in processes:

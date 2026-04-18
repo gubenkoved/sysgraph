@@ -18,9 +18,14 @@ from sysgraph.discovery import build_graph
 LOGGER = logging.getLogger(__name__)
 
 
+LOG_FORMAT = (
+    "%(asctime)s.%(msecs)03d %(name)s[%(process)d] %(levelname)s %(message)s"
+)
+
+
 @asynccontextmanager
 async def lifespan(app):
-    coloredlogs.install()
+    coloredlogs.install(fmt=LOG_FORMAT)
     logging.info(f"init for process with PID {os.getpid()}")
     yield
     logging.info(f"shutdown for process with PID {os.getpid()}")
