@@ -72,6 +72,7 @@ export type AstNode = TermNode | AndNode | OrNode;
 // ---------------------------------------------------------------------------
 
 const FIELD_RE = /^[a-zA-Z_][a-zA-Z0-9_.]*$/;
+const INVERSE_PREFIX_RE = /^!/;
 
 /**
  * Tokenize a search expression string into an array of tokens.
@@ -102,6 +103,7 @@ function tokenize(input: string): Token[] {
         if (input[i] === '"') {
             const str = readQuotedString(input, i);
             i = str.end;
+            assertNoFieldlessInverse(str.value);
             tokens.push({ type: TokenType.TERM, field: null, pattern: str.value });
             continue;
         }
@@ -122,6 +124,7 @@ function tokenize(input: string): Token[] {
 
         const colonIdx = raw.indexOf(':');
         if (colonIdx === -1) {
+            assertNoFieldlessInverse(raw);
             tokens.push({ type: TokenType.TERM, field: null, pattern: raw });
             continue;
         }
@@ -130,6 +133,7 @@ function tokenize(input: string): Token[] {
         const valueAfterColon = raw.slice(colonIdx + 1);
 
         if (!FIELD_RE.test(fieldCandidate)) {
+            assertNoFieldlessInverse(raw);
             tokens.push({ type: TokenType.TERM, field: null, pattern: raw });
             continue;
         }
@@ -159,6 +163,14 @@ function tokenize(input: string): Token[] {
     }
 
     return tokens;
+}
+
+function assertNoFieldlessInverse(pattern: string): void {
+    if (INVERSE_PREFIX_RE.test(pattern)) {
+        throw new SearchSyntaxError(
+            `Inverse match "${pattern}" requires a field specifier, e.g. field:${pattern}`
+        );
+    }
 }
 
 function readQuotedString(input: string, start: number): { value: string; end: number } {
