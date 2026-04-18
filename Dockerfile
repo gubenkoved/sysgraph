@@ -25,7 +25,7 @@ RUN apt-get update \
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Copy project metadata first to leverage Docker cache
-COPY pyproject.toml setup.py /app/
+COPY pyproject.toml /app/
 
 # Install the package in the image
 COPY . /app
