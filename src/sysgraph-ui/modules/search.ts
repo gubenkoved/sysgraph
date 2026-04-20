@@ -92,12 +92,22 @@ function astToFuseExpression(node: AstNode, allKeys: Set<string>): FuseExpressio
                 // for negation patterns, skip field resolution to avoid Fuse.js
                 // issues with multi-key $and expressions; use the exact field as given
                 if (INVERSE_PREFIX_RE.test(node.pattern)) {
+                    // require exact field match for inverse pattern
+                    if (!allKeys.has(node.field)) {
+                        throw new SearchSyntaxError(
+                            `No searchable fields match "${node.field}" for inverse pattern "${node.pattern}"`
+                        );
+                    }
+
                     return { [node.field]: node.pattern } as FuseExpression;
                 }
+
                 const keys = resolveField(node.field, allKeys);
                 if (keys.length === 0) {
-                    return { id: '=\x00__no_match__' };
+                    throw new SearchSyntaxError(`No searchable fields match "${node.field}"`);
+                    // return { id: '=\x00__no_match__' };
                 }
+
                 if (keys.length === 1) {
                     return { [keys[0]!]: node.pattern } as FuseExpression;
                 }
