@@ -72,7 +72,7 @@ export type AstNode = TermNode | AndNode | OrNode;
 // ---------------------------------------------------------------------------
 
 const FIELD_RE = /^[a-zA-Z_][a-zA-Z0-9_.]*$/;
-const INVERSE_PREFIX_RE = /^!/;
+export const INVERSE_PREFIX_RE = /^!/;
 
 /**
  * Tokenize a search expression string into an array of tokens.

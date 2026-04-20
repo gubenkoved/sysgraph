@@ -1,6 +1,6 @@
 import Fuse from 'fuse.js';
 import type { IFuseOptions, Expression as FuseExpression } from 'fuse.js';
-import { parse, SearchSyntaxError } from './search-parser.js';
+import { parse, SearchSyntaxError, INVERSE_PREFIX_RE } from './search-parser.js';
 import type { AstNode } from './search-parser.js';
 import type { Graph, GraphNode } from './graph.js';
 
@@ -89,6 +89,11 @@ function astToFuseExpression(node: AstNode, allKeys: Set<string>): FuseExpressio
     switch (node.type) {
         case 'term': {
             if (node.field) {
+                // for negation patterns, skip field resolution to avoid Fuse.js
+                // issues with multi-key $and expressions; use the exact field as given
+                if (INVERSE_PREFIX_RE.test(node.pattern)) {
+                    return { [node.field]: node.pattern } as FuseExpression;
+                }
                 const keys = resolveField(node.field, allKeys);
                 if (keys.length === 0) {
                     return { id: '=\x00__no_match__' };
