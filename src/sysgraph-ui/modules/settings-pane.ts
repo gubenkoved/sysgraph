@@ -75,7 +75,7 @@ const d3RenderingSettingsFolder = pane.addFolder({ title: 'd3 forces settings', 
 
 const d3Params: { key: keyof SettingsShape; label: string; min: number; max: number; step: number }[] = [
     { key: 'd3Charge', label: 'charge force', min: -800, max: 100, step: 10 },
-    { key: 'd3LinkDistance', label: 'link distance', min: 40, max: 300, step: 5 },
+    { key: 'd3LinkDistance', label: 'link distance', min: 40, max: 500, step: 5 },
     { key: 'd3LinkStrength', label: 'link strength', min: 0.0, max: 1.0, step: 0.01 },
     { key: 'd3CollisionMultiplier', label: 'collision', min: 0.5, max: 2.0, step: 0.05 },
     { key: 'd3AlphaTarget', label: 'alpha target', min: 0.0, max: 0.5, step: 0.01 },
