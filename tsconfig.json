@@ -11,8 +11,7 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "allowJs": false,
-        "baseUrl": "."
+        "allowJs": false
     },
     "include": [
         "src/sysgraph-ui/**/*"
