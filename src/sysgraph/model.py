@@ -87,6 +87,7 @@ class NetConnection:
     remote_address: SocketAddress | None
     socket_type: str
     state: str
+    fd: int | None = None
 
     def connection_id(self) -> str:
         if not self.remote_address:

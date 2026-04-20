@@ -263,6 +263,7 @@ def get_all_net_connections() -> dict[int, list[NetConnection]]:
                 else None,
                 socket_type=pcon.type.name,
                 state=pcon.status,
+                fd=pcon.fd if pcon.fd != -1 else None,
             )
         )
     return result
@@ -502,10 +503,15 @@ def _add_network_nodes(
                 sock_to_pids[sock_key] = sock_to_pids.get(sock_key, []) + [
                     proc.pid
                 ]
+                edge_props: dict = {}
+                if net_con.fd is not None:
+                    edge_props["fd"] = net_con.fd
+                    edge_props["label"] = f"socket (fd={net_con.fd})"
                 graph.add_edge(
                     source_id=proc_node.id,
                     target_id=local_socket.id,
                     rel_type=EDGE_SOCKET,
+                    properties=edge_props,
                 )
                 if net_con.remote_address:
                     remote_socket = ensure_socket(
