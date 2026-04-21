@@ -9,6 +9,7 @@ const toolRectSelectBtn = document.getElementById('toolRectSelect') as HTMLEleme
 const toolSearchBtn = document.getElementById('toolSearch') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
+const invertSelectionBtn = document.getElementById('invertSelection') as HTMLButtonElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
 const searchInput = document.getElementById('searchInput') as HTMLInputElement;
 const searchHelpTrigger = document.getElementById('searchHelpTrigger') as HTMLElement;
@@ -71,14 +72,17 @@ export function updateGraphInfo(): void {
             graphInfoEl.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
             deleteBtn.disabled = false;
             unselectBtn.disabled = false;
+            invertSelectionBtn.style.display = 'inline-block';
         } else {
             graphInfoEl.textContent = '';
             deleteBtn.disabled = true;
             unselectBtn.disabled = true;
+            invertSelectionBtn.style.display = 'none';
         }
     } else {
         deleteBtn.style.display = 'none';
         unselectBtn.style.display = 'none';
+        invertSelectionBtn.style.display = 'none';
         const nodeCount = state.graph.nodesMap.size;
         const edgeCount = state.graph.edgesMap.size;
         graphInfoEl.textContent = nodeCount > 0
@@ -136,6 +140,17 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
 
     unselectBtn.addEventListener('click', () => {
         state.selection.selectedNodeIds.clear();
+        updateGraphInfo();
+    });
+
+    invertSelectionBtn.addEventListener('click', () => {
+        const prevSelected = new Set(state.selection.selectedNodeIds);
+        state.selection.selectedNodeIds.clear();
+        for (const id of state.graph.nodesMap.keys()) {
+            if (!prevSelected.has(id)) {
+                state.selection.selectedNodeIds.add(id);
+            }
+        }
         updateGraphInfo();
     });
 
