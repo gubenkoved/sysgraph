@@ -26,6 +26,14 @@ import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultiplie
 import { getGraph, setAdjacencyFilter, setHighlight, state } from './state.js';
 
 // ---------------------------------------------------------------------------
+// Double-click detection (force-graph has no native onNodeDblClick)
+// ---------------------------------------------------------------------------
+
+const DOUBLE_CLICK_MS = 300;
+let lastClickedNodeId: string | null = null;
+let lastClickTime = 0;
+
+// ---------------------------------------------------------------------------
 // Custom node / link types for force-graph
 // ---------------------------------------------------------------------------
 
@@ -448,6 +456,16 @@ ForceGraphInstance
         ctx.fill();
     })
     .onNodeClick((node, event) => {
+        const now = Date.now();
+        if (node.id === lastClickedNodeId && now - lastClickTime < DOUBLE_CLICK_MS) {
+            lastClickedNodeId = null;
+            lastClickTime = 0;
+            handleNodeDoubleClick(node);
+        } else {
+            lastClickedNodeId = node.id;
+            lastClickTime = now;
+        }
+
         if (state.currentTool === 'pointer') {
             if (event?.altKey) {
                 unpinNode(node);
@@ -602,6 +620,17 @@ ForceGraphInstance
     .d3Force('collision', d3.forceCollide<FGNode>().radius(d => D3_COLLISION_BASE_RADIUS + (d.val ?? 1) * D3_COLLISION_RADIUS_PER_VAL).strength(D3_COLLISION_STRENGTH).iterations(D3_COLLISION_ITERATIONS))
     .d3Force('forceX', d3.forceX<FGNode>())
     .d3Force('forceY', d3.forceY<FGNode>());
+
+// ---------------------------------------------------------------------------
+// Node double-click handler
+// ---------------------------------------------------------------------------
+
+function handleNodeDoubleClick(node: FGNode): void {
+    if (state.adjacencyFilter) {
+        updateAdjacencyFilter([node.id], true);
+        void refreshGraphUI();
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Adjacency filter
