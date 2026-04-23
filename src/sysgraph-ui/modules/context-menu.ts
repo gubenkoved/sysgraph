@@ -1,5 +1,6 @@
 export interface ContextMenuItem {
     label?: string;
+    icon?: string;
     action?: () => void;
     divider?: boolean;
 }
@@ -21,7 +22,15 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
         }
         const el = document.createElement('div');
         el.className = 'context-menu-item';
-        el.textContent = item.label ?? '';
+        if (item.icon) {
+            const iconEl = document.createElement('span');
+            iconEl.className = 'material-symbols-outlined';
+            iconEl.textContent = item.icon;
+            el.appendChild(iconEl);
+        }
+        const labelEl = document.createElement('span');
+        labelEl.textContent = item.label ?? '';
+        el.appendChild(labelEl);
         el.addEventListener('click', (e) => {
             e.stopPropagation();
             hideContextMenu();

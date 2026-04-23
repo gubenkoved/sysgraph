@@ -496,15 +496,16 @@ ForceGraphInstance
         const items: import('./context-menu.js').ContextMenuItem[] = [];
 
         if (isNodePinned(node)) {
-            items.push({ label: 'Unpin', action: () => unpinNode(node) });
+            items.push({ label: 'Unpin', icon: 'keep_off', action: () => unpinNode(node) });
         } else {
-            items.push({ label: 'Pin', action: () => pinNode(node) });
+            items.push({ label: 'Pin', icon: 'push_pin', action: () => pinNode(node) });
         }
 
         items.push({ divider: true });
 
         items.push({
             label: 'Show adjacent only',
+            icon: 'filter_alt',
             action: () => {
                 updateAdjacencyFilter([node.id], false);
                 void refreshGraphUI();
@@ -514,6 +515,7 @@ ForceGraphInstance
         if (state.selection.selectedNodeIds.size > 0) {
             items.push({
                 label: 'Show adjacent only (all selected)',
+                icon: 'filter_alt',
                 action: () => {
                     updateAdjacencyFilter(state.selection.selectedNodeIds, false);
                     void refreshGraphUI();
@@ -524,6 +526,7 @@ ForceGraphInstance
         if (state.adjacencyFilter) {
             items.push({
                 label: 'Show adjacent (extend)',
+                icon: 'expand',
                 action: () => {
                     updateAdjacencyFilter([node.id], true);
                     void refreshGraphUI();
@@ -532,6 +535,7 @@ ForceGraphInstance
 
             items.push({
                 label: 'Reset adjacency filter',
+                icon: 'filter_alt_off',
                 action: () => {
                     updateAdjacencyFilter(null);
                     void refreshGraphUI();
@@ -546,6 +550,7 @@ ForceGraphInstance
         if (state.adjacencyFilter) {
             showContextMenu(event.clientX, event.clientY, [{
                 label: 'Reset adjacency filter',
+                icon: 'filter_alt_off',
                 action: () => {
                     setAdjacencyFilter(null);
                     void refreshGraphUI();
