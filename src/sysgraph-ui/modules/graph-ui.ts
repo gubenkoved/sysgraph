@@ -290,9 +290,10 @@ function drawTextWithStroke(
     fontSize: number, fillStyle: string, strokeStyle: string, strokeWidth: number,
     textBaseline: CanvasTextBaseline = 'middle',
     textAlign: CanvasTextAlign = 'center',
+    bold = false,
 ): void {
     ctx.save();
-    ctx.font = `${fontSize}px ${UI_FONT_FAMILY}`;
+    ctx.font = `${bold ? 'bold ' : ''}${fontSize}px ${UI_FONT_FAMILY}`;
     ctx.textAlign = textAlign;
     ctx.textBaseline = textBaseline;
     ctx.lineWidth = strokeWidth;
@@ -408,16 +409,6 @@ ForceGraphInstance
         ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
         ctx.stroke();
 
-        if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
-            const hiddenCount = state.adjacencyFilter.hiddenCounts.get(node.id) ?? 0;
-            drawTextWithStroke(
-                ctx, `+${hiddenCount}`, node.x! + r, node.y! - r, 9,
-                colorAdjustAlpha('rgba(17, 214, 27, 0.9)', alphaMultiplier),
-                colorAdjustAlpha('rgba(8, 168, 8, 0.91)', alphaMultiplier),
-                0.3, 'alphabetic', 'left',
-            );
-        }
-
         const locked = isNodePinned(node);
         if (locked) {
             drawCircle(ctx, node.x!, node.y!, r + 1, 2, colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
@@ -437,6 +428,17 @@ ForceGraphInstance
 
         const label = getNodeLabel(node);
         drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, NODE_LABEL_FONT_SIZE, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
+
+        // show hidden nodes counters in adjacency filtered mode
+        if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
+            const hiddenCount = state.adjacencyFilter.hiddenCounts.get(node.id) ?? 0;
+            drawTextWithStroke(
+                ctx, `+${hiddenCount}`, node.x! - r, node.y! - r, 9,
+                colorAdjustAlpha('rgba(8, 168, 8, 0.95)', alphaMultiplier),
+                colorAdjustAlpha('rgba(255, 255, 255, 0.9)', alphaMultiplier),
+                1.0, 'alphabetic', 'right', true,
+            );
+        }
     })
     .nodePointerAreaPaint((node, color, ctx) => {
         const r = nodePointerRadius(node);
