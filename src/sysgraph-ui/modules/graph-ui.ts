@@ -490,16 +490,26 @@ ForceGraphInstance
         items.push({
             label: 'Show adjacent only',
             action: () => {
-                updateAdjacencyFilter(node.id, false);
+                updateAdjacencyFilter([node.id], false);
                 void refreshGraphUI();
             },
         });
+
+        if (state.selection.selectedNodeIds.size > 0) {
+            items.push({
+                label: 'Show adjacent only (all selected)',
+                action: () => {
+                    updateAdjacencyFilter(state.selection.selectedNodeIds, false);
+                    void refreshGraphUI();
+                },
+            });
+        }
 
         if (state.adjacencyFilter) {
             items.push({
                 label: 'Show adjacent (extend)',
                 action: () => {
-                    updateAdjacencyFilter(node.id, true);
+                    updateAdjacencyFilter([node.id], true);
                     void refreshGraphUI();
                 },
             });
@@ -599,16 +609,18 @@ ForceGraphInstance
 // Adjacency filter
 // ---------------------------------------------------------------------------
 
-function updateAdjacencyFilter(nodeId: string | null, extendExisting = false): void {
+function updateAdjacencyFilter(seedNodeIds: Iterable<string> | null, extendExisting = false): void {
     const graph = getGraph();
 
-    if (nodeId !== null) {
-        const nodeIds = new Set([nodeId]);
-        const edges = graph.getAdjacentEdges(nodeId);
+    if (seedNodeIds !== null) {
+        const nodeIds = new Set<string>(seedNodeIds);
 
-        for (const edge of edges) {
-            const adjacentNodeId = edge.source_id === nodeId ? edge.target_id : edge.source_id;
-            nodeIds.add(adjacentNodeId);
+        for (const seedId of seedNodeIds) {
+            const edges = graph.getAdjacentEdges(seedId);
+            for (const edge of edges) {
+                const adjacentNodeId = edge.source_id === seedId ? edge.target_id : edge.source_id;
+                nodeIds.add(adjacentNodeId);
+            }
         }
 
         if (!extendExisting) {
