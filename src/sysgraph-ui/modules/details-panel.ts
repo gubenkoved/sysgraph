@@ -1,6 +1,6 @@
 import JSONFormatter from 'json-formatter-js';
+import { EVT_LINK_CLICKED, EVT_NODE_CLICKED } from './constants.js';
 import { on } from './event-bus.js';
-import { EVT_NODE_CLICKED, EVT_LINK_CLICKED } from './constants.js';
 
 // --- cached DOM elements (primary panel) ---
 const panel = document.getElementById('detailsPanel') as HTMLElement;

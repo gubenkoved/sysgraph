@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: intentional for generic event bus
 type AnyFn = (...args: any[]) => any;
 
 // --- pub/sub events (1:N, fire-and-forget) ---

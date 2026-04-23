@@ -1,8 +1,8 @@
-import { state, getGraph, updateGraph } from './state.js';
+import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constants.js';
+import { emit } from './event-bus.js';
 import { filterGraph } from './graph.js';
 import { ForceGraphInstance } from './graph-ui.js';
-import { emit } from './event-bus.js';
-import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constants.js';
+import { getGraph, state, updateGraph } from './state.js';
 
 /**
  * Removes all currently selected nodes (and their connected edges) from the

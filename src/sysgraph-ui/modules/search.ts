@@ -1,8 +1,8 @@
+import type { Expression as FuseExpression, IFuseOptions } from 'fuse.js';
 import Fuse from 'fuse.js';
-import type { IFuseOptions, Expression as FuseExpression } from 'fuse.js';
-import { parse, SearchSyntaxError, INVERSE_PREFIX_RE } from './search-parser.js';
-import type { AstNode } from './search-parser.js';
 import type { Graph, GraphNode } from './graph.js';
+import type { AstNode } from './search-parser.js';
+import { INVERSE_PREFIX_RE, parse, SearchSyntaxError } from './search-parser.js';
 
 export { SearchSyntaxError };
 

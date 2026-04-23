@@ -325,6 +325,7 @@ md-outlined-button.danger {
 /* ── Settings Pane (Tweakpane) ───────────────────────────── */
 
 .tp-rotv {
+  /* biome-ignore lint/complexity/noImportantStyles: needed to override Tweakpane's built-in font */
   font-family: var(--font-family) !important;
   opacity: 0.9;
 }

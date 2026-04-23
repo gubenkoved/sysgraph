@@ -1,28 +1,27 @@
-import { settings, getNodeColor, getEdgeColor, getEdgeWidth } from './settings.js';
-import type { SettingsShape } from './settings.js';
-import {
-    listAllPresets,
-    saveSettingsPreset,
-    deleteSettingsPreset,
-    applySettingsPreset,
-    resetSettingsToDefaults,
-} from './settings-presets.js';
-import type { PresetSource, PresetEntry } from './settings-presets.js';
-import { getGraph } from './state.js';
-import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
-import { emit, handle } from './event-bus.js';
-import { showError } from './util.js';
-import {
-    EVT_D3_PARAMS_CHANGED, EVT_SETTINGS_UPDATED, EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
-    EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
-    CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
-} from './constants.js';
-
-import { Pane } from 'tweakpane';
-import type { FolderApi } from 'tweakpane';
-import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import type { FpsGraphBladeApi } from '@tweakpane/plugin-essentials';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
+import type { FolderApi } from 'tweakpane';
+import { Pane } from 'tweakpane';
+import {CMD_EXPORT, CMD_IMPORT,
+    CMD_RELOAD, 
+    EVT_CLEAR_CLICKED, EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
+    EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED, 
+} from './constants.js';
+import { emit, handle } from './event-bus.js';
+import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { setFrameHooks } from './render-hooks.js';
+import type { SettingsShape } from './settings.js';
+import { getEdgeColor, getEdgeWidth, getNodeColor, settings } from './settings.js';
+import type { PresetEntry, PresetSource } from './settings-presets.js';
+import {
+    applySettingsPreset,
+    deleteSettingsPreset,
+    listAllPresets,
+    resetSettingsToDefaults,
+    saveSettingsPreset,
+} from './settings-presets.js';
+import { getGraph } from './state.js';
+import { showError } from './util.js';
 
 function getRequiredElement(id: string): HTMLElement {
     const element = document.getElementById(id);

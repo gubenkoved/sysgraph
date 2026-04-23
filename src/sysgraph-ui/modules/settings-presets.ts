@@ -1,5 +1,5 @@
-import { settings, createDefaultSettings } from './settings.js';
 import type { SettingsShape } from './settings.js';
+import { createDefaultSettings, settings } from './settings.js';
 
 const STORAGE_KEY = 'sysgraph:settings-presets';
 const STORAGE_VERSION = 1;

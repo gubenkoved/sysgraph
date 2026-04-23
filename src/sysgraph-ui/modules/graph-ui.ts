@@ -1,31 +1,29 @@
-import { state, setHighlight, setAdjacencyFilter } from './state.js';
-import { emit } from './event-bus.js';
-import { bfs } from './graph-algs.js';
-import { getGraph } from './state.js';
-import { settings, highlightAlphaMultipliers, getNodeCssColor, getEdgeCssColor, getEdgeWidth } from './settings.js';
-import { showContextMenu } from './context-menu.js';
-import { labelHelpers } from './graph-ui-helpers.js';
+import * as d3 from 'd3';
+import type { ForceGraphGeneric, LinkObject, NodeObject } from 'force-graph';
+import ForceGraph from 'force-graph';
 import { ColorScale } from './color-scale.js';
 import {
-    EVT_NODE_CLICKED, EVT_LINK_CLICKED, EVT_BACKGROUND_CLICK,
-    nodeRadius, nodePointerRadius, MAX_NODE_VAL, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,
-    UI_FONT_FAMILY,
-    SEARCH_NOT_MATCHING_OPACITY, SCORE_EPSILON,
+    D3_CHARGE_STRENGTH,
+    D3_COLLISION_BASE_RADIUS, D3_COLLISION_ITERATIONS,D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,EVT_BACKGROUND_CLICK,EVT_LINK_CLICKED,
+    EVT_NODE_CLICKED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_UNSTRESSED,GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
+    GRID_LINE_COLOR, GRID_LINE_COLOR_UNSTRESSED,
+    GRID_SPACING, MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
+    MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,nodePointerRadius,
+    nodeRadius, REHEAT_ALPHA, REHEAT_TIMEOUT_MS,SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
-    GRID_SPACING, GRID_CROSS_HALF, GRID_CENTER_CROSS_HALF, MAX_CROSSES_PER_AXIS,
-    GRID_LINE_COLOR, GRID_LINE_COLOR_UNSTRESSED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_UNSTRESSED,
-    MAX_ZOOM_BOOST, REHEAT_ALPHA, REHEAT_TIMEOUT_MS,
+    SEARCH_NOT_MATCHING_OPACITY,
     SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
-    D3_CHARGE_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,
-    D3_COLLISION_BASE_RADIUS, D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_COLLISION_ITERATIONS,
+    UI_FONT_FAMILY,
 } from './constants.js';
-
-import ForceGraph from 'force-graph';
-import type { ForceGraphGeneric, NodeObject, LinkObject, GraphData } from 'force-graph';
-import { callFramePre, callFramePost } from './render-hooks.js';
-import * as d3 from 'd3';
-import { filterGraph, computeNodeDegrees } from './graph.js';
-import type { GraphNode, GraphEdge } from './graph.js';
+import { showContextMenu } from './context-menu.js';
+import { emit } from './event-bus.js';
+import type { GraphEdge, GraphNode } from './graph.js';
+import { computeNodeDegrees, filterGraph } from './graph.js';
+import { bfs } from './graph-algs.js';
+import { labelHelpers } from './graph-ui-helpers.js';
+import { callFramePost, callFramePre } from './render-hooks.js';
+import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
+import { getGraph, setAdjacencyFilter, setHighlight, state } from './state.js';
 
 // ---------------------------------------------------------------------------
 // Custom node / link types for force-graph
@@ -74,7 +72,6 @@ function getNodeLabel(node: FGNode): string {
             return String(node.id);
         case 'expression':
             try {
-                // eslint-disable-next-line no-new-func
                 const fn = new Function('node', '__helpers', `with(__helpers){with(node){return String(${settings.nodeLabelExpression})}}`);
                 return fn(node, labelHelpers) as string;
             } catch {
@@ -91,7 +88,6 @@ function getNodeVal(node: FGNode, degree: number): number {
             return settings.nodeSizingConstant;
         case 'expression':
             try {
-                // eslint-disable-next-line no-new-func
                 const fn = new Function('node', 'degree', `with(node){return (${settings.nodeSizingExpression})}`);
                 const val = (fn(node, degree) as number) || 1;
                 return Math.min(val, MAX_NODE_VAL);
@@ -195,7 +191,7 @@ function linkTargetId(link: FGLink): string {
         : (link.target as string);
 }
 
-function colorWithAlpha(color: string, alpha: number): string {
+function _colorWithAlpha(color: string, alpha: number): string {
     const col = d3.color(color);
     if (!col) return color;
     col.opacity = alpha;

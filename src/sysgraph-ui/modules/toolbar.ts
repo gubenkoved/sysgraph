@@ -1,7 +1,7 @@
-import { state, setCurrentTool } from './state.js';
+import { EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE } from './constants.js';
 import { emit } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
-import { EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE } from './constants.js';
+import { setCurrentTool, state } from './state.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;

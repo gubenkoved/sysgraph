@@ -12,6 +12,8 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
 
 **After any frontend/UI changes** (HTML, CSS, JS in `src/sysgraph-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/sysgraph/dist/`.
 
+**After any frontend/UI changes**, run `./scripts/lint-ui.sh` and fix any lint errors or warnings introduced by the changes. Use `./scripts/lint-ui.sh --fix` to auto-fix when possible, then address any remaining issues manually. The codebase must stay lint-clean (0 errors, 0 warnings).
+
 **After any changes to Python dependencies** (adding, removing, or changing versions in `pyproject.toml`), always relock `requirements.txt` by running `pip-compile` (requires `pip-tools`). The locked file must stay in sync with `pyproject.toml`.
 
 ## Project Overview

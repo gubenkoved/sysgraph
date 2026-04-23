@@ -1,4 +1,4 @@
-import type { GraphNode, GraphEdge, Graph } from './graph.js';
+import type { Graph, GraphEdge, GraphNode } from './graph.js';
 
 /**
  * Fetches graph data from the backend API.

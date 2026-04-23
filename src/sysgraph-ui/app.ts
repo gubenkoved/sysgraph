@@ -1,21 +1,21 @@
-import { state, getGraph, updateGraph, resetState, setSearch } from './modules/state.js';
+import { loadDataFromApi, parseGraphData, serializeGraph } from './modules/data-io.js';
+import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
-import { refreshGraphUI, refreshGraphColors, computeMatchColors, autoAdjustCurvature, applyD3Params, ForceGraphInstance } from './modules/graph-ui.js';
-import { on, emit, registerHandler } from './modules/event-bus.js';
-import { search, SearchSyntaxError } from './modules/search.js';
-import { loadDataFromApi, serializeGraph, parseGraphData } from './modules/data-io.js';
-import { updateDynamicGraphPanes } from './modules/settings-pane.js';
-import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
+import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI } from './modules/graph-ui.js';
+import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
+import { updateDynamicGraphPanes } from './modules/settings-pane.js';
+import { getGraph, resetState, setSearch, state, updateGraph } from './modules/state.js';
+import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
+import { dismissError, showError } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
-import { showError, dismissError } from './modules/util.js';
 import './modules/details-panel.js';
-import {
-    EVT_GRAPH_UPDATED, EVT_CLEAR_CLICKED, EVT_FILTERS_UPDATED,
-    EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
+import {CMD_EXPORT, CMD_IMPORT,
+    CMD_RELOAD, EVT_CLEAR_CLICKED, 
     EVT_COLORS_UPDATED,
-    EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,
-    CMD_RELOAD, CMD_EXPORT, CMD_IMPORT,
+    EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,EVT_FILTERS_UPDATED,
+    EVT_GRAPH_UPDATED, 
+    EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
 } from './modules/constants.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/filled-tonal-button.js';
