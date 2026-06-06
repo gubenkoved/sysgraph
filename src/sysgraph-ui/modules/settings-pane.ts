@@ -14,7 +14,14 @@ import { emit, handle } from './event-bus.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { setFrameHooks } from './render-hooks.js';
 import type { SettingsShape } from './settings.js';
-import { getEdgeColor, getEdgeWidth, getNodeColor, settings } from './settings.js';
+import {
+    getEdgeColor,
+    getEdgeWidth,
+    getNodeColor,
+    settings,
+    sortEdgeTypes,
+    sortNodeTypes,
+} from './settings.js';
 import type { PresetEntry, PresetSource } from './settings-presets.js';
 import {
     applySettingsPreset,
@@ -483,8 +490,8 @@ export function updateDynamicGraphPanes(): void {
     const edgeColors = settings.edgeColors;
     const edgeWidths = settings.edgeWidths;
 
-    const nodeTypes = new Set(graph.getNodes().map((node) => node.type));
-    const edgeTypes = new Set(graph.getEdges().map((edge) => edge.type));
+    const nodeTypes = sortNodeTypes(new Set(graph.getNodes().map((node) => node.type)));
+    const edgeTypes = sortEdgeTypes(new Set(graph.getEdges().map((edge) => edge.type)));
 
     for (const key of nodeTypes) {
         if (!(key in nodeFilters)) {

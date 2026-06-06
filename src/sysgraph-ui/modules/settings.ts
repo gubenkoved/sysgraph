@@ -157,6 +157,42 @@ const defaultNodeColors: ColorMap = normalizeAuthoredColorMap(defaultNodeColorHe
 const defaultEdgeColors: ColorMap = normalizeAuthoredColorMap(defaultEdgeColorHexes, defaultLinkOpacity);
 const palette: RgbaColor[] = normalizeAuthoredPalette(paletteHexes, 1.0);
 
+/** Canonical display order for known node types (declared colour order). */
+const nodeTypeOrder: string[] = Object.keys(defaultNodeColorHexes);
+/** Canonical display order for known edge types (declared colour order). */
+const edgeTypeOrder: string[] = Object.keys(defaultEdgeColorHexes);
+
+/**
+ * Sorts type names by their position in a canonical order list. Known types
+ * keep their canonical order; unknown types are appended alphabetically.
+ */
+function sortByCanonicalOrder(types: Iterable<string>, order: string[]): string[] {
+    return [...types].sort((a, b) => {
+        const ia = order.indexOf(a);
+        const ib = order.indexOf(b);
+        if (ia !== -1 && ib !== -1) {
+            return ia - ib;
+        }
+        if (ia !== -1) {
+            return -1;
+        }
+        if (ib !== -1) {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+}
+
+/** Sorts node type names for stable display in the settings UI. */
+export function sortNodeTypes(types: Iterable<string>): string[] {
+    return sortByCanonicalOrder(types, nodeTypeOrder);
+}
+
+/** Sorts edge type names for stable display in the settings UI. */
+export function sortEdgeTypes(types: Iterable<string>): string[] {
+    return sortByCanonicalOrder(types, edgeTypeOrder);
+}
+
 /**
  * Converts an RGBA colour object to a CSS rgba() string.
  */
