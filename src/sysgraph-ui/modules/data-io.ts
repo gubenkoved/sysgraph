@@ -1,4 +1,4 @@
-import type { Graph, GraphEdge, GraphNode } from './graph.js';
+import { type Graph, type GraphEdge, type GraphNode, generateId } from './graph.js';
 
 /**
  * Fetches graph data from the backend API.
@@ -102,7 +102,7 @@ function normalizeEdges(raw: unknown[] | Record<string, unknown>): GraphEdge[] {
         : Object.entries(raw).map(([id, v]) => ({ ...(v as Record<string, unknown>), id }));
 
     return entries.map(e => ({
-        id: (e.id as string | undefined) ?? (`auto:${crypto.randomUUID()}`),
+        id: (e.id as string | undefined) ?? (`auto:${generateId()}`),
         source_id: e.source_id as string,
         target_id: e.target_id as string,
         type: (e.type as string | undefined) ?? null as unknown as string,
