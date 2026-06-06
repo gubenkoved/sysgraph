@@ -69,6 +69,11 @@ export const GRID_LINE_COLOR_UNSTRESSED_DARK = 'rgba(255, 255, 255, 0.12)';
 export const GRID_CENTER_COLOR_DARK = 'rgba(255, 80, 80, 0.45)';
 export const GRID_CENTER_COLOR_UNSTRESSED_DARK = 'rgba(255, 80, 80, 0.18)';
 
+// In dark mode, edge colours darker than this HSL lightness (0..1) are raised
+// to this floor so they stay legible against the dark canvas. Hue, saturation
+// and opacity are preserved; already-bright edges are left untouched.
+export const EDGE_DARK_MIN_LIGHTNESS = 0.55;
+
 // ── Search & highlight ──────────────────────────────────────
 export const SEARCH_NOT_MATCHING_OPACITY = 0.5;
 export const SCORE_EPSILON = 1e-12;

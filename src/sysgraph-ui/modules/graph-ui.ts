@@ -4,7 +4,8 @@ import ForceGraph from 'force-graph';
 import { ColorScale } from './color-scale.js';
 import {
     D3_CHARGE_STRENGTH,
-    D3_COLLISION_BASE_RADIUS, D3_COLLISION_ITERATIONS,D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,EVT_BACKGROUND_CLICK,EVT_LINK_CLICKED,
+    D3_COLLISION_BASE_RADIUS, D3_COLLISION_ITERATIONS,D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,
+    EDGE_DARK_MIN_LIGHTNESS,EVT_BACKGROUND_CLICK,EVT_LINK_CLICKED,
     EVT_NODE_CLICKED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_DARK, GRID_CENTER_COLOR_UNSTRESSED, GRID_CENTER_COLOR_UNSTRESSED_DARK,GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
     GRID_LINE_COLOR, GRID_LINE_COLOR_DARK, GRID_LINE_COLOR_UNSTRESSED, GRID_LINE_COLOR_UNSTRESSED_DARK,
     GRID_SPACING, MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
@@ -135,7 +136,7 @@ function getCachedNodeCssColor(nodeType: string): string {
 
 function getCachedEdgeCssColor(edgeType: string): string {
     if (!edgeCssColorCache.has(edgeType)) {
-        edgeCssColorCache.set(edgeType, getEdgeCssColor(edgeType));
+        edgeCssColorCache.set(edgeType, adjustEdgeColorForTheme(getEdgeCssColor(edgeType)));
     }
     return edgeCssColorCache.get(edgeType)!;
 }
@@ -238,6 +239,20 @@ function brighterColor(color: string): string {
  */
 function nodeOutlineColor(color: string): string {
     return getTheme() === 'dark' ? brighterColor(color) : darkerColor(color);
+}
+
+/**
+ * In dark mode, raises the lightness of edge colours that are too dark to be
+ * legible against the dark canvas up to EDGE_DARK_MIN_LIGHTNESS, preserving hue,
+ * saturation and opacity. Already-bright colours are returned unchanged. In
+ * light mode the colour is returned as-is.
+ */
+function adjustEdgeColorForTheme(color: string): string {
+    if (getTheme() !== 'dark') return color;
+    const hsl = d3.hsl(color);
+    if (hsl.l >= EDGE_DARK_MIN_LIGHTNESS) return color;
+    hsl.l = EDGE_DARK_MIN_LIGHTNESS;
+    return hsl.toString();
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ import {CMD_EXPORT, CMD_IMPORT,
     EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,EVT_FILTERS_UPDATED,
     EVT_GRAPH_UPDATED,
     EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
+    EVT_THEME_CHANGED,
     STANDALONE,
 } from './modules/constants.js';
 import '@material/web/button/filled-tonal-button.js';
@@ -118,6 +119,10 @@ on(EVT_SETTINGS_UPDATED, async () => {
 });
 
 on(EVT_COLORS_UPDATED, () => {
+    refreshGraphColors();
+});
+
+on(EVT_THEME_CHANGED, () => {
     refreshGraphColors();
 });
 
