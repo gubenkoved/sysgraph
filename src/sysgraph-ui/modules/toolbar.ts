@@ -117,6 +117,11 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
 
 /** Updates the selection info label and button visibility based on current state. */
 export function updateGraphInfo(): void {
+    // export & clear are only meaningful when the graph has at least one node
+    const isEmpty = state.graph.nodesMap.size === 0;
+    (exportDataBtn as HTMLButtonElement).disabled = isEmpty;
+    (clearGraphBtn as HTMLButtonElement).disabled = isEmpty;
+
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
     if (isSelectionTool) {
