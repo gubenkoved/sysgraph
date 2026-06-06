@@ -353,11 +353,11 @@ body {
   top: var(--spacing-md);
   left: var(--spacing-md);
   width: fit-content;
-  max-width: 420px;
+  max-width: calc(100% - var(--spacing-lg));
   height: auto;
   min-width: 200px;
   min-height: 120px;
-  max-height: min(350px, calc(100% - var(--spacing-lg)));
+  max-height: calc(100% - var(--spacing-lg));
   z-index: var(--z-details-panel);
   background: var(--bg-panel);
   box-shadow: 0 2px 12px var(--shadow-sm);
@@ -409,6 +409,57 @@ body {
   min-height: 0;
   padding: var(--spacing-md);
   font-family: var(--font-family);
+}
+
+/* json-formatter-js ships a hardcoded light palette (dark keys/text) that is
+   illegible on dark panels. Re-color its classes in dark mode using the
+   library's own tuned dark palette. The extra [data-theme="dark"] qualifier
+   raises specificity above the library's injected default rules. */
+:root[data-theme="dark"] .json-formatter-row,
+:root[data-theme="dark"] .json-formatter-row a,
+:root[data-theme="dark"] .json-formatter-row a:hover {
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-key {
+  color: #23a0db;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-string,
+:root[data-theme="dark"] .json-formatter-row .json-formatter-stringifiable {
+  color: #31f031;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-number {
+  color: #66c2ff;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-boolean {
+  color: #ec4242;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-null {
+  color: #eec97d;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-undefined {
+  color: #ef8fbe;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-function {
+  color: #fd48cb;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-bracket {
+  color: #9494ff;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-url {
+  color: #027bff;
+}
+
+:root[data-theme="dark"] .json-formatter-row .json-formatter-date {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 #detailsPanel {
