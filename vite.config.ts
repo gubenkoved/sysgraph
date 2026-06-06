@@ -109,7 +109,7 @@ export default defineConfig({
     {
       name: 'inject-python-version',
       transformIndexHtml(html: string) {
-        return html.replace('__APP_VERSION__', readPythonVersion());
+        return html.replaceAll('__APP_VERSION__', readPythonVersion());
       },
     },
     {

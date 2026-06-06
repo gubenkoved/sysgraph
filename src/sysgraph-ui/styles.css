@@ -382,6 +382,7 @@ body {
   flex-shrink: 0;
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 
 .details-panel .panel-header:active {
