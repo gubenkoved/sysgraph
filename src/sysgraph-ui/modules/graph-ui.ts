@@ -443,7 +443,10 @@ ForceGraphInstance
         if (link.properties?.directional === false) {
             return 0;
         }
-        return 6 * edgeWidthFor(link);
+        // Grow the arrow sub-linearly with line width so thick edges don't get
+        // overwhelmingly large arrowheads. Tuned so width 1 keeps the original
+        // size (~6) and width 10 caps around ~19 instead of a linear ~60.
+        return 6 * Math.sqrt(edgeWidthFor(link));
     })
     .linkDirectionalArrowRelPos(0.55)
     .linkLineDash(link => {
