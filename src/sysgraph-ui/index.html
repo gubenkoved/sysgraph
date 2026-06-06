@@ -12,7 +12,10 @@
   </head>
   <body>
     <div id="toolbar">
-      <img id="toolbar-logo" src="./icon.png" alt="sysgraph" title="sysgraph __APP_VERSION__" />
+      <button id="toolbar-logo-button" type="button" title="Menu" aria-haspopup="menu">
+        <img id="toolbar-logo" src="./icon.png" alt="sysgraph" title="sysgraph __APP_VERSION__" />
+        <md-icon class="toolbar-logo-caret">expand_more</md-icon>
+      </button>
       <span class="tool-divider"></span>
       <div class="tool-group" id="toolGroup">
         <md-icon-button id="toolPointer" class="active" title="Pointer tool (P)">
@@ -47,24 +50,6 @@
         </md-icon-button>
         <md-icon-button id="invertSelection" title="Invert selection" style="display: none;">
           <md-icon>flip</md-icon>
-        </md-icon-button>
-      </div>
-      <div class="tool-group" id="dataGroup">
-        <span class="tool-divider"></span>
-        <md-icon-button id="reloadGraph" title="Reload sysgraph (fetch fresh graph)" style="display: none;">
-          <md-icon>sync</md-icon>
-        </md-icon-button>
-        <md-icon-button id="importData" title="Import graph (JSON)">
-          <md-icon>upload</md-icon>
-        </md-icon-button>
-        <md-icon-button id="loadExample" title="Load example graph" style="display: none;">
-          <md-icon>category</md-icon>
-        </md-icon-button>
-        <md-icon-button id="exportData" title="Export graph (JSON)">
-          <md-icon>download</md-icon>
-        </md-icon-button>
-        <md-icon-button id="clearGraph" class="danger" title="Clear graph">
-          <md-icon>delete_sweep</md-icon>
         </md-icon-button>
       </div>
       <div class="tool-group" id="settingsGroup">

@@ -1,8 +1,8 @@
 import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
-import { showContextMenu } from './context-menu.js';
-import { loadExamplesManifest } from './data-io.js';
+import { type ContextMenuItem, showContextMenu } from './context-menu.js';
+import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
@@ -23,13 +23,9 @@ const actionGroup = document.getElementById('actionGroup') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
 const invertSelectionBtn = document.getElementById('invertSelection') as HTMLButtonElement;
-const reloadGraphBtn = document.getElementById('reloadGraph') as HTMLElement;
-const importDataBtn = document.getElementById('importData') as HTMLElement;
-const loadExampleBtn = document.getElementById('loadExample') as HTMLElement;
-const exportDataBtn = document.getElementById('exportData') as HTMLElement;
-const clearGraphBtn = document.getElementById('clearGraph') as HTMLElement;
 const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLElement;
 const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
+const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonElement;
 const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
 const settingsPane = document.getElementById('settingsPane') as HTMLElement;
 const importFileInput = document.getElementById('importFile') as HTMLInputElement;
@@ -43,6 +39,10 @@ const searchMatchCount = document.getElementById('searchMatchCount') as HTMLElem
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 
 type Tool = 'pointer' | 'rect-select' | 'search' | 'edit';
+
+// bundled example graphs, loaded once on init; the logo menu only offers the
+// "load example" entry when at least one example is available
+let examples: ExampleInfo[] = [];
 
 /** Reflects the current theme on the toggle button's icon. */
 function updateThemeIcon(): void {
@@ -118,11 +118,6 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
 
 /** Updates the selection info label and button visibility based on current state. */
 export function updateGraphInfo(): void {
-    // export & clear are only meaningful when the graph has at least one node
-    const isEmpty = state.graph.nodesMap.size === 0;
-    (exportDataBtn as HTMLButtonElement).disabled = isEmpty;
-    (clearGraphBtn as HTMLButtonElement).disabled = isEmpty;
-
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
     if (isSelectionTool) {
@@ -149,35 +144,107 @@ export function updateGraphInfo(): void {
 }
 
 /**
- * Loads the bundled example manifest and, when at least one example exists,
- * reveals the toolbar button that opens a compact picker menu.
+ * Loads the bundled example manifest so the logo menu can offer the
+ * "load example" entry when at least one example is available.
  */
-async function initExamplesButton(): Promise<void> {
-    const examples = await loadExamplesManifest();
-    if (examples.length === 0) return;
+async function initExamples(): Promise<void> {
+    examples = await loadExamplesManifest();
+}
 
-    loadExampleBtn.style.display = 'inline-flex';
+/** Pulls a fresh graph from the backend (unavailable in standalone builds). */
+async function doReload(): Promise<void> {
+    try {
+        await handle(CMD_RELOAD);
+    } catch (err) {
+        console.error('reload failed:', err);
+        showError(`Reload failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+}
 
-    loadExampleBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const rect = loadExampleBtn.getBoundingClientRect();
-        showContextMenu(
-            rect.left,
-            rect.bottom + 4,
-            examples.map((example) => ({
-                label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
-                icon: 'category',
-                action: async () => {
-                    try {
-                        await handle(CMD_LOAD_EXAMPLE, example.file);
-                    } catch (err) {
-                        console.error('load example failed:', err);
-                        showError(`Load example failed: ${err instanceof Error ? err.message : String(err)}`);
-                    }
-                },
-            })),
-        );
+/** Opens the file picker to import a graph from JSON. */
+function doImport(): void {
+    importFileInput.click();
+}
+
+/** Serializes the current graph and triggers a download. */
+function doExport(): void {
+    const blob = handle<undefined, Blob>(CMD_EXPORT);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${timestamp}_graph.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    // the current graph is now safely on disk — no unexported data
+    setGraphDirty(false);
+}
+
+/** Clears the current graph. */
+function doClear(): void {
+    emit(EVT_CLEAR_CLICKED, null);
+}
+
+/** Opens a compact picker listing the bundled example graphs. */
+function openExampleMenu(x: number, y: number): void {
+    showContextMenu(
+        x,
+        y,
+        examples.map((example) => ({
+            label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
+            icon: 'category',
+            action: async () => {
+                try {
+                    await handle(CMD_LOAD_EXAMPLE, example.file);
+                } catch (err) {
+                    console.error('load example failed:', err);
+                    showError(`Load example failed: ${err instanceof Error ? err.message : String(err)}`);
+                }
+            },
+        })),
+    );
+}
+
+/** Builds the logo dropdown menu items based on the current state. */
+function buildLogoMenu(): ContextMenuItem[] {
+    const isEmpty = state.graph.nodesMap.size === 0;
+    const items: ContextMenuItem[] = [];
+
+    // "reload sysgraph" pulls a fresh graph from the backend — unavailable in
+    // standalone builds, which never contact the backend
+    if (!STANDALONE) {
+        items.push({ label: 'Reload sysgraph', icon: 'sync', action: doReload });
+    }
+
+    items.push({ label: 'Import graph…', icon: 'upload', action: doImport });
+
+    if (examples.length > 0) {
+        items.push({
+            label: 'Load example',
+            icon: 'category',
+            action: () => {
+                const rect = logoButton.getBoundingClientRect();
+                openExampleMenu(rect.left, rect.bottom + 4);
+            },
+        });
+    }
+
+    items.push({
+        label: 'Export graph',
+        icon: 'download',
+        disabled: isEmpty,
+        action: doExport,
     });
+    items.push({ divider: true });
+    items.push({
+        label: 'Clear graph',
+        icon: 'delete_sweep',
+        danger: true,
+        disabled: isEmpty,
+        action: doClear,
+    });
+
+    return items;
 }
 
 /**
@@ -264,11 +331,8 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         }
     });
 
-    // data action handlers (import / export / clear)
-    importDataBtn.addEventListener('click', () => {
-        importFileInput.click();
-    });
-
+    // data actions live in the logo dropdown menu; the hidden file input is
+    // still driven by the menu's "import graph" entry
     importFileInput.addEventListener('change', async () => {
         const file = importFileInput.files?.[0];
         if (!file) return;
@@ -282,40 +346,15 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         importFileInput.value = '';
     });
 
-    exportDataBtn.addEventListener('click', () => {
-        const blob = handle<undefined, Blob>(CMD_EXPORT);
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${timestamp}_graph.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        // the current graph is now safely on disk — no unexported data
-        setGraphDirty(false);
+    // logo click opens the data-actions dropdown menu
+    logoButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const rect = logoButton.getBoundingClientRect();
+        showContextMenu(rect.left, rect.bottom + 4, buildLogoMenu());
     });
 
-    clearGraphBtn.addEventListener('click', () => {
-        emit(EVT_CLEAR_CLICKED, null);
-    });
-
-    // "reload sysgraph" pulls a fresh graph from the backend — unavailable in
-    // standalone builds, which never contact the backend.
-    if (!STANDALONE) {
-        reloadGraphBtn.style.display = 'inline-flex';
-        reloadGraphBtn.addEventListener('click', async () => {
-            try {
-                await handle(CMD_RELOAD);
-            } catch (err) {
-                console.error('reload failed:', err);
-                showError(`Reload failed: ${err instanceof Error ? err.message : String(err)}`);
-            }
-        });
-    }
-
-    // example graphs — populate a compact dropdown next to the import button.
-    // The button stays hidden when no examples are bundled.
-    void initExamplesButton();
+    // load the bundled example manifest so the logo menu can offer it
+    void initExamples();
 
     // settings (parameters) pane toggle
     toggleSettingsBtn.addEventListener('click', () => {

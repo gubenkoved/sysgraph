@@ -187,11 +187,34 @@ body {
   box-shadow: 0 2px 12px var(--shadow-sm);
 }
 
+#toolbar-logo-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  height: 34px;
+  padding: 0 var(--spacing-xs);
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  color: var(--icon-default);
+}
+
+#toolbar-logo-button:hover {
+  background: var(--hover-overlay);
+}
+
 #toolbar-logo {
   height: 26px;
   width: 26px;
   object-fit: contain;
-  margin-left: var(--spacing-xs);
+}
+
+.toolbar-logo-caret {
+  --md-icon-size: 18px;
+  font-size: 18px;
+  color: var(--icon-default);
 }
 
 .tool-group {
@@ -705,6 +728,24 @@ body {
 
 .context-menu-item:hover {
   background: var(--hover-overlay);
+}
+
+.context-menu-item.danger {
+  color: var(--accent-danger);
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.context-menu-item.disabled {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.context-menu-item.disabled:hover {
+  background: transparent;
 }
 
 .context-menu-divider {

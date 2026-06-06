@@ -3,6 +3,8 @@ export interface ContextMenuItem {
     icon?: string;
     action?: () => void;
     divider?: boolean;
+    disabled?: boolean;
+    danger?: boolean;
 }
 
 const menu = document.getElementById('contextMenu') as HTMLElement;
@@ -22,6 +24,12 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
         }
         const el = document.createElement('div');
         el.className = 'context-menu-item';
+        if (item.danger) {
+            el.classList.add('danger');
+        }
+        if (item.disabled) {
+            el.classList.add('disabled');
+        }
         if (item.icon) {
             const iconEl = document.createElement('span');
             iconEl.className = 'material-symbols-outlined';
@@ -31,11 +39,13 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
         const labelEl = document.createElement('span');
         labelEl.textContent = item.label ?? '';
         el.appendChild(labelEl);
-        el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            hideContextMenu();
-            item.action?.();
-        });
+        if (!item.disabled) {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideContextMenu();
+                item.action?.();
+            });
+        }
         menu.appendChild(el);
     }
 
