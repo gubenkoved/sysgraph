@@ -195,6 +195,12 @@ function edgeWidthFor(edge: FGLink): number {
     return getEdgeWidth(edge.type);
 }
 
+// Curvature applied to a single self-referencing edge so force-graph draws a
+// visible loop (a zero-curvature self-link is degenerate/invisible). Additional
+// self-loops on the same node are fanned out by SELF_LOOP_CURVATURE_STEP.
+const SELF_LOOP_BASE_CURVATURE = 0.4;
+const SELF_LOOP_CURVATURE_STEP = 0.2;
+
 function linkSourceId(link: FGLink): string {
     return (typeof link.source === 'object' && link.source !== null)
         ? (link.source as FGNode).id
@@ -920,6 +926,7 @@ function mergeGraphDataIntoForceGraph(nodes: FGNode[], edges: FGLink[]): void {
 
 export function autoAdjustCurvature(): void {
     const sameNodesLinks = new Map<string, FGLink[]>();
+    const selfLoops = new Map<string, FGLink[]>();
     const seenLinks = new Set<string>();
 
     const links = ForceGraphInstance.graphData().links;
@@ -930,6 +937,17 @@ export function autoAdjustCurvature(): void {
 
         const srcId = linkSourceId(l);
         const tgtId = linkTargetId(l);
+
+        if (srcId === tgtId) {
+            // Self-referencing edge (loop): group by the single node so that
+            // multiple self-loops on the same node can be spread apart.
+            if (!selfLoops.has(srcId)) {
+                selfLoops.set(srcId, []);
+            }
+            selfLoops.get(srcId)!.push(l);
+            continue;
+        }
+
         const pairKey = srcId < tgtId ? `${srcId}::${tgtId}` : `${tgtId}::${srcId}`;
 
         if (!sameNodesLinks.has(pairKey)) {
@@ -955,6 +973,15 @@ export function autoAdjustCurvature(): void {
             if (linkSourceId(linksGroup[idx]!) !== firstSrcId) {
                 linksGroup[idx]!.curvature! *= -1;
             }
+        }
+    }
+
+    // Self-loops require a non-zero curvature to be drawn at all by force-graph
+    // (a zero-curvature link from a node to itself is degenerate/invisible).
+    // Give each loop a distinct curvature so multiple loops fan out.
+    for (const loopGroup of selfLoops.values()) {
+        for (let idx = 0; idx < loopGroup.length; idx++) {
+            loopGroup[idx]!.curvature = SELF_LOOP_BASE_CURVATURE + idx * SELF_LOOP_CURVATURE_STEP;
         }
     }
 }
