@@ -18,6 +18,15 @@ export const CMD_RELOAD = 'reload-graph';
 export const CMD_EXPORT = 'export-graph';
 export const CMD_IMPORT = 'import-graph';
 
+// ── Build-time configuration ────────────────────────────────
+/**
+ * Standalone mode (build-time flag). When true the UI never contacts the
+ * backend: no initial /api/graph fetch and no "reload sysgraph" action.
+ * Graphs can still be loaded via JSON import. Set VITE_STANDALONE=true at
+ * build time to enable.
+ */
+export const STANDALONE = __STANDALONE__;
+
 // ── Node rendering ──────────────────────────────────────────
 export const MIN_NODE_RADIUS = 4;
 export const MIN_POINTER_AREA_RADIUS = 8;

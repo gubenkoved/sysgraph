@@ -3,9 +3,10 @@ import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import type { FolderApi } from 'tweakpane';
 import { Pane } from 'tweakpane';
 import {CMD_EXPORT, CMD_IMPORT,
-    CMD_RELOAD, 
+    CMD_RELOAD,
     EVT_CLEAR_CLICKED, EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
-    EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED, 
+    EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
+    STANDALONE,
 } from './constants.js';
 import { emit, handle } from './event-bus.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
@@ -203,16 +204,20 @@ function syncStaticSettingsPane(): void {
 
 const actionsFolder = pane.addFolder({ title: 'actions', expanded: true });
 
-actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
-    try {
-        await handle(CMD_RELOAD);
-    } catch (err) {
-        console.error('reload failed:', err);
-        showError(`Reload failed: ${getErrorMessage(err)}`);
-    }
-});
+// "reload sysgraph" pulls a fresh graph from the backend — unavailable in
+// standalone builds, which never contact the backend.
+if (!STANDALONE) {
+    actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
+        try {
+            await handle(CMD_RELOAD);
+        } catch (err) {
+            console.error('reload failed:', err);
+            showError(`Reload failed: ${getErrorMessage(err)}`);
+        }
+    });
 
-actionsFolder.addBlade({ view: 'separator' });
+    actionsFolder.addBlade({ view: 'separator' });
+}
 
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();

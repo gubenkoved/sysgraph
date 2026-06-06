@@ -338,7 +338,7 @@ md-outlined-button.danger {
 }
 
 #settingsPane {
-  max-height: calc(100% - 30px);
+  max-height: calc(100% - 34px);
   position: absolute;
   overflow-y: auto;
   right: 10px;
@@ -356,6 +356,21 @@ md-outlined-button.danger {
   pointer-events: none;
   z-index: var(--z-version-badge);
   font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+#standalone-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: calc(var(--font-size-xs) * 0.85);
+  font-weight: 600;
+  color: rgb(30, 100, 200);
+  background: rgba(30, 100, 200, 0.1);
+  border: 1px solid rgba(30, 100, 200, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-xs);
 }
 
 /* ── Zoom Indicator ──────────────────────────────────────── */

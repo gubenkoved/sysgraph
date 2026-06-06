@@ -11,11 +11,12 @@ import { dismissError, showError } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
 import './modules/details-panel.js';
 import {CMD_EXPORT, CMD_IMPORT,
-    CMD_RELOAD, EVT_CLEAR_CLICKED, 
+    CMD_RELOAD, EVT_CLEAR_CLICKED,
     EVT_COLORS_UPDATED,
     EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,EVT_FILTERS_UPDATED,
-    EVT_GRAPH_UPDATED, 
+    EVT_GRAPH_UPDATED,
     EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
+    STANDALONE,
 } from './modules/constants.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/filled-tonal-button.js';
@@ -28,6 +29,12 @@ import '@material/web/textfield/outlined-text-field.js';
 const searchMatchCountEl = document.getElementById('searchMatchCount') as HTMLElement;
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 const loadingOverlay = document.getElementById('loading-overlay') as HTMLElement;
+
+// --- standalone-mode indicator ---
+if (STANDALONE) {
+    const standaloneBadge = document.getElementById('standalone-badge');
+    if (standaloneBadge) standaloneBadge.hidden = false;
+}
 
 // --- event wiring ---
 on(EVT_GRAPH_UPDATED, async () => {
@@ -133,6 +140,7 @@ registerHandler(CMD_IMPORT, async (text?: string) => {
 });
 
 registerHandler(CMD_RELOAD, async () => {
+    if (STANDALONE) return;
     loadingOverlay.classList.add('visible');
     try {
         const loadedData = await loadDataFromApi();
@@ -154,6 +162,14 @@ initZoomIndicator();
 // --- initial load ---
 window.addEventListener('load', async () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
+
+    // Standalone mode: no backend. Start with an empty graph; the user loads
+    // data via JSON import.
+    if (STANDALONE) {
+        emit(EVT_GRAPH_UPDATED, null);
+        return;
+    }
+
     loadingOverlay.classList.add('visible');
     try {
         const loadedData = await loadDataFromApi();
