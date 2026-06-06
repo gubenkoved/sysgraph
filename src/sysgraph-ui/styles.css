@@ -25,7 +25,6 @@
   --accent-danger: #dc2626;
 
   /* spacing */
-  --toolbar-height: 48px;
   --spacing-xs: 4px;
   --spacing-sm: 6px;
   --spacing-md: 8px;
@@ -80,72 +79,135 @@ body {
   font-family: var(--font-family);
 }
 
-/* ── Toolbar ─────────────────────────────────────────────── */
+/* ── Toolbar (floating pill) ─────────────────────────────── */
 
 #toolbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--toolbar-height);
+  top: var(--spacing-md);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: var(--z-toolbar);
-  background: var(--bg-toolbar);
-  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
-  padding: 0 var(--spacing-lg);
-  gap: var(--spacing-sm);
-  box-shadow: 0 1px 3px var(--shadow-xs);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px var(--shadow-sm);
 }
 
-#toolbar md-outlined-button {
-  --md-outlined-button-container-height: var(--button-height);
-  --md-outlined-button-label-text-size: var(--font-size-sm);
-  --md-outlined-button-label-text-weight: 500;
-  --md-outlined-button-icon-size: 16px;
-  --md-outlined-button-leading-space: 10px;
-  --md-outlined-button-trailing-space: 12px;
-  --md-outlined-button-icon-offset: -2px;
-  --md-outlined-button-container-shape: var(--radius-sm);
+#toolbar-logo {
+  height: 26px;
+  width: 26px;
+  object-fit: contain;
+  margin-left: var(--spacing-xs);
 }
 
-md-outlined-button.active {
-  --md-outlined-button-container-color: #d0e1ff;
-  --md-outlined-button-label-text-color: var(--accent-primary);
-  --md-outlined-button-outline-color: var(--accent-primary);
-  --md-outlined-button-icon-color: var(--accent-primary);
+.tool-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
-md-outlined-button.danger {
-  --md-outlined-button-label-text-color: var(--accent-danger);
-  --md-outlined-button-outline-color: var(--accent-danger);
-  --md-outlined-button-icon-color: var(--accent-danger);
-}
-
-.toolbar-separator {
+.tool-divider {
   width: 1px;
-  height: var(--icon-button-size);
+  height: 20px;
+  margin: 0 var(--spacing-xs);
   background: var(--border-light);
 }
 
-/* ── Search ──────────────────────────────────────────────── */
-
-#searchInput {
-  width: 240px;
-  height: var(--button-height);
-  --md-outlined-text-field-container-shape: var(--radius-sm);
-  --md-outlined-text-field-top-space: var(--spacing-xs);
-  --md-outlined-text-field-bottom-space: var(--spacing-xs);
-  --md-outlined-text-field-input-text-size: var(--font-size-sm);
-  --md-outlined-text-field-label-text-size: var(--font-size-sm);
+/* low specificity (:where) so later area-scoped md-icon-button rules win */
+:where(#toolbar) md-icon-button {
+  --md-icon-button-icon-size: 24px;
+  --md-icon-button-state-layer-height: 34px;
+  --md-icon-button-state-layer-width: 34px;
+  height: 34px;
+  width: 34px;
+  border-radius: var(--radius-sm);
 }
 
-#searchHelpTrigger {
+#toolbar md-icon-button.active {
+  --md-icon-button-icon-color: var(--accent-primary);
+  background: #d0e1ff;
+}
+
+#toolbar md-icon-button.danger {
+  --md-icon-button-icon-color: var(--accent-danger);
+}
+
+#toolbar md-icon-button.danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+/* ── Search (floating bar below the toolbar) ─────────────── */
+
+#searchBar {
+  position: fixed;
+  top: calc(var(--spacing-md) + 34px + 2 * var(--spacing-xs) + var(--spacing-md));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toolbar);
+  display: none;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px var(--shadow-sm);
+}
+
+.search-bar-icon {
+  color: #5f6368;
+  font-size: 20px;
+  margin-left: var(--spacing-xs);
+}
+
+#searchBar md-icon-button {
   --md-icon-button-icon-size: 18px;
   --md-icon-button-state-layer-height: var(--button-height);
   --md-icon-button-state-layer-width: var(--button-height);
   height: var(--button-height);
   width: var(--button-height);
+  border-radius: var(--radius-sm);
+}
+
+#searchMatchCount {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: #555;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 3px 10px;
+  box-shadow: 0 1px 4px var(--shadow-xs);
+  visibility: hidden;
+}
+
+#searchInput {
+  width: 280px;
+  height: var(--button-height);
+  --md-outlined-text-field-container-shape: var(--radius-sm);
+  --md-outlined-text-field-top-space: var(--spacing-xs);
+  --md-outlined-text-field-bottom-space: var(--spacing-xs);
+  --md-outlined-text-field-input-text-size: 15px;
+  --md-outlined-text-field-label-text-size: 15px;
+  --md-outlined-text-field-outline-color: transparent;
+  --md-outlined-text-field-hover-outline-color: transparent;
+  --md-outlined-text-field-focus-outline-color: transparent;
+  --md-outlined-text-field-focus-outline-width: 0px;
 }
 
 .search-help-anchor {
@@ -184,7 +246,7 @@ md-outlined-button.danger {
 
 #content {
   position: fixed;
-  top: var(--toolbar-height);
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
@@ -474,6 +536,35 @@ md-outlined-button.danger {
 
 /* ── Misc ────────────────────────────────────────────────── */
 
+#statusLine {
+  position: fixed;
+  bottom: var(--spacing-md);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-version-badge);
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+#graphInfo {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: #555;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 3px 12px;
+  box-shadow: 0 1px 4px var(--shadow-xs);
+  white-space: nowrap;
+}
+
+#graphInfo:empty {
+  display: none;
+}
+
 #version-badge {
   position: fixed;
   bottom: var(--spacing-sm);
@@ -510,10 +601,12 @@ md-outlined-button.danger {
   display: flex;
   align-items: center;
   gap: 0;
-  background: var(--bg-toolbar);
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: 0 1px 4px var(--shadow-xs);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px var(--shadow-sm);
   padding: 0 var(--spacing-xs);
 }
 

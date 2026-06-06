@@ -1,9 +1,9 @@
 import { EVT_GRAPH_UPDATED, EVT_NODE_CLICKED } from './constants.js';
 import { emit } from './event-bus.js';
-import { generateId } from './graph.js';
 import type { GraphEdge, GraphNode } from './graph.js';
-import { ForceGraphInstance, setPendingNodePosition } from './graph-ui.js';
+import { generateId } from './graph.js';
 import type { FGNode } from './graph-ui.js';
+import { ForceGraphInstance, setPendingNodePosition } from './graph-ui.js';
 import { getGraph, setPendingEdgeSource, state } from './state.js';
 
 let newNodeCounter = 0;

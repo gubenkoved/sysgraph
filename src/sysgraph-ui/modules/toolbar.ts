@@ -2,20 +2,23 @@ import { EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE } from './constants.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
-import { setCurrentTool, setEditActive, setEditSubTool, state } from './state.js';
 import type { EditSubTool } from './state.js';
+import { setCurrentTool, setEditActive, setEditSubTool, state } from './state.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
 const toolRectSelectBtn = document.getElementById('toolRectSelect') as HTMLElement;
 const toolSearchBtn = document.getElementById('toolSearch') as HTMLElement;
 const toolEditBtn = document.getElementById('toolEdit') as HTMLElement;
+const editSubToolGroup = document.getElementById('editSubToolGroup') as HTMLElement;
 const editModifyBtn = document.getElementById('editModify') as HTMLElement;
 const editConnectBtn = document.getElementById('editConnect') as HTMLElement;
+const actionGroup = document.getElementById('actionGroup') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
 const invertSelectionBtn = document.getElementById('invertSelection') as HTMLButtonElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
+const searchBar = document.getElementById('searchBar') as HTMLElement;
 const searchInput = document.getElementById('searchInput') as HTMLInputElement;
 const searchHelpTrigger = document.getElementById('searchHelpTrigger') as HTMLElement;
 const searchHelpAnchor = document.getElementById('searchHelpAnchor') as HTMLElement;
@@ -47,14 +50,12 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
     // edit mode setup / teardown
     if (tool === 'edit') {
         setEditActive(true);
-        editModifyBtn.style.display = 'inline-block';
-        editConnectBtn.style.display = 'inline-block';
+        editSubToolGroup.style.display = 'inline-flex';
         applyEditSubTool('modify');
     } else {
         setEditActive(false);
         cancelPendingEdge();
-        editModifyBtn.style.display = 'none';
-        editConnectBtn.style.display = 'none';
+        editSubToolGroup.style.display = 'none';
     }
 
     if (tool === 'rect-select') {
@@ -66,21 +67,19 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
     }
 
     if (tool === 'search') {
-        searchInput.style.display = 'inline-block';
-        searchHelpAnchor.style.display = 'inline-flex';
-        addToSelectionBtn.style.display = 'inline-block';
+        searchBar.style.display = 'flex';
+        addToSelectionBtn.style.display = 'inline-flex';
         searchInput.focus();
         if (searchInput.value) {
             emit(EVT_SEARCH_CHANGED, searchInput.value);
         } else {
-            searchMatchCount.style.display = 'none';
+            searchMatchCount.style.visibility = 'hidden';
             addToSelectionBtn.disabled = true;
         }
     } else {
-        searchInput.style.display = 'none';
-        searchHelpAnchor.style.display = 'none';
+        searchBar.style.display = 'none';
         searchHelpPopover.classList.remove('open');
-        searchMatchCount.style.display = 'none';
+        searchMatchCount.style.visibility = 'hidden';
         addToSelectionBtn.style.display = 'none';
         emit(EVT_SEARCH_CHANGED, '');
     }
@@ -93,13 +92,12 @@ export function updateGraphInfo(): void {
     const isSelectionTool = state.currentTool === 'rect-select' || state.currentTool === 'search';
 
     if (isSelectionTool) {
-        deleteBtn.style.display = 'inline-block';
-        unselectBtn.style.display = 'inline-block';
+        actionGroup.style.display = 'inline-flex';
         if (state.selection.selectedNodeIds.size > 0) {
             graphInfoEl.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
             deleteBtn.disabled = false;
             unselectBtn.disabled = false;
-            invertSelectionBtn.style.display = 'inline-block';
+            invertSelectionBtn.style.display = 'inline-flex';
         } else {
             graphInfoEl.textContent = '';
             deleteBtn.disabled = true;
@@ -107,9 +105,7 @@ export function updateGraphInfo(): void {
             invertSelectionBtn.style.display = 'none';
         }
     } else {
-        deleteBtn.style.display = 'none';
-        unselectBtn.style.display = 'none';
-        invertSelectionBtn.style.display = 'none';
+        actionGroup.style.display = 'none';
         const nodeCount = state.graph.nodesMap.size;
         const edgeCount = state.graph.edgesMap.size;
         graphInfoEl.textContent = nodeCount > 0

@@ -12,40 +12,49 @@
   </head>
   <body>
     <div id="toolbar">
-      <img src="./icon.png" alt="sysgraph" style="height: 28px; width: 28px; object-fit: contain;">
-      <div class="toolbar-separator"></div>
-      <md-outlined-button id="toolPointer" class="active" title="Pointer tool (P)">
-        <md-icon slot="icon">near_me</md-icon> Pointer
-      </md-outlined-button>
-      <md-outlined-button id="toolRectSelect" title="Rectangular selection (R)">
-        <md-icon slot="icon">select_all</md-icon> Select
-      </md-outlined-button>
-      <md-outlined-button id="toolSearch" title="Search">
-        <md-icon slot="icon">search</md-icon> Search
-      </md-outlined-button>
-      <md-outlined-button id="toolEdit" title="Edit graph (E)">
-        <md-icon slot="icon">edit</md-icon> Edit
-      </md-outlined-button>
-      <div class="toolbar-separator"></div>
-      <md-outlined-button id="editModify" title="Modify: click empty canvas to add a node, click a node to edit it" style="display: none;">
-        <md-icon slot="icon">open_with</md-icon> Modify
-      </md-outlined-button>
-      <md-outlined-button id="editConnect" title="Connect: click a source node, then a target node to create an edge" style="display: none;">
-        <md-icon slot="icon">add_link</md-icon> Connect
-      </md-outlined-button>
-      <div class="toolbar-separator"></div>
-      <md-outlined-button id="deleteSelected" class="danger" title="Delete selected nodes (del)" style="display: none;">
-        <md-icon slot="icon">delete</md-icon> Delete
-      </md-outlined-button>
-      <md-outlined-button id="unselectAll" title="Clear selection" style="display: none;">
-        <md-icon slot="icon">deselect</md-icon> Unselect
-      </md-outlined-button>
-      <md-outlined-button id="invertSelection" title="Invert selection" style="display: none;">
-        <md-icon slot="icon">flip</md-icon> Invert
-      </md-outlined-button>
-      <div class="toolbar-separator"></div>
-      <md-outlined-text-field id="searchInput" placeholder="Search nodes..." type="search" style="display: none;"></md-outlined-text-field>
-      <span class="search-help-anchor" id="searchHelpAnchor" style="display: none;">
+      <img id="toolbar-logo" src="./icon.png" alt="sysgraph" />
+      <span class="tool-divider"></span>
+      <div class="tool-group" id="toolGroup">
+        <md-icon-button id="toolPointer" class="active" title="Pointer tool (P)">
+          <md-icon>near_me</md-icon>
+        </md-icon-button>
+        <md-icon-button id="toolRectSelect" title="Rectangular selection (R)">
+          <md-icon>select_all</md-icon>
+        </md-icon-button>
+        <md-icon-button id="toolSearch" title="Search">
+          <md-icon>search</md-icon>
+        </md-icon-button>
+        <md-icon-button id="toolEdit" title="Edit graph (E)">
+          <md-icon>edit</md-icon>
+        </md-icon-button>
+      </div>
+      <div class="tool-group contextual" id="editSubToolGroup" style="display: none;">
+        <span class="tool-divider"></span>
+        <md-icon-button id="editModify" title="Modify: click empty canvas to add a node, click a node to edit it">
+          <md-icon>open_with</md-icon>
+        </md-icon-button>
+        <md-icon-button id="editConnect" title="Connect: click a source node, then a target node to create an edge">
+          <md-icon>add_link</md-icon>
+        </md-icon-button>
+      </div>
+      <div class="tool-group contextual" id="actionGroup" style="display: none;">
+        <span class="tool-divider"></span>
+        <md-icon-button id="deleteSelected" class="danger" title="Delete selected nodes (del)">
+          <md-icon>delete</md-icon>
+        </md-icon-button>
+        <md-icon-button id="unselectAll" title="Clear selection">
+          <md-icon>deselect</md-icon>
+        </md-icon-button>
+        <md-icon-button id="invertSelection" title="Invert selection" style="display: none;">
+          <md-icon>flip</md-icon>
+        </md-icon-button>
+      </div>
+    </div>
+
+    <div id="searchBar" style="display: none;">
+      <md-icon class="search-bar-icon">search</md-icon>
+      <md-outlined-text-field id="searchInput" placeholder="Search nodes..." type="search"></md-outlined-text-field>
+      <span class="search-help-anchor" id="searchHelpAnchor">
         <md-icon-button id="searchHelpTrigger">
           <md-icon>help</md-icon>
         </md-icon-button>
@@ -69,11 +78,10 @@
         <a href="https://www.fusejs.io/extended-search.html" target="_blank" rel="noopener" style="color: #58a6ff;">Fuse.js docs &rarr;</a>
         </div>
       </span>
-      <span id="searchMatchCount" style="display: none; font-size: 12px; color: #666; margin-left: 4px;"></span>
-      <md-outlined-button id="addToSelection" title="Add matches to selection" style="display: none;" disabled>
-        <md-icon slot="icon">add_circle</md-icon> Select matches
-      </md-outlined-button>
-      <span id="graphInfo" style="font-size: 12px; color: #666; margin-left: auto;"></span>
+      <span id="searchMatchCount"></span>
+      <md-icon-button id="addToSelection" title="Add matches to selection" style="display: none;" disabled>
+        <md-icon>add_circle</md-icon>
+      </md-icon-button>
     </div>
 
     <div id="content">
@@ -107,6 +115,10 @@
     <div id="version-badge">
       <span id="standalone-badge" title="Standalone build — not connected to a backend; load data via import" hidden>standalone</span>
       <span id="version-text">__APP_VERSION__</span>
+    </div>
+
+    <div id="statusLine">
+      <span id="graphInfo"></span>
     </div>
 
     <input type="file" id="importFile" accept=".json" style="display:none">

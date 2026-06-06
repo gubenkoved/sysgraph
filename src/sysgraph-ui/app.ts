@@ -19,7 +19,6 @@ import {CMD_EXPORT, CMD_IMPORT,
     EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
     STANDALONE,
 } from './modules/constants.js';
-import '@material/web/button/outlined-button.js';
 import '@material/web/button/filled-tonal-button.js';
 import '@material/web/button/text-button.js';
 import '@material/web/icon/icon.js';
@@ -67,25 +66,25 @@ on(EVT_SEARCH_CHANGED, (expression: string) => {
             });
             dismissError('search-syntax');
             searchMatchCountEl.textContent = `${matchesMap.size} match${matchesMap.size !== 1 ? 'es' : ''}`;
-            searchMatchCountEl.style.display = 'inline';
+            searchMatchCountEl.style.visibility = 'visible';
             addToSelectionBtn.disabled = matchesMap.size === 0;
         } catch (err) {
             if (err instanceof SearchSyntaxError) {
                 setSearch(null);
-                searchMatchCountEl.style.display = 'none';
+                searchMatchCountEl.style.visibility = 'hidden';
                 addToSelectionBtn.disabled = true;
                 showError(err.message, { id: 'search-syntax' });
             } else {
                 console.error('search error:', err);
                 setSearch(null);
-                searchMatchCountEl.style.display = 'none';
+                searchMatchCountEl.style.visibility = 'hidden';
                 addToSelectionBtn.disabled = true;
             }
         }
     } else {
         setSearch(null);
         dismissError('search-syntax');
-        searchMatchCountEl.style.display = 'none';
+        searchMatchCountEl.style.visibility = 'hidden';
         addToSelectionBtn.disabled = true;
     }
 });
@@ -107,7 +106,7 @@ on(EVT_SEARCH_CYCLE, ({ direction }: { direction: 1 | -1 }) => {
         ForceGraphInstance.centerAt(node.x, node.y, 500);
     }
     searchMatchCountEl.textContent = `${next + 1} / ${total} match${total !== 1 ? 'es' : ''}`;
-    searchMatchCountEl.style.display = 'inline';
+    searchMatchCountEl.style.visibility = 'visible';
 });
 
 on(EVT_SETTINGS_UPDATED, async () => {
