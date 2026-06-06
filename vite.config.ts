@@ -26,7 +26,8 @@ interface ExampleInfo {
 
 /**
  * Derive a human-readable title from an example filename
- * (e.g. 'greek-mythology.json' -> 'Greek Mythology').
+ * (e.g. 'greek-mythology.json' -> 'Greek Mythology'). Used as a fallback when
+ * the graph JSON does not provide an explicit `title`.
  */
 function titleFromFilename(name: string): string {
   return name
@@ -64,6 +65,7 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
     }
     let nodes = 0;
     let edges = 0;
+    let title = titleFromFilename(entry);
     try {
       const data = JSON.parse(raw) as Record<string, unknown>;
       const rawNodes = data.nodes;
@@ -74,12 +76,17 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
       edges = Array.isArray(rawEdges)
         ? rawEdges.length
         : rawEdges ? Object.keys(rawEdges).length : 0;
+      // an explicit `title` in the graph JSON wins over the filename-derived
+      // one (lets examples control exact casing, e.g. "US Airports")
+      if (typeof data.title === 'string' && data.title.trim()) {
+        title = data.title.trim();
+      }
     } catch {
       // Skip files that are not valid JSON graphs.
       continue;
     }
     files.set(entry, raw);
-    manifest.push({ file: entry, title: titleFromFilename(entry), nodes, edges });
+    manifest.push({ file: entry, title, nodes, edges });
   }
 
   manifest.sort((a, b) => a.title.localeCompare(b.title));
