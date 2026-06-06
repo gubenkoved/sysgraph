@@ -7,6 +7,9 @@ RUN npm ci
 COPY vite.config.ts tsconfig.json tsconfig.node.json ./
 COPY src/sysgraph-ui/ ./src/sysgraph-ui/
 COPY src/sysgraph/__init__.py ./src/sysgraph/__init__.py
+# Bundled example graphs read by vite.config.ts (readExamples) at build time;
+# without these the "load example" toolbar button would never appear.
+COPY data/ ./data/
 RUN npm run build
 
 # --- Stage 2: Python runtime ---
