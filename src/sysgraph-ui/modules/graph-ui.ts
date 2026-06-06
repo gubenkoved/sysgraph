@@ -9,7 +9,7 @@ import {
     GRID_LINE_COLOR, GRID_LINE_COLOR_UNSTRESSED,
     GRID_SPACING, MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
     MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,nodePointerRadius,
-    nodeRadius, REHEAT_ALPHA, REHEAT_TIMEOUT_MS,SCORE_EPSILON,
+    nodeRadius, SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     SEARCH_NOT_MATCHING_OPACITY,
     SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
@@ -57,12 +57,10 @@ export interface FGLink extends LinkObject<FGNode> {
     target_id?: string;
 }
 
-// Force-graph exposes d3Alpha / d3AlphaTarget / refresh at runtime but they
-// are absent from its shipped .d.ts. We extend the type here.
+// Force-graph exposes d3ReheatSimulation / d3VelocityDecay / refresh at runtime
+// but some are absent from its shipped .d.ts. We extend the type here.
 type FGBaseType<N extends NodeObject, L extends LinkObject<N>> = ForceGraphGeneric<FGBaseType<N, L>, N, L>;
 type ForceGraphInstance = FGBaseType<FGNode, FGLink> & {
-    d3Alpha(alpha: number): ForceGraphInstance;
-    d3AlphaTarget(alphaTarget: number): ForceGraphInstance;
     refresh(): ForceGraphInstance;
 };
 
@@ -817,6 +815,14 @@ export function autoAdjustCurvature(): void {
 }
 
 export function applyD3Params(): void {
+    if (!settings.d3EnablePhysics) {
+        // Freeze the engine: it stops after the next tick check.
+        ForceGraphInstance.cooldownTicks(0);
+        return;
+    }
+
+    ForceGraphInstance.cooldownTicks(Infinity);
+
     const chargeForce = ForceGraphInstance.d3Force('charge');
     if (chargeForce && typeof chargeForce.strength === 'function') chargeForce.strength(settings.d3Charge);
 
@@ -847,17 +853,7 @@ export function applyD3Params(): void {
         ForceGraphInstance.d3VelocityDecay(settings.d3VelocityDecay);
     }
 
-    const fgi = ForceGraphInstance as unknown as Record<string, unknown>;
-    if (typeof fgi.d3AlphaTarget === 'function') {
-        (fgi.d3AlphaTarget as (v: number) => void)(settings.d3AlphaTarget);
-    }
-
-    if (typeof fgi.d3Alpha === 'function') {
-        (fgi.d3Alpha as (v: number) => void)(REHEAT_ALPHA);
-        setTimeout(() => {
-            if (typeof fgi.d3AlphaTarget === 'function') {
-                (fgi.d3AlphaTarget as (v: number) => void)(0);
-            }
-        }, REHEAT_TIMEOUT_MS);
-    }
+    // Reheat so updated forces (and a re-enabled engine) take effect.
+    // d3ReheatSimulation sets alpha=1 and restarts the cooled-down engine.
+    ForceGraphInstance.d3ReheatSimulation();
 }

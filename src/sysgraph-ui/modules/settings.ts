@@ -13,6 +13,7 @@ export type EdgeWidthMap = Record<string, number>;
 export type FilterMap = Record<string, boolean>;
 
 export interface SettingsShape {
+    d3EnablePhysics: boolean;
     d3Charge: number;
     d3LinkDistance: number;
     d3LinkStrength: number;
@@ -38,6 +39,7 @@ export interface SettingsShape {
 
 export function createDefaultSettings(): SettingsShape {
     return {
+        d3EnablePhysics: true,
         d3Charge: -400,
         d3LinkDistance: 140,
         d3LinkStrength: 0.8,

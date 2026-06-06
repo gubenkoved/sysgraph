@@ -85,6 +85,10 @@ const d3Params: { key: keyof SettingsShape; label: string; min: number; max: num
     { key: 'd3ForceXYStrength', label: 'XY centering', min: 0.00, max: 0.99, step: 0.01 },
 ];
 
+d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3EnablePhysics', { label: 'enable physics' }).on('change', () => {
+    emit(EVT_D3_PARAMS_CHANGED, null);
+});
+
 for (const p of d3Params) {
     d3RenderingSettingsFolder.addBinding(
         settings as unknown as Record<string, unknown>,
