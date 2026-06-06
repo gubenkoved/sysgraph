@@ -2,7 +2,7 @@ import JSONFormatter from 'json-formatter-js';
 import { EVT_GRAPH_UPDATED, EVT_LINK_CLICKED, EVT_NODE_CLICKED } from './constants.js';
 import { deleteEdge, deleteNode } from './edit-mode.js';
 import { emit, on } from './event-bus.js';
-import { getGraph, state } from './state.js';
+import { getGraph, setGraphDirty, state } from './state.js';
 
 // --- cached DOM elements (primary panel) ---
 const panel = document.getElementById('detailsPanel') as HTMLElement;
@@ -88,6 +88,7 @@ function buildEditableForm(nodeOrLink: NodeOrLink): HTMLElement {
         if (target) {
             target.type = newType;
             nodeOrLink.type = newType;
+            setGraphDirty(true);
             emit(EVT_GRAPH_UPDATED, null);
         }
     });
@@ -132,6 +133,7 @@ function buildEditableForm(nodeOrLink: NodeOrLink): HTMLElement {
         if (target) {
             target.properties = props;
             nodeOrLink.properties = props;
+            setGraphDirty(true);
             emit(EVT_GRAPH_UPDATED, null);
         }
     };

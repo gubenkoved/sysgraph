@@ -7,7 +7,7 @@ import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
-import { setCurrentTool, setEditActive, setEditSubTool, state } from './state.js';
+import { setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
 import { getTheme, toggleTheme } from './theme.js';
 import { showError } from './util.js';
 
@@ -290,6 +290,8 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         a.download = `${timestamp}_graph.json`;
         a.click();
         URL.revokeObjectURL(url);
+        // the current graph is now safely on disk — no unexported data
+        setGraphDirty(false);
     });
 
     clearGraphBtn.addEventListener('click', () => {

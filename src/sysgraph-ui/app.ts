@@ -5,7 +5,7 @@ import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInsta
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
-import { getGraph, resetState, setSearch, state, updateGraph } from './modules/state.js';
+import { getGraph, isGraphDirty, resetState, setGraphDirty, setSearch, state, updateGraph } from './modules/state.js';
 import { initTheme } from './modules/theme.js';
 import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
 import { dismissError, showError } from './modules/util.js';
@@ -170,6 +170,7 @@ registerHandler(CMD_RELOAD, async () => {
     try {
         const loadedData = await loadDataFromApi();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        setGraphDirty(false);
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
         console.error('reload failed:', err);
@@ -183,6 +184,15 @@ registerHandler(CMD_RELOAD, async () => {
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
 initZoomIndicator();
+
+// --- guard against losing unexported graph data on close/reload ---
+window.addEventListener('beforeunload', (event) => {
+    if (isGraphDirty()) {
+        event.preventDefault();
+        // legacy browsers require returnValue to be set to trigger the prompt
+        event.returnValue = '';
+    }
+});
 
 // --- initial load ---
 window.addEventListener('load', async () => {
@@ -199,6 +209,7 @@ window.addEventListener('load', async () => {
     try {
         const loadedData = await loadDataFromApi();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        setGraphDirty(false);
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
         console.error('initial load failed:', err);

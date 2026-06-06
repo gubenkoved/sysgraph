@@ -4,7 +4,7 @@ import type { GraphEdge, GraphNode } from './graph.js';
 import { generateId } from './graph.js';
 import type { FGNode } from './graph-ui.js';
 import { ForceGraphInstance, setPendingNodePosition } from './graph-ui.js';
-import { getGraph, setPendingEdgeSource, state } from './state.js';
+import { getGraph, setGraphDirty, setPendingEdgeSource, state } from './state.js';
 
 let newNodeCounter = 0;
 
@@ -26,6 +26,7 @@ export function createNodeAt(graphX: number, graphY: number): void {
     };
     setPendingNodePosition(node.id, graphX, graphY);
     getGraph().addNode(node);
+    setGraphDirty(true);
     emit(EVT_GRAPH_UPDATED, null);
     selectNodeById(node.id);
 }
@@ -40,6 +41,7 @@ export function createEdge(sourceId: string, targetId: string): void {
         properties: {},
     };
     getGraph().addEdge(edge);
+    setGraphDirty(true);
     emit(EVT_GRAPH_UPDATED, null);
 }
 
@@ -78,11 +80,13 @@ export function deleteNode(id: string): void {
     if (state.edit.pendingEdgeSourceId === id) {
         setPendingEdgeSource(null);
     }
+    setGraphDirty(true);
     emit(EVT_GRAPH_UPDATED, null);
 }
 
 /** Removes an edge from the graph. */
 export function deleteEdge(id: string): void {
     getGraph().removeEdge(id);
+    setGraphDirty(true);
     emit(EVT_GRAPH_UPDATED, null);
 }

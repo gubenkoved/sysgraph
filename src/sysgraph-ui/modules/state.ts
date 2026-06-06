@@ -86,6 +86,7 @@ export function resetState(): void {
     state.highlight = null;
     state.search = null;
     state.edit.pendingEdgeSourceId = null;
+    graphDirty = false;
 }
 
 export function updateGraph(newGraph: Graph): void {
@@ -122,4 +123,18 @@ export function setEditSubTool(subTool: EditSubTool): void {
 
 export function setPendingEdgeSource(nodeId: string | null): void {
     state.edit.pendingEdgeSourceId = nodeId;
+}
+
+// --- unsaved-changes tracking -------------------------------------------
+// tracks whether the current graph holds data that has not been exported
+// since it was last modified; used to warn the user before they close the
+// app and lose unexported work
+let graphDirty = false;
+
+export function setGraphDirty(value: boolean): void {
+    graphDirty = value;
+}
+
+export function isGraphDirty(): boolean {
+    return graphDirty;
 }
