@@ -251,12 +251,15 @@ attachDrag(panel);
 
 function createFloatingPanel(nodeOrLink: NodeOrLink): void {
     floatingPanelCount++;
-    const offset = 8 + floatingPanelCount * 30;
+    // On narrow (mobile) screens, start below the centered floating toolbar
+    // so the panel does not open overlapping it.
+    const baseTop = window.innerWidth <= 600 ? 64 : 8;
+    const offset = floatingPanelCount * 30;
 
     const el = document.createElement('div');
     el.className = 'details-panel open';
-    el.style.top = `${offset}px`;
-    el.style.left = `${offset}px`;
+    el.style.top = `${baseTop + offset}px`;
+    el.style.left = `${8 + offset}px`;
 
     const header = document.createElement('div');
     header.className = 'panel-header';

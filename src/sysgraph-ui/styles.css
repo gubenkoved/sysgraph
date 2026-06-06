@@ -373,6 +373,16 @@ body {
   display: flex;
 }
 
+/* On narrow (mobile) screens the panel grows near full-width and would
+   overlap the centered floating toolbar at the top. Push it down so it
+   opens clear of the toolbar. */
+@media (max-width: 600px) {
+  .details-panel {
+    top: 64px;
+    max-height: calc(100% - 64px - var(--spacing-md));
+  }
+}
+
 .details-panel .panel-header {
   display: flex;
   align-items: center;
