@@ -14,7 +14,7 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
 
 **After any frontend/UI changes**, run `./scripts/lint-ui.sh` and fix any lint errors or warnings introduced by the changes. Use `./scripts/lint-ui.sh --fix` to auto-fix when possible, then address any remaining issues manually. The codebase must stay lint-clean (0 errors, 0 warnings).
 
-**After any changes to Python dependencies** (adding, removing, or changing versions in `pyproject.toml`), always relock `requirements.txt` by running `pip-compile` (requires `pip-tools`). The locked file must stay in sync with `pyproject.toml`.
+**After any changes to Python dependencies** (adding, removing, or changing versions in `pyproject.toml`), always relock `requirements.txt` by running `./scripts/compile-requirements.sh` (wraps `pip-compile` from `pip-tools`). The locked file must stay in sync with `pyproject.toml`.
 
 ## Project Overview
 
@@ -22,9 +22,10 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
 
 - **Author:** Eugene Gubenkov (`gubenkoved@gmail.com`)
 - **License:** MIT
-- **Python:** ≥ 3.12 (strict)
+- **Python:** ≥ 3.12 (supports 3.12 and 3.13)
 - **Node.js:** 22 (used for frontend build via Vite)
 - **Package name:** `sysgraph` (importable as `sysgraph`)
+- **Packaging:** setuptools via `pyproject.toml` (no `setup.py`); version is dynamic from `sysgraph.__version__`
 
 ## Architecture
 
@@ -32,9 +33,10 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
 ┌──────────────────────────────────────────────────────────┐
 │  Browser (SPA)                                           │
 │  Built by Vite from src/sysgraph-ui/ → src/sysgraph/dist/  │
-│  Libraries (npm): force-graph, d3@6, tweakpane,          │
-│    fuse.js, @material/web, json-formatter-js             │
-│  Icons: Material Symbols Outlined (Google Fonts CDN)     │
+│  Libraries (npm): force-graph, d3@7, tweakpane (+core,    │
+│    plugin-essentials), fuse.js, @material/web,           │
+│    json-formatter-js                                     │
+│  Icons & fonts: Material Symbols, Roboto, Ubuntu (CDN)   │
 └──────────────┬───────────────────────────────────────────┘
                │  HTTP (fetch)
                ▼
@@ -59,20 +61,21 @@ If the user has Node.js 22 installed locally, `npm run build`, `npm run typechec
 
 ```
 sysgraph/
-├── pyproject.toml          # Ruff + isort config
-├── setup.py                # Package metadata, dependencies
+├── pyproject.toml          # Packaging (setuptools), Ruff + isort config, dynamic version
 ├── requirements.txt        # Locked deps (pip-compile output)
-├── requirements-dev.in     # Dev dependencies (pytest, ruff, httpx, etc.)
+├── requirements-dev.in     # Dev dependencies (pytest, httpx, ruff, pip-tools, etc.)
 ├── package.json            # Node.js deps & scripts (Vite build)
 ├── package-lock.json       # Locked npm deps
-├── vite.config.ts          # Vite build config (root: src/sysgraph-ui)
+├── vite.config.ts          # Vite build config (root: src/sysgraph-ui; bundles data/ examples)
 ├── tsconfig.json           # TypeScript config (browser, strict, noEmit)
 ├── tsconfig.node.json      # TypeScript config for vite.config.ts (Node types)
 ├── biome.json              # Biome linter config
 ├── Dockerfile              # Multi-stage: Node.js build + Python runtime
 ├── MANIFEST.in             # Includes dist/ in Python package
-├── data/
-│   └── simplest-graph.json # Sample graph for import/testing
+├── .pre-commit-config.yaml # pre-commit hooks
+├── data/                   # Built-in example graphs (bundled into dist/examples/)
+│   ├── simplest-graph.json
+│   └── greek-mythology.json
 ├── scripts/
 │   ├── build-image.sh      # Build Docker image
 │   ├── build-ui.sh         # Build frontend via Docker (no host Node.js needed)
@@ -80,39 +83,53 @@ sysgraph/
 │   ├── typecheck-ui.sh     # TypeScript type checking via Docker
 │   ├── lint-ui.sh          # Biome linter via Docker (--fix to auto-fix)
 │   ├── publish-image.sh    # Tag & push to Docker Hub (gubenkoved/sysgraph)
+│   ├── publish-pypi.sh     # Build & publish the Python package to PyPI
 │   ├── compile-requirements.sh  # pip-compile to lock deps
 │   ├── docker-entrypoint.sh     # Container entrypoint (uvicorn)
 │   └── lint.sh             # Run ruff + isort (Python)
 ├── src/
 │   └── sysgraph/                 # Python backend package
 │       ├── __init__.py          # Exports __version__ (single source of truth)
-│       ├── __main__.py          # Allows `python -m sysgraph`
+│       ├── __main__.py          # Allows `python -m sysgraph` (calls app.main())
 │       ├── app.py               # FastAPI application & API schemas
 │       ├── discovery.py         # OS process/connection discovery + graph building
 │       ├── graph.py             # Graph data structure (Node, Relationship, Graph)
 │       ├── model.py             # Domain models (Process, NetConnection, UDS, etc.)
+│       ├── constants.py         # Node/edge type names + node-ID helper functions
 │       ├── main.py              # CLI entry point for debug/exploration
 │       ├── dist/                # Vite build output (generated, gitignored)
 │       └── tests/
-│           └── test_discovery.py
+│           ├── test_discovery.py
+│           └── test_graph.py
 │   └── sysgraph-ui/             # Frontend source (Vite project root)
 │       ├── index.html           # SPA shell (toolbar, detail panel, settings pane)
+│       ├── styles.css           # All styling + design tokens (CSS custom properties)
+│       ├── globals.d.ts         # Ambient declarations (e.g. __STANDALONE__)
 │       ├── app.ts               # Frontend entry point
 │       └── modules/
-│           ├── state.ts          # Centralized app state
-│           ├── event-bus.ts      # Pub-sub event system
+│           ├── state.ts          # Centralized app state (incl. unsaved-changes flag)
+│           ├── event-bus.ts      # Pub-sub event system + 1:1 command handlers
+│           ├── constants.ts      # Event/command names, render constants, STANDALONE flag
 │           ├── graph.ts          # Frontend Graph class (adjacency index)
 │           ├── graph-ui.ts       # force-graph rendering (largest module)
+│           ├── graph-ui-helpers.ts # Label-expression helpers (e.g. bytes_to_human)
 │           ├── graph-algs.ts     # BFS algorithm for highlights
-│           ├── data-io.ts        # API fetch, JSON serialization/parsing
-│           ├── search.ts         # Fuzzy search via Fuse.js
+│           ├── render-hooks.ts   # Pre/post per-frame render hooks
+│           ├── data-io.ts        # API fetch, JSON serialization/parsing, examples manifest
+│           ├── search.ts         # Search via Fuse.js (uses search-parser)
+│           ├── search-parser.ts  # Search grammar (field:value, AND/OR, grouping, quotes)
 │           ├── selection.ts      # Rectangle selection overlay
+│           ├── edit-mode.ts      # Graph editing (add/delete nodes & edges)
+│           ├── details-panel.ts  # Node/edge details panel + editable form
 │           ├── toolbar.ts        # Toolbar buttons & keyboard shortcuts
 │           ├── settings-pane.ts  # Tweakpane settings UI (filters, colors, forces)
 │           ├── settings.ts       # Default settings, color palettes
+│           ├── settings-presets.ts # Predefined + user settings presets (localStorage)
 │           ├── context-menu.ts   # Right-click context menu
 │           ├── color-scale.ts    # Color interpolation for search heatmap
-│           └── util.ts           # FNV-1a hash helper
+│           ├── theme.ts          # Light/dark theme toggle (persisted)
+│           ├── zoom-indicator.ts # Floating zoom widget (-/+ and live %)
+│           └── util.ts           # FNV-1a hash + toast error helpers
 ```
 
 ## Development Setup
@@ -199,10 +216,11 @@ The Dockerfile is a **multi-stage build**: stage 1 builds the frontend with Node
 
 | Module | Purpose |
 |--------|---------|
-| `app.py` | FastAPI app, Pydantic schemas (`GraphSchema`, `GraphNodeSchema`, `GraphEdgeSchema`), serves Vite build output from `dist/`, `/api/graph` endpoint |
+| `app.py` | FastAPI app, Pydantic schemas (`GraphSchema`, `GraphNodeSchema`, `GraphEdgeSchema`), serves Vite build output from `dist/`, `/api/graph` and `/api/health` endpoints, `main()` CLI/uvicorn entry point |
 | `discovery.py` | OS introspection: `discover_processes()`, `discover_unix_sockets()`, `get_processes_open_files()`, `get_all_net_connections()`, `build_graph()` |
 | `graph.py` | Backend graph data structure: `Node`, `Relationship`, `Graph` with `add_node()`, `add_edge()`, `as_dict()` |
 | `model.py` | Domain models: `Process`, `ProcessOpenFile`, `UnixDomainSocket`, `UnixDomainSocketConnection`, `NetConnection`, `SocketAddress`, etc. |
+| `constants.py` | Node/edge type-name constants (`NODE_*`, `EDGE_*`) and node-ID helpers (`process_node_id()`, `uds_node_id()`, `pipe_node_id()`, `socket_node_id()`, `external_ip_node_id()`) |
 | `main.py` | CLI debug script — runs discovery and logs results |
 | `__main__.py` | Allows running as `python -m sysgraph` (calls `app.main()`) |
 
@@ -213,17 +231,21 @@ The backend serves the Vite-built frontend from `src/sysgraph/dist/`:
 - `GET /*` → catch-all `StaticFiles` mount on `dist/` (after all `/api/*` routes)
 - If `dist/` is missing, a warning is logged and the frontend is not served
 
-The `dist/` directory is included in the Python package via `MANIFEST.in` and `setup.py` `package_data`.
+The `dist/` directory is included in the Python package via `MANIFEST.in` and the `[tool.setuptools.package-data]` entry in `pyproject.toml` (`sysgraph = ["dist/*", "dist/**/*"]`).
 
 ### Graph Node Types (generated by backend)
+Type-name constants live in `constants.py` (`NODE_*`).
 - `process` — OS process (properties: pid, command, user, name, cpu_user, cpu_system, environment)
 - `pipe` — Named pipe (FIFO) inode (properties: label)
 - `socket` — TCP/UDP socket endpoint (properties: label, state, socket_type)
+- `uds` — Unix domain socket endpoint
 - `external_ip` — Remote IP not owned by a local process (properties: label)
 
 ### Graph Edge Types (generated by backend)
+Type-name constants live in `constants.py` (`EDGE_*`).
 - `child_process` — Parent→child process relationship
-- `unix_domain_socket` — UDS connection between two processes
+- `uds` — Process→UDS binding
+- `uds_connection` — Connection between two UDS endpoints
 - `pipe` — Read/write pipe connection (directional; properties: fd, mode)
 - `socket` — Process→local socket binding
 - `socket_connection` — Connection between local↔remote socket endpoints
@@ -265,33 +287,40 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 
 **npm dependencies** (`package.json`):
 - `force-graph` — Canvas-based force-directed graph
-- `d3@6` — Physics simulation, color utilities
+- `d3@7` — Physics simulation, color utilities
 - `@material/web` — Material Design 3 web components (buttons, icons, text fields)
-- `tweakpane@4` — Settings panel UI
+- `tweakpane@4` (+ `@tweakpane/core`, `@tweakpane/plugin-essentials`) — Settings panel UI
 - `fuse.js@7` — Fuzzy search engine
 - `json-formatter-js` — Collapsible JSON display in details panel
 
-**Dev dependencies**: `vite@6`, `typescript@5`, `@types/d3`, `@types/node`, `@biomejs/biome`
+**Dev dependencies**: `vite@8`, `typescript@6`, `@types/d3@7`, `@types/node`, `@biomejs/biome@2`
 
 ### Module Architecture
 
 **State Management:** `state.ts` holds centralized mutable state:
 - `state.graph` — Current `Graph` instance
 - `state.currentTool` — Active tool: `"pointer"` | `"rect-select"` | `"search"`
+- `state.edit` — Edit-mode state (`active`, `subTool`: `"modify"` | `"connect"`, `pendingEdgeSourceId`)
 - `state.selection` — Rectangle selection coordinates, selected node IDs
 - `state.highlight` — BFS distance maps for hover highlighting
 - `state.adjacencyFilter` — Visible node/hidden count maps for adjacency filter
-- `state.search` — Match map and color map from fuzzy search
+- `state.search` — Match map and color map from search
+- Module-level unsaved-changes flag (`isGraphDirty()` / `setGraphDirty()`) — tracks unexported edits
 
-**Event Bus:** `event-bus.ts` provides generic `on<T>` / `emit<T>` / `registerHandler` / `handle` for decoupled communication.
+**Event Bus:** `event-bus.ts` provides generic `on<T>` / `emit<T>` / `registerHandler` / `handle` for decoupled communication. Event and command name constants live in `constants.ts`.
 
 Key events:
 - `"node-clicked"`, `"link-clicked"`, `"background-click"` — UI interactions
-- `"search-expression-changed"` — Search input updates
+- `"search-expression-changed"`, `"search-cycle"` — Search input updates / next-prev match cycling
+- `"selection-changed"` — Selection set changed
 - `"d3-simulation-parameters-changed"` — Force simulation parameter updates
+- `"graph-ui-settings-updated"`, `"graph-ui-colors-updated"`, `"graph-ui-links-curvature-updated"` — Settings/colors/curvature changes
 - `"clear-button-clicked"` — Reset state
-- `"graph-updated"` — Emitted after loading a new graph (e.g., from API or file import)
+- `"graph-updated"` — Emitted after loading a new graph (e.g., from API, file import, or example)
 - `"graph-filters-updated"` — Emitted after changing type filters in settings
+- `"theme-changed"` — Light/dark theme toggled
+
+Key commands (1:1 handlers): `"reload-graph"`, `"export-graph"`, `"import-graph"`, `"load-example"`.
 
 **Rendering (`graph-ui.ts`):** Uses the `force-graph` library (canvas-based) with d3 physics simulation. This is the largest module. Key features:
 - Custom canvas drawing for nodes (circles with labels, selection indicators, search highlights)
@@ -310,12 +339,29 @@ Key events:
 - Export/import graph JSON
 - Pin/unpin all nodes
 
-**Search (`search.ts`):** Fuzzy search via Fuse.js across all node properties. Space-separated terms are AND-ed. Results are color-coded on the graph using `ColorScale`.
+**Search (`search.ts` + `search-parser.ts`):** Search across node properties via Fuse.js. `search-parser.ts` implements a small grammar: `field:value` specifiers, `AND`/`OR` logic (implicit AND via adjacency), parenthesized grouping, and double-quoted strings. Results are color-coded on the graph using `ColorScale`, and the search tool supports cycling through matches.
 
 **Data I/O (`data-io.ts`):** Handles API fetching and flexible JSON parsing. Supports:
 - Nodes/edges as arrays or id-keyed maps
 - Alternate edge keys: `"relationships"`, `"links"`
 - Auto-generates missing edge IDs
+- Loads the bundled examples manifest and example graphs from `dist/examples/`
+
+**Edit Mode (`edit-mode.ts` + `details-panel.ts`):** The Edit tool (E) enables graph authoring:
+- `modify` sub-tool — click empty canvas to add a node; click a node to edit it
+- `connect` sub-tool — click a source node then a target node to create an edge
+- The details panel renders an editable form (type + properties) for the selected node/edge
+- Any edit marks the graph "dirty"; a `beforeunload` guard warns before losing unexported changes. Loading/importing/exporting clears the dirty flag.
+
+**Theme (`theme.ts`):** Light/dark theme toggle, persisted in `localStorage` (`sysgraph:theme`); emits `"theme-changed"` so the canvas re-derives colors.
+
+**Settings Presets (`settings-presets.ts`):** Predefined and user-defined settings presets persisted in `localStorage` (`sysgraph:settings-presets`).
+
+**Zoom Indicator (`zoom-indicator.ts`):** Floating bottom-left widget showing the live zoom level with `-`/`+` buttons that animate the camera.
+
+**Render Hooks (`render-hooks.ts`):** Registerable pre/post per-frame hooks invoked around each force-graph render frame.
+
+**Standalone mode:** Build-time flag `__STANDALONE__` (declared in `globals.d.ts`, set via `VITE_STANDALONE=true`). When enabled the UI never contacts the backend (no initial `/api/graph` fetch, no reload); graphs are loaded via import or examples.
 
 ### UI Components
 
@@ -328,6 +374,13 @@ The toolbar and form elements use **Material Web** (`@material/web`) components:
 Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 
 ## Coding Conventions
+
+### Comments (Python & TypeScript)
+- Start regular comments with a lower-case letter
+- Do not end a comment with a period/dot
+- Applies to inline (`//`, `#`) and line comments; keep them concise
+- Section-divider comments (e.g. `// --- foo ---`) and structured doc comments (JSDoc `/** ... */`, docstrings) are exempt and may use normal sentence capitalization/punctuation
+- Explain the "why", not the obvious "what"
 
 ### Python
 - Line length: 79 (ruff)
@@ -406,4 +459,4 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 - **No host Node.js needed:** All `*-ui.sh` scripts run Node.js inside Docker. If Node.js 22 is available locally, `npm run build/typecheck/lint` also work.
 - **Version single source of truth:** The app version is defined in `src/sysgraph/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
 - **Graph size:** On busy systems the graph can have thousands of nodes. The force simulation may be slow; tune d3 parameters via the settings pane.
-- **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"uds::{inode}"`, `"external_ip::{ip}"`. Edge IDs are UUIDs.
+- **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"uds::{key}"`, `"external_ip::{ip}"` (see the `*_node_id()` helpers in `constants.py`). Edge IDs are UUIDs.
