@@ -1,4 +1,4 @@
-import { CMD_LOAD_EXAMPLE, EVT_GRAPH_UPDATED, EVT_TOOL_CHANGED } from './constants.js';
+import { CMD_LOAD_EXAMPLE, EVT_GRAPH_UPDATED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
 import { showContextMenu } from './context-menu.js';
 import { loadExamplesManifest } from './data-io.js';
 import { handle, on } from './event-bus.js';
@@ -16,6 +16,19 @@ const importFileInput = document.getElementById('importFile') as HTMLInputElemen
 // once dismissed, stay hidden until the graph is populated again
 let dismissed = false;
 
+// suppress the panel until the initial backend load settles; standalone builds
+// have no backend, so they are ready immediately
+let ready = STANDALONE;
+
+/**
+ * Marks the quick-start panel ready to appear (called once the initial backend
+ * load has settled) and refreshes its visibility.
+ */
+export function markQuickStartReady(): void {
+    ready = true;
+    refreshVisibility();
+}
+
 /** Shows the quick-start panel only when the graph is empty and edit mode is inactive. */
 function refreshVisibility(): void {
     const isEmpty = state.graph.nodesMap.size === 0;
@@ -23,7 +36,7 @@ function refreshVisibility(): void {
     if (!isEmpty) {
         dismissed = false;
     }
-    const visible = isEmpty && !dismissed && state.currentTool !== 'edit';
+    const visible = ready && isEmpty && !dismissed && state.currentTool !== 'edit';
     quickStartEl.classList.toggle('visible', visible);
 }
 

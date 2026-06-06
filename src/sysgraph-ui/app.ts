@@ -2,7 +2,7 @@ import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } fro
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI } from './modules/graph-ui.js';
-import { initQuickStart } from './modules/quick-start.js';
+import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
@@ -220,5 +220,7 @@ window.addEventListener('load', async () => {
         showError(`Failed to load graph: ${(err as Error).message}`);
     } finally {
         loadingOverlay.classList.remove('visible');
+        // allow the quick-start panel to appear now that the backend load settled
+        markQuickStartReady();
     }
 });
