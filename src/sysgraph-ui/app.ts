@@ -2,6 +2,7 @@ import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } fro
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI, requestFitToView } from './modules/graph-ui.js';
+import { initLongPress } from './modules/long-press.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
@@ -190,6 +191,7 @@ const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
 initQuickStart(() => setTool('edit', selectionCanvas, canvas));
 initZoomIndicator();
+initLongPress();
 
 // --- guard against losing unexported graph data on close/reload ---
 window.addEventListener('beforeunload', (event) => {

@@ -16,6 +16,7 @@ import {
     SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
     UI_FONT_FAMILY,
 } from './constants.js';
+import type { ContextMenuItem } from './context-menu.js';
 import { showContextMenu } from './context-menu.js';
 import {
     cancelPendingEdge,
@@ -42,6 +43,10 @@ import { getTheme } from './theme.js';
 const DOUBLE_CLICK_MS = 300;
 let lastClickedNodeId: string | null = null;
 let lastClickTime = 0;
+
+// minimum on-screen hit radius (px) for touch long-press node detection, so
+// small/zoomed-out nodes are still reachable with a finger
+const TOUCH_SLOP_PX = 18;
 
 // ---------------------------------------------------------------------------
 // Custom node / link types for force-graph
@@ -406,7 +411,6 @@ export const ForceGraphInstance = new ForceGraph<FGNode, FGLink>(
     document.getElementById('graph') as HTMLElement,
 ) as unknown as ForceGraphInstance;
 
-// fit-to-view tuning
 const FIT_TO_VIEW_DURATION_MS = 400;
 const FIT_TO_VIEW_PADDING = 40;
 // never auto-zoom past 100% for small graphs
@@ -450,9 +454,10 @@ function fitToView(durationMs: number): void {
     ForceGraphInstance.zoom(zoom, durationMs);
 }
 
-// pan and zoom to fit the freshly loaded graph in a single camera animation
+// request the view to center on / fit the freshly loaded graph: a single,
+// immediately-started pan to the center plus zoom-out (if needed) to fit the
+// whole graph in view; clamped so small graphs are never zoomed past 100%
 export function requestFitToView(): void {
-    // defer one frame so the new graph data (and node positions) are in place
     requestAnimationFrame(() => fitToView(FIT_TO_VIEW_DURATION_MS));
 }
 
@@ -609,12 +614,7 @@ ForceGraphInstance
     })
     .onLinkRightClick((link, event) => {
         event.preventDefault();
-        if (!state.edit.active) return;
-        showContextMenu(event.clientX, event.clientY, [{
-            label: 'Delete edge',
-            icon: 'delete',
-            action: () => deleteEdge(link.id),
-        }]);
+        showLinkContextMenu(link, event.clientX, event.clientY);
     })
     .onNodeDrag(node => {
         pinNode(node);
@@ -633,87 +633,11 @@ ForceGraphInstance
     })
     .onNodeRightClick((node, event) => {
         event.preventDefault();
-        const items: import('./context-menu.js').ContextMenuItem[] = [];
-
-        if (state.edit.active) {
-            items.push({
-                label: 'Start edge from here',
-                icon: 'add_link',
-                action: () => {
-                    setEditSubTool('connect');
-                    startEdgeFrom(node.id);
-                },
-            });
-            items.push({
-                label: 'Delete node',
-                icon: 'delete',
-                action: () => deleteNode(node.id),
-            });
-            items.push({ divider: true });
-        }
-
-        if (isNodePinned(node)) {
-            items.push({ label: 'Unpin', icon: 'keep_off', action: () => unpinNode(node) });
-        } else {
-            items.push({ label: 'Pin', icon: 'push_pin', action: () => pinNode(node) });
-        }
-
-        items.push({ divider: true });
-
-        items.push({
-            label: 'Show adjacent only',
-            icon: 'filter_alt',
-            action: () => {
-                updateAdjacencyFilter([node.id], false);
-                void refreshGraphUI();
-            },
-        });
-
-        if (state.selection.selectedNodeIds.size > 0) {
-            items.push({
-                label: 'Show adjacent only (all selected)',
-                icon: 'filter_alt',
-                action: () => {
-                    updateAdjacencyFilter(state.selection.selectedNodeIds, false);
-                    void refreshGraphUI();
-                },
-            });
-        }
-
-        if (state.adjacencyFilter) {
-            items.push({
-                label: 'Show adjacent (extend)',
-                icon: 'expand',
-                action: () => {
-                    updateAdjacencyFilter([node.id], true);
-                    void refreshGraphUI();
-                },
-            });
-
-            items.push({
-                label: 'Reset adjacency filter',
-                icon: 'filter_alt_off',
-                action: () => {
-                    updateAdjacencyFilter(null);
-                    void refreshGraphUI();
-                },
-            });
-        }
-
-        showContextMenu(event.clientX, event.clientY, items);
+        showNodeContextMenu(node, event.clientX, event.clientY);
     })
     .onBackgroundRightClick((event) => {
         event.preventDefault();
-        if (state.adjacencyFilter) {
-            showContextMenu(event.clientX, event.clientY, [{
-                label: 'Reset adjacency filter',
-                icon: 'filter_alt_off',
-                action: () => {
-                    setAdjacencyFilter(null);
-                    void refreshGraphUI();
-                },
-            }]);
-        }
+        showBackgroundContextMenu(event.clientX, event.clientY);
     })
     .onBackgroundClick((event) => {
         if (state.edit.active) {
@@ -875,6 +799,139 @@ function updateAdjacencyFilter(seedNodeIds: Iterable<string> | null, extendExist
     } else {
         setAdjacencyFilter(null);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Context menus (shared by right-click and touch long-press)
+// ---------------------------------------------------------------------------
+
+/** Builds and shows the node context menu at the given screen coordinates. */
+export function showNodeContextMenu(node: FGNode, clientX: number, clientY: number): void {
+    const items: ContextMenuItem[] = [];
+
+    if (state.edit.active) {
+        items.push({
+            label: 'Start edge from here',
+            icon: 'add_link',
+            action: () => {
+                setEditSubTool('connect');
+                startEdgeFrom(node.id);
+            },
+        });
+        items.push({
+            label: 'Delete node',
+            icon: 'delete',
+            action: () => deleteNode(node.id),
+        });
+        items.push({ divider: true });
+    }
+
+    if (isNodePinned(node)) {
+        items.push({ label: 'Unpin', icon: 'keep_off', action: () => unpinNode(node) });
+    } else {
+        items.push({ label: 'Pin', icon: 'push_pin', action: () => pinNode(node) });
+    }
+
+    items.push({ divider: true });
+
+    items.push({
+        label: 'Show adjacent only',
+        icon: 'filter_alt',
+        action: () => {
+            updateAdjacencyFilter([node.id], false);
+            void refreshGraphUI();
+        },
+    });
+
+    if (state.selection.selectedNodeIds.size > 0) {
+        items.push({
+            label: 'Show adjacent only (all selected)',
+            icon: 'filter_alt',
+            action: () => {
+                updateAdjacencyFilter(state.selection.selectedNodeIds, false);
+                void refreshGraphUI();
+            },
+        });
+    }
+
+    if (state.adjacencyFilter) {
+        items.push({
+            label: 'Show adjacent (extend)',
+            icon: 'expand',
+            action: () => {
+                updateAdjacencyFilter([node.id], true);
+                void refreshGraphUI();
+            },
+        });
+
+        items.push({
+            label: 'Reset adjacency filter',
+            icon: 'filter_alt_off',
+            action: () => {
+                updateAdjacencyFilter(null);
+                void refreshGraphUI();
+            },
+        });
+    }
+
+    showContextMenu(clientX, clientY, items);
+}
+
+/** Builds and shows the link context menu at the given screen coordinates. */
+export function showLinkContextMenu(link: FGLink, clientX: number, clientY: number): void {
+    if (!state.edit.active) return;
+    showContextMenu(clientX, clientY, [{
+        label: 'Delete edge',
+        icon: 'delete',
+        action: () => deleteEdge(link.id),
+    }]);
+}
+
+/** Builds and shows the background context menu at the given screen coordinates. */
+export function showBackgroundContextMenu(clientX: number, clientY: number): void {
+    if (state.adjacencyFilter) {
+        showContextMenu(clientX, clientY, [{
+            label: 'Reset adjacency filter',
+            icon: 'filter_alt_off',
+            action: () => {
+                setAdjacencyFilter(null);
+                void refreshGraphUI();
+            },
+        }]);
+    }
+}
+
+/**
+ * Hit-tests the graph for a node under the given screen coordinates, returning
+ * the closest node within a finger-sized radius, or null. Used by touch
+ * long-press, which cannot rely on force-graph's mouse hover state.
+ *
+ * The test is done in screen space (after projecting each node through the
+ * current zoom/pan) and padded with a touch slop, so it stays reliable when
+ * the graph is zoomed out and nodes are visually tiny.
+ */
+export function getNodeAtScreen(clientX: number, clientY: number): FGNode | null {
+    const rect = graphContainerEl.getBoundingClientRect();
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const k = ForceGraphInstance.zoom();
+
+    let closest: FGNode | null = null;
+    let closestDist = Number.POSITIVE_INFINITY;
+
+    for (const node of ForceGraphInstance.graphData().nodes as FGNode[]) {
+        if (node.x == null || node.y == null) continue;
+        const screen = ForceGraphInstance.graph2ScreenCoords(node.x, node.y);
+        const dist = Math.hypot(screen.x - px, screen.y - py);
+        // node's on-screen radius, with a minimum finger target size
+        const hitRadius = Math.max(nodeRadius(node) * k, TOUCH_SLOP_PX);
+        if (dist <= hitRadius && dist < closestDist) {
+            closest = node;
+            closestDist = dist;
+        }
+    }
+
+    return closest;
 }
 
 // ---------------------------------------------------------------------------

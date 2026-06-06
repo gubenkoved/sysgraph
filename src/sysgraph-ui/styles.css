@@ -984,6 +984,13 @@ hr {
     max-height: calc(100% - 64px - var(--spacing-md));
   }
 
+  /* json-formatter inherits the 16px document default, which is oversized on
+     small screens — shrink the panel body and its rows to the compact scale. */
+  .details-panel .panel-body,
+  .details-panel .panel-body .json-formatter-row {
+    font-size: var(--font-size-xs);
+  }
+
   /* Hide the standalone marker to save horizontal space. */
   #standalone-badge {
     display: none;
