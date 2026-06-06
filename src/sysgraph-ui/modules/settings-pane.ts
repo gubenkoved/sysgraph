@@ -460,6 +460,27 @@ function attachIsolateOnDoubleClick(
     });
 }
 
+/** Counts occurrences of each type name, preserving first-seen order. */
+function countByType(types: Iterable<string>): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const type of types) {
+        counts.set(type, (counts.get(type) ?? 0) + 1);
+    }
+    return counts;
+}
+
+/**
+ * Injects a right-aligned count badge into a Tweakpane filter row, rendered as
+ * a subtle pill next to the toggle rather than inline in the label text.
+ */
+function attachCountBadge(binding: { element: HTMLElement }, count: number): void {
+    binding.element.classList.add('has-count-badge');
+    const badge = document.createElement('span');
+    badge.className = 'type-count-badge';
+    badge.textContent = count.toLocaleString();
+    binding.element.appendChild(badge);
+}
+
 /**
  * Rebuilds the dynamic filter and colour panes in the settings UI based on the
  * current graph's node/edge types.
@@ -490,8 +511,11 @@ export function updateDynamicGraphPanes(): void {
     const edgeColors = settings.edgeColors;
     const edgeWidths = settings.edgeWidths;
 
-    const nodeTypes = sortNodeTypes(new Set(graph.getNodes().map((node) => node.type)));
-    const edgeTypes = sortEdgeTypes(new Set(graph.getEdges().map((edge) => edge.type)));
+    const nodeTypeCounts = countByType(graph.getNodes().map((node) => node.type));
+    const edgeTypeCounts = countByType(graph.getEdges().map((edge) => edge.type));
+
+    const nodeTypes = sortNodeTypes(nodeTypeCounts.keys());
+    const edgeTypes = sortEdgeTypes(edgeTypeCounts.keys());
 
     for (const key of nodeTypes) {
         if (!(key in nodeFilters)) {
@@ -501,6 +525,7 @@ export function updateDynamicGraphPanes(): void {
         binding.on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
+        attachCountBadge(binding, nodeTypeCounts.get(key) ?? 0);
         attachIsolateOnDoubleClick(binding, nodeFilters, nodeTypes, key);
     }
 
@@ -512,6 +537,7 @@ export function updateDynamicGraphPanes(): void {
         binding.on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
+        attachCountBadge(binding, edgeTypeCounts.get(key) ?? 0);
         attachIsolateOnDoubleClick(binding, edgeFilters, edgeTypes, key);
     }
 

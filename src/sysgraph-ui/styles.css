@@ -345,6 +345,28 @@ md-outlined-button.danger {
   top: 10px;
 }
 
+.has-count-badge {
+  position: relative;
+}
+
+.type-count-badge {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill, 999px);
+  background: hsla(230, 15%, 30%, 0.12);
+  color: hsla(230, 10%, 30%, 0.85);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+
 /* ── Misc ────────────────────────────────────────────────── */
 
 #version-badge {
