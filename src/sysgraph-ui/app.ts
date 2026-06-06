@@ -1,7 +1,7 @@
 import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
-import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI } from './modules/graph-ui.js';
+import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI, requestFitToView } from './modules/graph-ui.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
@@ -144,6 +144,7 @@ registerHandler(CMD_IMPORT, async (text?: string) => {
         const loadedData = parseGraphData(text);
         resetState();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        requestFitToView();
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
         console.error('import failed:', err);
@@ -158,6 +159,7 @@ registerHandler(CMD_LOAD_EXAMPLE, async (file?: string) => {
         const loadedData = await loadExampleGraph(file);
         resetState();
         updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        requestFitToView();
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
         console.error('load example failed:', err);

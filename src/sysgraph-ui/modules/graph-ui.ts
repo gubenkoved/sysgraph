@@ -406,6 +406,56 @@ export const ForceGraphInstance = new ForceGraph<FGNode, FGLink>(
     document.getElementById('graph') as HTMLElement,
 ) as unknown as ForceGraphInstance;
 
+// fit-to-view tuning
+const FIT_TO_VIEW_DURATION_MS = 400;
+const FIT_TO_VIEW_PADDING = 40;
+// never auto-zoom past 100% for small graphs
+const FIT_TO_VIEW_MAX_ZOOM = 1;
+
+// fit the camera to the current node positions, centering the graph and
+// clamping the zoom so small graphs are not blown up past 100%
+function fitToView(durationMs: number): void {
+    const nodes = ForceGraphInstance.graphData().nodes;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const n of nodes) {
+        if (n.x == null || n.y == null) continue;
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+    }
+
+    if (!Number.isFinite(minX)) return;
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    const bboxWidth = maxX - minX + FIT_TO_VIEW_PADDING * 2;
+    const bboxHeight = maxY - minY + FIT_TO_VIEW_PADDING * 2;
+
+    const viewWidth = ForceGraphInstance.width();
+    const viewHeight = ForceGraphInstance.height();
+
+    const zoom = Math.min(
+        FIT_TO_VIEW_MAX_ZOOM,
+        viewWidth / bboxWidth,
+        viewHeight / bboxHeight,
+    );
+
+    ForceGraphInstance.centerAt(centerX, centerY, durationMs);
+    ForceGraphInstance.zoom(zoom, durationMs);
+}
+
+// pan and zoom to fit the freshly loaded graph in a single camera animation
+export function requestFitToView(): void {
+    // defer one frame so the new graph data (and node positions) are in place
+    requestAnimationFrame(() => fitToView(FIT_TO_VIEW_DURATION_MS));
+}
+
 ForceGraphInstance
     .nodeId('id')
     .graphData({ nodes: [], links: [] })
