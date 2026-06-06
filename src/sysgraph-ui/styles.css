@@ -373,16 +373,6 @@ body {
   display: flex;
 }
 
-/* On narrow (mobile) screens the panel grows near full-width and would
-   overlap the centered floating toolbar at the top. Push it down so it
-   opens clear of the toolbar. */
-@media (max-width: 600px) {
-  .details-panel {
-    top: 64px;
-    max-height: calc(100% - 64px - var(--spacing-md));
-  }
-}
-
 .details-panel .panel-header {
   display: flex;
   align-items: center;
@@ -848,4 +838,31 @@ hr {
   border: none;
   border-top: 1px solid var(--border-subtle);
   margin: var(--spacing-sm) 0;
+}
+
+/* ── Mobile overrides ────────────────────────────────────── */
+/* Single breakpoint for all "mobile" tweaks. CSS media queries can't read
+   custom properties, so this one block is the single source of truth for the
+   mobile breakpoint — keep mobile-only rules here (mirrors the 600px check in
+   details-panel.ts). */
+@media (max-width: 600px) {
+  /* Push details panels below the centered floating toolbar so they don't
+     open overlapping it (panel grows near full-width on narrow screens). */
+  .details-panel {
+    top: 64px;
+    max-height: calc(100% - 64px - var(--spacing-md));
+  }
+
+  /* Hide the standalone marker to save horizontal space. */
+  #standalone-badge {
+    display: none;
+  }
+
+  /* Move the status pill from center-bottom to the bottom-right corner. */
+  #statusLine {
+    left: auto;
+    right: var(--spacing-md);
+    transform: none;
+    justify-content: flex-end;
+  }
 }
