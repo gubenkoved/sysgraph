@@ -1,4 +1,4 @@
-import { loadDataFromApi, parseGraphData, serializeGraph } from './modules/data-io.js';
+import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI } from './modules/graph-ui.js';
@@ -11,6 +11,7 @@ import { dismissError, showError } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
 import './modules/details-panel.js';
 import {CMD_EXPORT, CMD_IMPORT,
+    CMD_LOAD_EXAMPLE,
     CMD_RELOAD, EVT_CLEAR_CLICKED,
     EVT_COLORS_UPDATED,
     EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,EVT_FILTERS_UPDATED,
@@ -136,6 +137,22 @@ registerHandler(CMD_IMPORT, async (text?: string) => {
     } catch (err) {
         console.error('import failed:', err);
         showError(`Import failed: ${(err as Error).message}`);
+    }
+});
+
+registerHandler(CMD_LOAD_EXAMPLE, async (file?: string) => {
+    if (!file) return;
+    loadingOverlay.classList.add('visible');
+    try {
+        const loadedData = await loadExampleGraph(file);
+        resetState();
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        emit(EVT_GRAPH_UPDATED, null);
+    } catch (err) {
+        console.error('load example failed:', err);
+        showError(`Load example failed: ${(err as Error).message}`);
+    } finally {
+        loadingOverlay.classList.remove('visible');
     }
 });
 

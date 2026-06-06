@@ -1,13 +1,15 @@
 import type { FpsGraphBladeApi } from '@tweakpane/plugin-essentials';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-import type { FolderApi } from 'tweakpane';
+import type { FolderApi, ListBladeApi } from 'tweakpane';
 import { Pane } from 'tweakpane';
 import {CMD_EXPORT, CMD_IMPORT,
+    CMD_LOAD_EXAMPLE,
     CMD_RELOAD,
     EVT_CLEAR_CLICKED, EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
     EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
     STANDALONE,
 } from './constants.js';
+import { loadExamplesManifest } from './data-io.js';
 import { emit, handle } from './event-bus.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { setFrameHooks } from './render-hooks.js';
@@ -268,6 +270,37 @@ importFileInput.addEventListener('change', async () => {
 
     importFileInput.value = '';
 });
+
+// Built-in example graphs (bundled into dist/examples/). The picker is only
+// shown when at least one example is available, so missing examples degrade
+// gracefully to no UI.
+async function initExamplesPicker(): Promise<void> {
+    const examples = await loadExamplesManifest();
+    if (examples.length === 0) return;
+
+    actionsFolder.addBlade({ view: 'separator' });
+
+    const exampleBlade = actionsFolder.addBlade({
+        view: 'list',
+        label: 'example',
+        options: examples.map((e) => ({
+            text: `${e.title} (${e.nodes}n / ${e.edges}e)`,
+            value: e.file,
+        })),
+        value: examples[0].file,
+    }) as ListBladeApi<string>;
+
+    actionsFolder.addButton({ title: 'load example' }).on('click', async () => {
+        try {
+            await handle(CMD_LOAD_EXAMPLE, exampleBlade.value);
+        } catch (err) {
+            console.error('load example failed:', err);
+            showError(`Load example failed: ${getErrorMessage(err)}`);
+        }
+    });
+}
+
+void initExamplesPicker();
 
 // --- filter panes ---
 let nodeFiltersFolder: FolderApi = pane.addFolder({ title: 'node filters', expanded: false });

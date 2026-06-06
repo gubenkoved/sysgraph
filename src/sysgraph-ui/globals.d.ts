@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 /**
  * Build-time constant injected by Vite (`define` in vite.config.ts).
  * When true the UI runs in standalone mode and never contacts the backend.

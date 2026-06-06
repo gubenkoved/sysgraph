@@ -17,6 +17,7 @@ export const EVT_BACKGROUND_CLICK = 'background-click';
 export const CMD_RELOAD = 'reload-graph';
 export const CMD_EXPORT = 'export-graph';
 export const CMD_IMPORT = 'import-graph';
+export const CMD_LOAD_EXAMPLE = 'load-example';
 
 // ── Build-time configuration ────────────────────────────────
 /**

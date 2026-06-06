@@ -122,3 +122,44 @@ export function parseGraphData(text: string): { nodes: GraphNode[]; edges: Graph
         ),
     };
 }
+
+/** A built-in example graph as listed in examples/index.json. */
+export interface ExampleInfo {
+    file: string;
+    title: string;
+    nodes: number;
+    edges: number;
+}
+
+/**
+ * Loads the manifest of built-in example graphs. Returns an empty list when
+ * the manifest is missing or unreadable (e.g. dist built without examples).
+ */
+export async function loadExamplesManifest(): Promise<ExampleInfo[]> {
+    const url = `${import.meta.env.BASE_URL}examples/index.json`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        return await res.json() as ExampleInfo[];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Fetches and parses a built-in example graph by its manifest filename.
+ */
+export async function loadExampleGraph(
+    file: string,
+): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
+    const url = `${import.meta.env.BASE_URL}examples/${file}`;
+    let res: Response;
+    try {
+        res = await fetch(url);
+    } catch (err) {
+        throw new Error(`Network error fetching ${url}: ${(err as Error).message}`);
+    }
+    if (!res.ok)
+        throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
+    return parseGraphData(await res.text());
+}
