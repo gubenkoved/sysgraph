@@ -986,16 +986,6 @@
       }
     },
     {
-      "id": "midas",
-      "type": "mortal",
-      "properties": {
-        "name": "Midas",
-        "domain": "golden touch, greed, folly",
-        "symbol": "golden hand",
-        "gender": "male"
-      }
-    },
-    {
       "id": "pandora",
       "type": "mortal",
       "properties": {
@@ -2433,12 +2423,6 @@
       "type": "slew"
     },
     {
-      "id": "cd593f82-2952-42e0-97f1-41c7a9c03f0e",
-      "source_id": "heracles",
-      "target_id": "cerberus",
-      "type": "captured"
-    },
-    {
       "id": "480a7a70-e12b-47f3-81bf-71e8b543c77f",
       "source_id": "bellerophon",
       "target_id": "chimera",
@@ -2457,46 +2441,10 @@
       "type": "slew"
     },
     {
-      "id": "3ef0dbcc-07d1-45b1-9c68-9925cfb067aa",
-      "source_id": "dionysus",
-      "target_id": "orpheus",
-      "type": "caused_death_of"
-    },
-    {
       "id": "a269bfd6-509b-404e-a951-ae6607a80a13",
       "source_id": "zeus",
       "target_id": "asclepius",
       "type": "slew"
-    },
-    {
-      "id": "62f9f769-809d-452a-af34-0ce596fdb131",
-      "source_id": "athena",
-      "target_id": "medusa",
-      "type": "transformed"
-    },
-    {
-      "id": "bbf77520-8b1f-4d1d-b098-75a28d306fc0",
-      "source_id": "apollo",
-      "target_id": "cassandra",
-      "type": "cursed"
-    },
-    {
-      "id": "2b1cf581-459d-4827-b85e-42378f2ced17",
-      "source_id": "circe",
-      "target_id": "scylla",
-      "type": "transformed"
-    },
-    {
-      "id": "37bb8b42-3519-4c66-8b86-bbf86393f824",
-      "source_id": "dionysus",
-      "target_id": "midas",
-      "type": "granted_wish_to"
-    },
-    {
-      "id": "45cc3b76-e87c-4cb0-98c5-c5439106fe94",
-      "source_id": "eros",
-      "target_id": "apollo",
-      "type": "cursed"
     },
     {
       "id": "f02431ae-8ec0-4fb3-a83c-919de12e7232",
@@ -2559,12 +2507,6 @@
       "type": "served"
     },
     {
-      "id": "f6972bd5-c6c4-45ce-96eb-e6176f915a70",
-      "source_id": "hermes",
-      "target_id": "charon",
-      "type": "cooperated_with"
-    },
-    {
       "id": "449af726-b28f-4495-8c61-bee3634e6957",
       "source_id": "hephaestus",
       "target_id": "achilles",
@@ -2589,28 +2531,10 @@
       "type": "punished"
     },
     {
-      "id": "64641549-76f1-45c0-a6cf-2a2a51e3385d",
-      "source_id": "minos",
-      "target_id": "daedalus",
-      "type": "imprisoned"
-    },
-    {
-      "id": "431fa9a3-7a04-4064-a7fe-f5af4fa15fec",
-      "source_id": "minos",
-      "target_id": "minotaur",
-      "type": "imprisoned"
-    },
-    {
       "id": "f9b4f12b-c55a-4177-b364-13f16b467077",
       "source_id": "daedalus",
       "target_id": "minos",
       "type": "served"
-    },
-    {
-      "id": "b65f91d2-ed3f-4d1c-a46e-c3b2139fdde0",
-      "source_id": "heracles",
-      "target_id": "prometheus",
-      "type": "freed"
     },
     {
       "id": "363753c4-c572-4f86-86c5-80fd530c565f",
@@ -2619,28 +2543,10 @@
       "type": "encountered"
     },
     {
-      "id": "43fde10a-1f36-4393-b0b5-6ae3f9ba37f2",
-      "source_id": "medea",
-      "target_id": "hecate",
-      "type": "worshipped"
-    },
-    {
-      "id": "4923aaa4-9f15-4cb6-9132-a4c613fb1990",
-      "source_id": "circe",
-      "target_id": "hecate",
-      "type": "worshipped"
-    },
-    {
       "id": "ddb4cb32-80fb-40c3-b054-2c6dcb91ad68",
       "source_id": "eris",
       "target_id": "paris",
       "type": "influenced"
-    },
-    {
-      "id": "ef8aa4b4-b213-4850-bfe6-adb0a617526c",
-      "source_id": "perseus",
-      "target_id": "andromeda",
-      "type": "rescued"
     },
     {
       "id": "df0df894-86d4-4b03-b7c2-52e339e19757",
@@ -2667,40 +2573,10 @@
       "type": "encountered"
     },
     {
-      "id": "4b262942-b042-42a1-8672-2b4345384140",
-      "source_id": "odysseus",
-      "target_id": "polyphemus",
-      "type": "blinded"
-    },
-    {
-      "id": "0f4528a6-9873-4f36-a1e0-5188fc6b4a85",
-      "source_id": "bellerophon",
-      "target_id": "pegasus",
-      "type": "rode"
-    },
-    {
-      "id": "d2702413-c987-4603-9201-1b0389d4a985",
-      "source_id": "icarus",
-      "target_id": "helios",
-      "type": "tempted_by"
-    },
-    {
       "id": "1c009ecd-11f3-4182-abff-ffa3ed27fc61",
       "source_id": "zeus",
       "target_id": "eros",
       "type": "assisted"
-    },
-    {
-      "id": "3ad92a68-3db7-4a84-99a0-10f91d62a490",
-      "source_id": "hephaestus",
-      "target_id": "pandora",
-      "type": "created"
-    },
-    {
-      "id": "0d08e66e-9aa5-49fa-a7ba-934ce9aab999",
-      "source_id": "prometheus",
-      "target_id": "epimetheus",
-      "type": "warned"
     },
     {
       "id": "bae5ac49-3f22-4a07-8115-38c381441260",
@@ -2725,12 +2601,6 @@
       "source_id": "poseidon",
       "target_id": "aphrodite",
       "type": "loved"
-    },
-    {
-      "id": "e78027be-1091-4460-92bf-ec3a5a5e2a1e",
-      "source_id": "agamemnon",
-      "target_id": "cassandra",
-      "type": "captured"
     },
     {
       "id": "7d10f243-c06b-4f1e-b048-4b504a6a62cc",
@@ -2763,18 +2633,6 @@
       "type": "enemy_of"
     },
     {
-      "id": "20e8edef-c54f-4421-aaea-e71b1b8c39c9",
-      "source_id": "diomedes",
-      "target_id": "ares",
-      "type": "wounded"
-    },
-    {
-      "id": "f2799adb-ec6b-4e5e-9c6f-29dbd3eae3da",
-      "source_id": "diomedes",
-      "target_id": "aphrodite",
-      "type": "wounded"
-    },
-    {
       "id": "0dcd212c-c032-442e-b9b7-a8886798092d",
       "source_id": "athena",
       "target_id": "diomedes",
@@ -2793,12 +2651,6 @@
       "type": "ally_of"
     },
     {
-      "id": "22f8cf9f-b79c-41ae-897f-9e752da17c76",
-      "source_id": "heracles",
-      "target_id": "atlas",
-      "type": "tricked"
-    },
-    {
       "id": "7a3e0fd7-2c2b-4973-bb50-9301eb91cf75",
       "source_id": "heracles",
       "target_id": "ares",
@@ -2811,12 +2663,6 @@
       "type": "enemy_of"
     },
     {
-      "id": "81fcc52a-487a-431f-bdaa-a0d840a5116b",
-      "source_id": "theseus",
-      "target_id": "poseidon",
-      "type": "child_of"
-    },
-    {
       "id": "240459c6-d48d-4be8-bb22-6ca87fbe722e",
       "source_id": "theseus",
       "target_id": "minos",
@@ -2827,18 +2673,6 @@
       "source_id": "minos",
       "target_id": "daedalus",
       "type": "ally_of"
-    },
-    {
-      "id": "9be4841a-1c41-460b-b2cd-ce3a5c9ac62d",
-      "source_id": "icarus",
-      "target_id": "daedalus",
-      "type": "child_of"
-    },
-    {
-      "id": "94f8a98b-2580-45ee-8a98-993483565f64",
-      "source_id": "odysseus",
-      "target_id": "hermes",
-      "type": "received_gift_from"
     },
     {
       "id": "e6ceeabd-7f60-4a7b-bb16-d4e5f1f13411",
@@ -2877,40 +2711,10 @@
       "type": "served"
     },
     {
-      "id": "fa4363ce-d4f3-4987-a209-d10e32545f02",
-      "source_id": "poseidon",
-      "target_id": "zeus",
-      "type": "rival_of"
-    },
-    {
-      "id": "9d490f9e-342e-4d40-936b-59bf242b93e5",
-      "source_id": "hera",
-      "target_id": "zeus",
-      "type": "rival_of"
-    },
-    {
       "id": "7781cd6f-d423-480c-b3ba-2bc585bc24b5",
       "source_id": "eris",
       "target_id": "agamemnon",
       "type": "influenced"
-    },
-    {
-      "id": "a1a45f3e-18fe-4b9a-9555-2f265909774e",
-      "source_id": "eris",
-      "target_id": "hera",
-      "type": "antagonized"
-    },
-    {
-      "id": "9adf69e5-8239-42de-8b39-3fb890039886",
-      "source_id": "eris",
-      "target_id": "athena",
-      "type": "antagonized"
-    },
-    {
-      "id": "17462262-248d-41f3-bcc0-3b36f3786d2c",
-      "source_id": "eris",
-      "target_id": "aphrodite",
-      "type": "antagonized"
     },
     {
       "id": "f65c9611-948c-4c5b-a5fe-7c5ba50b47dc",
@@ -2973,34 +2777,10 @@
       "type": "encountered"
     },
     {
-      "id": "7ad0d8e6-8fc7-45a4-a79c-3182595fd14f",
-      "source_id": "odysseus",
-      "target_id": "hades",
-      "type": "visited"
-    },
-    {
       "id": "19817311-097d-4a58-868d-46237825214c",
       "source_id": "odysseus",
       "target_id": "persephone",
       "type": "petitioned"
-    },
-    {
-      "id": "82af5fcb-0bf9-4cd3-a1db-b723327bdce3",
-      "source_id": "charon",
-      "target_id": "tartarus",
-      "type": "guarded_entrance_to"
-    },
-    {
-      "id": "cd673fcf-35c8-4259-b45c-6dd24fdc6dd1",
-      "source_id": "cerberus",
-      "target_id": "tartarus",
-      "type": "guarded_entrance_to"
-    },
-    {
-      "id": "3572dd59-69d6-4d77-9fce-74417188dc9d",
-      "source_id": "poseidon",
-      "target_id": "polyphemus",
-      "type": "avenged"
     },
     {
       "id": "d8d5aab0-48d3-4bfe-85c0-21f94c2f4d1e",
@@ -3015,58 +2795,10 @@
       "type": "parent_of"
     },
     {
-      "id": "7d0ed3d4-25ae-4cba-a49e-5ab725c8f380",
-      "source_id": "hephaestus",
-      "target_id": "zeus",
-      "type": "crafted_for"
-    },
-    {
-      "id": "884094a5-2999-4613-95e4-c46994f90d0c",
-      "source_id": "hephaestus",
-      "target_id": "hermes",
-      "type": "crafted_for"
-    },
-    {
-      "id": "e47672f2-a8a8-4371-8748-fb76da708dde",
-      "source_id": "hephaestus",
-      "target_id": "artemis",
-      "type": "crafted_for"
-    },
-    {
-      "id": "1927983e-afc3-40df-bec4-94bdd016d12d",
-      "source_id": "hermes",
-      "target_id": "pandora",
-      "type": "escorted"
-    },
-    {
       "id": "c0aa8d84-c215-4216-aa8a-ff09e26fa031",
       "source_id": "athena",
       "target_id": "pandora",
       "type": "assisted"
-    },
-    {
-      "id": "eb637fd4-67f2-4ccb-b054-02ed770fd1b6",
-      "source_id": "apollo",
-      "target_id": "oedipus",
-      "type": "prophesied_about"
-    },
-    {
-      "id": "e363d9ff-ab8a-4dd6-92c4-35c1cb8d6af0",
-      "source_id": "apollo",
-      "target_id": "heracles",
-      "type": "prophesied_about"
-    },
-    {
-      "id": "e2629219-60bc-49fa-b07b-7a010b0b4d48",
-      "source_id": "apollo",
-      "target_id": "agamemnon",
-      "type": "prophesied_about"
-    },
-    {
-      "id": "f493c1aa-5aa8-4121-8fca-ca6eaaaae8ce",
-      "source_id": "themis",
-      "target_id": "zeus",
-      "type": "advised"
     },
     {
       "id": "8bd229cb-c702-43af-a3c5-08bbef3fe710",
@@ -3153,18 +2885,6 @@
       "type": "enemy_of"
     },
     {
-      "id": "51baaa7b-18a6-48c3-8d20-93fb2fc88c2f",
-      "source_id": "apollo",
-      "target_id": "leto",
-      "type": "protected"
-    },
-    {
-      "id": "02324f44-ccdd-4e86-a033-71dbea7a650a",
-      "source_id": "artemis",
-      "target_id": "leto",
-      "type": "protected"
-    },
-    {
       "id": "fad26c80-e023-4125-92c9-634f65cbf69e",
       "source_id": "gaia",
       "target_id": "mnemosyne",
@@ -3213,18 +2933,6 @@
       "type": "enemy_of"
     },
     {
-      "id": "e9ecfd23-38fd-4379-9959-844695dbc226",
-      "source_id": "zeus",
-      "target_id": "semele",
-      "type": "caused_death_of"
-    },
-    {
-      "id": "60e4eabb-5c78-4366-a1fd-eb8bd786366f",
-      "source_id": "dionysus",
-      "target_id": "semele",
-      "type": "rescued"
-    },
-    {
       "id": "6bfed3a7-6959-4165-b0bf-478f8f3dc592",
       "source_id": "thetis",
       "target_id": "achilles",
@@ -3241,24 +2949,6 @@
       "source_id": "thetis",
       "target_id": "hephaestus",
       "type": "petitioned"
-    },
-    {
-      "id": "0350caab-d277-45f0-a2ac-63b4510de23f",
-      "source_id": "hephaestus",
-      "target_id": "thetis",
-      "type": "crafted_for"
-    },
-    {
-      "id": "69b7cfaf-9f28-4ac8-b91c-bc01daa8ada4",
-      "source_id": "zeus",
-      "target_id": "thetis",
-      "type": "respected"
-    },
-    {
-      "id": "6b8e37be-2eca-4da6-ab89-96e2ba042e87",
-      "source_id": "hera",
-      "target_id": "thetis",
-      "type": "rival_of"
     },
     {
       "id": "d44e83da-5b95-4539-b9a9-4934851a9f37",
@@ -3345,12 +3035,6 @@
       "type": "enemy_of"
     },
     {
-      "id": "1d0817e0-54df-45a8-843d-2d355bc82963",
-      "source_id": "achilles",
-      "target_id": "priam",
-      "type": "respected"
-    },
-    {
       "id": "61dcc098-0d03-46ce-9cca-24d9d679bf90",
       "source_id": "hecuba",
       "target_id": "hector",
@@ -3391,12 +3075,6 @@
       "source_id": "aegeus",
       "target_id": "theseus",
       "type": "parent_of"
-    },
-    {
-      "id": "a7b142d8-52db-458f-acfc-5eaf7b55726d",
-      "source_id": "theseus",
-      "target_id": "aegeus",
-      "type": "caused_death_of"
     },
     {
       "id": "30867d2c-4422-4f86-9fd9-25bdafc67fcd",
@@ -3525,22 +3203,10 @@
       "type": "loved"
     },
     {
-      "id": "a796d33f-5ab8-40fa-991d-d3438a8e42b3",
-      "source_id": "zeus",
-      "target_id": "ganymede",
-      "type": "abducted"
-    },
-    {
       "id": "37ca2776-f360-4604-bda4-ed75fa5f7320",
       "source_id": "ganymede",
       "target_id": "zeus",
       "type": "served"
-    },
-    {
-      "id": "818e7622-b308-41b3-8009-9c9b07810445",
-      "source_id": "hebe",
-      "target_id": "ganymede",
-      "type": "rival_of"
     },
     {
       "id": "9d5b0ed2-1d86-4c9f-ade3-e83fd0d1dda6",
@@ -3559,18 +3225,6 @@
       "source_id": "odysseus",
       "target_id": "calypso",
       "type": "encountered"
-    },
-    {
-      "id": "9362940f-b8df-47b7-a6d0-9b313aaf3188",
-      "source_id": "zeus",
-      "target_id": "calypso",
-      "type": "ordered"
-    },
-    {
-      "id": "99423a5b-b0a5-49a0-a564-9c23a19c9bcc",
-      "source_id": "hermes",
-      "target_id": "calypso",
-      "type": "delivered_message_to"
     },
     {
       "id": "ac3b928c-9172-4572-a372-9fb31f09b41b",
@@ -3609,18 +3263,6 @@
       "type": "parent_of"
     },
     {
-      "id": "ebae74a8-4f77-4e18-af51-6d925c0f217c",
-      "source_id": "hephaestus",
-      "target_id": "talos",
-      "type": "created"
-    },
-    {
-      "id": "441221ae-e5b2-4672-a807-2200e633bce3",
-      "source_id": "minos",
-      "target_id": "talos",
-      "type": "commanded"
-    },
-    {
       "id": "a795b678-0110-4e23-a147-ab319353be9c",
       "source_id": "jason",
       "target_id": "talos",
@@ -3645,22 +3287,10 @@
       "type": "loved"
     },
     {
-      "id": "ad4e246e-f6e9-43b9-b43a-98eab4978ad3",
-      "source_id": "narcissus",
-      "target_id": "echo",
-      "type": "rejected"
-    },
-    {
       "id": "df1e80e3-f0f4-4175-81a4-2f0b65b6fc40",
       "source_id": "nemesis",
       "target_id": "narcissus",
       "type": "punished"
-    },
-    {
-      "id": "f3fd7c75-85bf-4293-8db9-5f8d4b5ca6ea",
-      "source_id": "aphrodite",
-      "target_id": "narcissus",
-      "type": "cursed"
     }
   ]
 }
