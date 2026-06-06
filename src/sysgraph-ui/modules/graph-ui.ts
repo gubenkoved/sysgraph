@@ -411,54 +411,17 @@ export const ForceGraphInstance = new ForceGraph<FGNode, FGLink>(
     document.getElementById('graph') as HTMLElement,
 ) as unknown as ForceGraphInstance;
 
-const FIT_TO_VIEW_DURATION_MS = 400;
-const FIT_TO_VIEW_PADDING = 40;
-// never auto-zoom past 100% for small graphs
-const FIT_TO_VIEW_MAX_ZOOM = 1;
+const RECENTER_VIEW_DURATION_MS = 400;
 
-// fit the camera to the current node positions, centering the graph and
-// clamping the zoom so small graphs are not blown up past 100%
-function fitToView(durationMs: number): void {
-    const nodes = ForceGraphInstance.graphData().nodes;
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-
-    for (const n of nodes) {
-        if (n.x == null || n.y == null) continue;
-        if (n.x < minX) minX = n.x;
-        if (n.x > maxX) maxX = n.x;
-        if (n.y < minY) minY = n.y;
-        if (n.y > maxY) maxY = n.y;
-    }
-
-    if (!Number.isFinite(minX)) return;
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-
-    const bboxWidth = maxX - minX + FIT_TO_VIEW_PADDING * 2;
-    const bboxHeight = maxY - minY + FIT_TO_VIEW_PADDING * 2;
-
-    const viewWidth = ForceGraphInstance.width();
-    const viewHeight = ForceGraphInstance.height();
-
-    const zoom = Math.min(
-        FIT_TO_VIEW_MAX_ZOOM,
-        viewWidth / bboxWidth,
-        viewHeight / bboxHeight,
-    );
-
-    ForceGraphInstance.centerAt(centerX, centerY, durationMs);
-    ForceGraphInstance.zoom(zoom, durationMs);
+// recenter the camera on the origin at 100% zoom
+function recenterView(durationMs: number): void {
+    ForceGraphInstance.centerAt(0, 0, durationMs);
+    ForceGraphInstance.zoom(1.0, durationMs);
 }
 
-// request the view to center on / fit the freshly loaded graph: a single,
-// immediately-started pan to the center plus zoom-out (if needed) to fit the
-// whole graph in view; clamped so small graphs are never zoomed past 100%
-export function requestFitToView(): void {
-    requestAnimationFrame(() => fitToView(FIT_TO_VIEW_DURATION_MS));
+// request a recenter on the next animation frame
+export function requestRecenterView(): void {
+    requestAnimationFrame(() => recenterView(RECENTER_VIEW_DURATION_MS));
 }
 
 ForceGraphInstance
