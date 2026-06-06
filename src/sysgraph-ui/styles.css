@@ -269,6 +269,111 @@ md-outlined-button.danger {
   background: rgba(26, 115, 232, 0.06);
 }
 
+/* ── Edit Form (edit mode details panel) ─────────────────── */
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.edit-form-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.edit-form-row > label {
+  flex: 0 0 52px;
+  color: #666;
+  font-size: var(--font-size-sm);
+}
+
+.edit-form-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  background: #fff;
+  color: #222;
+}
+
+.edit-form-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.edit-form-input:disabled {
+  background: #f3f4f6;
+  color: #888;
+}
+
+.edit-form-props {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--spacing-sm);
+}
+
+.edit-form-props-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #666;
+  font-weight: 500;
+}
+
+.edit-prop-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.edit-prop-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.edit-prop-key {
+  flex: 0 0 38%;
+}
+
+.edit-prop-value {
+  flex: 1;
+}
+
+.edit-form-props md-icon-button {
+  --md-icon-button-icon-size: 16px;
+  --md-icon-button-state-layer-height: var(--icon-button-size);
+  --md-icon-button-state-layer-width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  width: var(--icon-button-size);
+  flex-shrink: 0;
+}
+
+.edit-form-delete {
+  margin-top: var(--spacing-sm);
+  padding: 6px 12px;
+  border: 1px solid var(--accent-danger);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--accent-danger);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.edit-form-delete:hover {
+  background: var(--accent-danger);
+  color: #fff;
+}
+
 /* ── Context Menu ────────────────────────────────────────── */
 
 #contextMenu {

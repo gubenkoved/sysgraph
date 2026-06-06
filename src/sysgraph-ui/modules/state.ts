@@ -27,6 +27,14 @@ export interface SearchState {
     currentMatchIndex: number; // -1 = no match focused yet
 }
 
+export type EditSubTool = 'modify' | 'connect';
+
+export interface EditState {
+    active: boolean;
+    subTool: EditSubTool;
+    pendingEdgeSourceId: string | null;
+}
+
 export interface AppState {
     graph: Graph;
     highlight: HighlightState | null;
@@ -34,6 +42,7 @@ export interface AppState {
     adjacencyFilter: AdjacencyFilter | null;
     selection: SelectionState;
     search: SearchState | null;
+    edit: EditState;
 }
 
 function initializeSelectionState(): SelectionState {
@@ -44,6 +53,14 @@ function initializeSelectionState(): SelectionState {
         selectionEnd: null,
         selectionStartCanvas: null,
         selectionEndCanvas: null,
+    };
+}
+
+function initializeEditState(): EditState {
+    return {
+        active: false,
+        subTool: 'modify',
+        pendingEdgeSourceId: null,
     };
 }
 
@@ -58,6 +75,7 @@ export const state: AppState = {
     adjacencyFilter: null,
     selection: initializeSelectionState(),
     search: null,
+    edit: initializeEditState(),
 };
 
 /** Resets all application state to initial defaults. */
@@ -67,6 +85,7 @@ export function resetState(): void {
     state.adjacencyFilter = null;
     state.highlight = null;
     state.search = null;
+    state.edit.pendingEdgeSourceId = null;
 }
 
 export function updateGraph(newGraph: Graph): void {
@@ -91,4 +110,16 @@ export function setAdjacencyFilter(value: AdjacencyFilter | null): void {
 
 export function setCurrentTool(tool: string): void {
     state.currentTool = tool;
+}
+
+export function setEditActive(active: boolean): void {
+    state.edit.active = active;
+}
+
+export function setEditSubTool(subTool: EditSubTool): void {
+    state.edit.subTool = subTool;
+}
+
+export function setPendingEdgeSource(nodeId: string | null): void {
+    state.edit.pendingEdgeSourceId = nodeId;
 }

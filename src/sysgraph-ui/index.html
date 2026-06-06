@@ -23,6 +23,16 @@
       <md-outlined-button id="toolSearch" title="Search">
         <md-icon slot="icon">search</md-icon> Search
       </md-outlined-button>
+      <md-outlined-button id="toolEdit" title="Edit graph (E)">
+        <md-icon slot="icon">edit</md-icon> Edit
+      </md-outlined-button>
+      <div class="toolbar-separator"></div>
+      <md-outlined-button id="editModify" title="Modify: click empty canvas to add a node, click a node to edit it" style="display: none;">
+        <md-icon slot="icon">open_with</md-icon> Modify
+      </md-outlined-button>
+      <md-outlined-button id="editConnect" title="Connect: click a source node, then a target node to create an edge" style="display: none;">
+        <md-icon slot="icon">add_link</md-icon> Connect
+      </md-outlined-button>
       <div class="toolbar-separator"></div>
       <md-outlined-button id="deleteSelected" class="danger" title="Delete selected nodes (del)" style="display: none;">
         <md-icon slot="icon">delete</md-icon> Delete

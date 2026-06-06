@@ -1,12 +1,17 @@
 import { EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE } from './constants.js';
+import { cancelPendingEdge } from './edit-mode.js';
 import { emit } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
-import { setCurrentTool, state } from './state.js';
+import { setCurrentTool, setEditActive, setEditSubTool, state } from './state.js';
+import type { EditSubTool } from './state.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
 const toolRectSelectBtn = document.getElementById('toolRectSelect') as HTMLElement;
 const toolSearchBtn = document.getElementById('toolSearch') as HTMLElement;
+const toolEditBtn = document.getElementById('toolEdit') as HTMLElement;
+const editModifyBtn = document.getElementById('editModify') as HTMLElement;
+const editConnectBtn = document.getElementById('editConnect') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
 const invertSelectionBtn = document.getElementById('invertSelection') as HTMLButtonElement;
@@ -18,7 +23,15 @@ const searchHelpPopover = document.getElementById('searchHelp') as HTMLElement;
 const searchMatchCount = document.getElementById('searchMatchCount') as HTMLElement;
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 
-type Tool = 'pointer' | 'rect-select' | 'search';
+type Tool = 'pointer' | 'rect-select' | 'search' | 'edit';
+
+/** Updates the edit sub-tool buttons' active state and cancels any pending edge. */
+function applyEditSubTool(subTool: EditSubTool): void {
+    setEditSubTool(subTool);
+    cancelPendingEdge();
+    editModifyBtn.classList.toggle('active', subTool === 'modify');
+    editConnectBtn.classList.toggle('active', subTool === 'connect');
+}
 
 /**
  * Activates the given tool and updates toolbar button states.
@@ -29,13 +42,27 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
     toolPointerBtn.classList.toggle('active', tool === 'pointer');
     toolRectSelectBtn.classList.toggle('active', tool === 'rect-select');
     toolSearchBtn.classList.toggle('active', tool === 'search');
+    toolEditBtn.classList.toggle('active', tool === 'edit');
+
+    // edit mode setup / teardown
+    if (tool === 'edit') {
+        setEditActive(true);
+        editModifyBtn.style.display = 'inline-block';
+        editConnectBtn.style.display = 'inline-block';
+        applyEditSubTool('modify');
+    } else {
+        setEditActive(false);
+        cancelPendingEdge();
+        editModifyBtn.style.display = 'none';
+        editConnectBtn.style.display = 'none';
+    }
 
     if (tool === 'rect-select') {
         selectionCanvas.style.pointerEvents = 'auto';
         selectionCanvas.style.cursor = 'crosshair';
     } else {
         selectionCanvas.style.pointerEvents = 'none';
-        canvas.style.cursor = 'default';
+        canvas.style.cursor = tool === 'edit' ? 'crosshair' : 'default';
     }
 
     if (tool === 'search') {
@@ -134,6 +161,18 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         setTool('search', selectionCanvas, canvas);
     });
 
+    toolEditBtn.addEventListener('click', () => {
+        setTool('edit', selectionCanvas, canvas);
+    });
+
+    editModifyBtn.addEventListener('click', () => {
+        applyEditSubTool('modify');
+    });
+
+    editConnectBtn.addEventListener('click', () => {
+        applyEditSubTool('connect');
+    });
+
     deleteBtn.addEventListener('click', async () => {
         await deleteSelectedNodes();
     });
@@ -180,6 +219,10 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             setTool('pointer', selectionCanvas, canvas);
         } else if (event.key === 'r' || event.key === 'R') {
             setTool('rect-select', selectionCanvas, canvas);
+        } else if (event.key === 'e' || event.key === 'E') {
+            setTool('edit', selectionCanvas, canvas);
+        } else if (event.key === 'Escape' && state.edit.active) {
+            cancelPendingEdge();
         } else if (event.key === 'Delete' && state.currentTool === 'rect-select' && state.selection.selectedNodeIds.size > 0) {
             await deleteSelectedNodes();
         }

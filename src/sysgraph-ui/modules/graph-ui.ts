@@ -16,6 +16,14 @@ import {
     UI_FONT_FAMILY,
 } from './constants.js';
 import { showContextMenu } from './context-menu.js';
+import {
+    cancelPendingEdge,
+    createNodeAt,
+    deleteEdge,
+    deleteNode,
+    handleEditNodeClick,
+    startEdgeFrom,
+} from './edit-mode.js';
 import { emit } from './event-bus.js';
 import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph } from './graph.js';
@@ -23,7 +31,7 @@ import { bfs } from './graph-algs.js';
 import { labelHelpers } from './graph-ui-helpers.js';
 import { callFramePost, callFramePre } from './render-hooks.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
-import { getGraph, setAdjacencyFilter, setHighlight, state } from './state.js';
+import { getGraph, setAdjacencyFilter, setEditSubTool, setHighlight, state } from './state.js';
 
 // ---------------------------------------------------------------------------
 // Double-click detection (force-graph has no native onNodeDblClick)
@@ -329,6 +337,32 @@ export function isNodePinned(node: FGNode): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Edit-mode helpers (new-node placement & pointer tracking)
+// ---------------------------------------------------------------------------
+
+/** Graph coordinates to assign to freshly created nodes on next merge. */
+const pendingNodePositions = new Map<string, { x: number; y: number }>();
+
+/** Records where a newly created node should appear (in graph coordinates). */
+export function setPendingNodePosition(id: string, x: number, y: number): void {
+    pendingNodePositions.set(id, { x, y });
+}
+
+/** Last known pointer position in graph coordinates (for the edit rubber band). */
+const pointerGraphPos = { x: 0, y: 0 };
+
+const graphContainerEl = document.getElementById('graph') as HTMLElement;
+graphContainerEl.addEventListener('mousemove', (event) => {
+    const rect = graphContainerEl.getBoundingClientRect();
+    const coords = ForceGraphInstance.screen2GraphCoords(
+        event.clientX - rect.left,
+        event.clientY - rect.top,
+    );
+    pointerGraphPos.x = coords.x;
+    pointerGraphPos.y = coords.y;
+});
+
+// ---------------------------------------------------------------------------
 // ForceGraph instance
 // ---------------------------------------------------------------------------
 
@@ -432,6 +466,11 @@ ForceGraphInstance
             drawCircle(ctx, node.x!, node.y!, r + (SEARCH_PULSE_BASE + pulse) * zoomBoost, 3 * zoomBoost, matchColor);
         }
 
+        if (state.edit.active && state.edit.pendingEdgeSourceId === node.id) {
+            const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * SEARCH_PULSE_FREQ);
+            drawCircle(ctx, node.x!, node.y!, r + (SEARCH_PULSE_BASE + pulse) * zoomBoost, 2.5 * zoomBoost, 'rgb(33, 150, 243)');
+        }
+
         const label = getNodeLabel(node);
         drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, NODE_LABEL_FONT_SIZE, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
 
@@ -464,6 +503,11 @@ ForceGraphInstance
             lastClickTime = now;
         }
 
+        if (state.edit.active) {
+            handleEditNodeClick(node);
+            return;
+        }
+
         if (state.currentTool === 'pointer') {
             if (event?.altKey) {
                 unpinNode(node);
@@ -473,6 +517,15 @@ ForceGraphInstance
     })
     .onLinkClick((link, event) => {
         emit(EVT_LINK_CLICKED, { data: link, shiftKey: event?.shiftKey ?? false });
+    })
+    .onLinkRightClick((link, event) => {
+        event.preventDefault();
+        if (!state.edit.active) return;
+        showContextMenu(event.clientX, event.clientY, [{
+            label: 'Delete edge',
+            icon: 'delete',
+            action: () => deleteEdge(link.id),
+        }]);
     })
     .onNodeDrag(node => {
         pinNode(node);
@@ -492,6 +545,23 @@ ForceGraphInstance
     .onNodeRightClick((node, event) => {
         event.preventDefault();
         const items: import('./context-menu.js').ContextMenuItem[] = [];
+
+        if (state.edit.active) {
+            items.push({
+                label: 'Start edge from here',
+                icon: 'add_link',
+                action: () => {
+                    setEditSubTool('connect');
+                    startEdgeFrom(node.id);
+                },
+            });
+            items.push({
+                label: 'Delete node',
+                icon: 'delete',
+                action: () => deleteNode(node.id),
+            });
+            items.push({ divider: true });
+        }
 
         if (isNodePinned(node)) {
             items.push({ label: 'Unpin', icon: 'keep_off', action: () => unpinNode(node) });
@@ -556,7 +626,20 @@ ForceGraphInstance
             }]);
         }
     })
-    .onBackgroundClick(() => {
+    .onBackgroundClick((event) => {
+        if (state.edit.active) {
+            if (state.edit.subTool === 'connect' && state.edit.pendingEdgeSourceId) {
+                cancelPendingEdge();
+                return;
+            }
+            const rect = graphContainerEl.getBoundingClientRect();
+            const coords = ForceGraphInstance.screen2GraphCoords(
+                event.clientX - rect.left,
+                event.clientY - rect.top,
+            );
+            createNodeAt(coords.x, coords.y);
+            return;
+        }
         if (state.currentTool === 'pointer') {
             emit(EVT_BACKGROUND_CLICK, null);
         } else if (state.currentTool === 'rect-select') {
@@ -566,6 +649,24 @@ ForceGraphInstance
     .autoPauseRedraw(false)
     .onRenderFramePre((ctx, globalScale) => {
         callFramePre();
+
+        // edit-mode rubber band: line from pending edge source to the pointer
+        if (state.edit.active && state.edit.subTool === 'connect' && state.edit.pendingEdgeSourceId) {
+            const source = (ForceGraphInstance.graphData().nodes as FGNode[])
+                .find(n => n.id === state.edit.pendingEdgeSourceId);
+            if (source?.x != null && source.y != null) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(33, 150, 243, 0.8)';
+                ctx.lineWidth = 1.5 / globalScale;
+                ctx.setLineDash([6 / globalScale, 4 / globalScale]);
+                ctx.beginPath();
+                ctx.moveTo(source.x, source.y);
+                ctx.lineTo(pointerGraphPos.x, pointerGraphPos.y);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
         if (!settings.showGrid) return;
 
         const topLeft = ForceGraphInstance.screen2GraphCoords(0, 0);
@@ -746,6 +847,14 @@ function mergeGraphDataIntoForceGraph(nodes: FGNode[], edges: FGLink[]): void {
             Object.assign(existing, node);
             mergedNodes.push(existing);
         } else {
+            const pos = pendingNodePositions.get(node.id);
+            if (pos) {
+                node.x = pos.x;
+                node.y = pos.y;
+                node.fx = pos.x;
+                node.fy = pos.y;
+                pendingNodePositions.delete(node.id);
+            }
             mergedNodes.push(node);
         }
     }
