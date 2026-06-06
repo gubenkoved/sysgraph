@@ -505,11 +505,18 @@ body {
 }
 
 #settingsPane {
-  max-height: calc(100% - 34px);
   position: absolute;
+  /* sit below the top toolbar so the two never overlap on narrow screens */
+  top: calc(var(--spacing-md) + 34px + 2 * var(--spacing-xs) + var(--spacing-md));
+  right: var(--spacing-md);
+  /* leave room for the bottom row (chip height + its offset + a gap) so the
+     pane never slides under the version badge / status chip */
+  max-height: calc(
+    100%
+    - (var(--spacing-md) + 34px + 2 * var(--spacing-xs) + var(--spacing-md))
+    - (var(--spacing-md) + var(--button-height) + var(--spacing-md))
+  );
   overflow-y: auto;
-  right: 10px;
-  top: 10px;
   display: none;
 }
 
@@ -541,6 +548,19 @@ body {
 
 /* ── Misc ────────────────────────────────────────────────── */
 
+/* Shared frosted-glass chip styling for the bottom row controls
+   (zoom indicator, status pill) so they look cohesive. */
+#zoom-indicator,
+#graphInfo {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px var(--shadow-sm);
+  font-family: var(--font-family);
+}
+
 #statusLine {
   position: fixed;
   bottom: var(--spacing-md);
@@ -553,16 +573,12 @@ body {
 }
 
 #graphInfo {
-  font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  height: var(--button-height);
   font-size: var(--font-size-sm);
   color: #555;
-  background: rgba(255, 255, 255, 0.78);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  padding: 3px 12px;
-  box-shadow: 0 1px 4px var(--shadow-xs);
+  padding: 0 var(--spacing-lg);
   white-space: nowrap;
 }
 
@@ -574,14 +590,14 @@ body {
   position: fixed;
   bottom: var(--spacing-sm);
   right: var(--spacing-md);
-  font-size: var(--font-size-xs);
-  color: rgba(0, 0, 0, 0.3);
-  pointer-events: none;
   z-index: var(--z-version-badge);
-  font-family: var(--font-family);
+  pointer-events: none;
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  color: rgba(0, 0, 0, 0.3);
 }
 
 #standalone-badge {
@@ -606,12 +622,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0;
-  background: rgba(255, 255, 255, 0.78);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 12px var(--shadow-sm);
+  height: var(--button-height);
   padding: 0 var(--spacing-xs);
 }
 
