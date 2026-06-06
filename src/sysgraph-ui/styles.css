@@ -45,28 +45,30 @@
   --button-height: 28px;
   --icon-button-size: 24px;
 
-  /* tweakpane theme */
-  --tp-base-background-color: hsla(230, 5%, 90%, 1.00);
-  --tp-base-shadow-color: hsla(0, 0%, 0%, 0.10);
-  --tp-button-background-color: hsla(230, 7%, 75%, 1.00);
-  --tp-button-background-color-active: hsla(230, 7%, 60%, 1.00);
-  --tp-button-background-color-focus: hsla(230, 7%, 65%, 1.00);
-  --tp-button-background-color-hover: hsla(230, 7%, 70%, 1.00);
-  --tp-button-foreground-color: hsla(230, 10%, 30%, 1.00);
-  --tp-container-background-color: hsla(230, 15%, 30%, 0.20);
-  --tp-container-background-color-active: hsla(230, 15%, 30%, 0.32);
-  --tp-container-background-color-focus: hsla(230, 15%, 30%, 0.28);
-  --tp-container-background-color-hover: hsla(230, 15%, 30%, 0.24);
-  --tp-container-foreground-color: hsla(230, 10%, 30%, 1.00);
-  --tp-groove-foreground-color: hsla(230, 15%, 30%, 0.10);
-  --tp-input-background-color: hsla(230, 15%, 30%, 0.10);
-  --tp-input-background-color-active: hsla(230, 15%, 30%, 0.22);
-  --tp-input-background-color-focus: hsla(230, 15%, 30%, 0.18);
-  --tp-input-background-color-hover: hsla(230, 15%, 30%, 0.14);
-  --tp-input-foreground-color: hsla(230, 10%, 30%, 1.00);
-  --tp-label-foreground-color: hsla(230, 10%, 30%, 0.70);
-  --tp-monitor-background-color: hsla(230, 15%, 30%, 0.10);
-  --tp-monitor-foreground-color: hsla(230, 10%, 30%, 0.50);
+  /* tweakpane theme — aligned with the app's light, blue-accented panels.
+     The pane's own card chrome (frosted bg, border, radius, shadow) is
+     provided by #settingsPane, so the tweakpane base stays transparent. */
+  --tp-base-background-color: hsla(221, 40%, 98%, 0.00);
+  --tp-base-shadow-color: hsla(221, 40%, 20%, 0.10);
+  --tp-button-background-color: hsla(221, 45%, 92%, 1.00);
+  --tp-button-background-color-active: hsla(221, 60%, 80%, 1.00);
+  --tp-button-background-color-focus: hsla(221, 55%, 84%, 1.00);
+  --tp-button-background-color-hover: hsla(221, 50%, 88%, 1.00);
+  --tp-button-foreground-color: hsla(221, 35%, 25%, 1.00);
+  --tp-container-background-color: hsla(221, 30%, 50%, 0.08);
+  --tp-container-background-color-active: hsla(221, 35%, 50%, 0.16);
+  --tp-container-background-color-focus: hsla(221, 35%, 50%, 0.14);
+  --tp-container-background-color-hover: hsla(221, 30%, 50%, 0.12);
+  --tp-container-foreground-color: hsla(221, 25%, 28%, 1.00);
+  --tp-groove-foreground-color: hsla(221, 30%, 50%, 0.10);
+  --tp-input-background-color: hsla(221, 30%, 50%, 0.08);
+  --tp-input-background-color-active: hsla(221, 45%, 50%, 0.20);
+  --tp-input-background-color-focus: hsla(221, 45%, 50%, 0.16);
+  --tp-input-background-color-hover: hsla(221, 35%, 50%, 0.12);
+  --tp-input-foreground-color: hsla(221, 35%, 25%, 1.00);
+  --tp-label-foreground-color: hsla(221, 20%, 35%, 0.75);
+  --tp-monitor-background-color: hsla(221, 30%, 50%, 0.08);
+  --tp-monitor-foreground-color: hsla(221, 25%, 30%, 0.60);
 }
 
 /* ── Reset & Base ────────────────────────────────────────── */
@@ -501,9 +503,13 @@ body {
 .tp-rotv {
   /* biome-ignore lint/complexity/noImportantStyles: needed to override Tweakpane's built-in font */
   font-family: var(--font-family) !important;
-  opacity: 0.9;
+  /* biome-ignore lint/complexity/noImportantStyles: override Tweakpane's default rounding to match app cards */
+  --tp-base-border-radius: var(--radius-md) !important;
+  --tp-blade-border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
 }
 
+/* Frosted-glass card to match the details panel and bottom-row chips. */
 #settingsPane {
   position: absolute;
   /* sit below the top toolbar so the two never overlap on narrow screens */
@@ -518,6 +524,27 @@ body {
   );
   overflow-y: auto;
   display: none;
+  padding: var(--spacing-xs);
+  background: var(--bg-panel);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px var(--shadow-sm);
+}
+
+/* Pane title ("parameters") styled as a subtle uppercase header. */
+#settingsPane > .tp-rotv > .tp-rotv_b {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  color: var(--accent-primary);
+}
+
+/* Folder titles ("d3 forces settings", "display options", …). */
+#settingsPane .tp-fldv_b {
+  font-weight: 500;
 }
 
 #settingsPane.open {
@@ -536,8 +563,8 @@ body {
   min-width: 18px;
   padding: 1px 6px;
   border-radius: var(--radius-pill, 999px);
-  background: hsla(230, 15%, 30%, 0.12);
-  color: hsla(230, 10%, 30%, 0.85);
+  background: hsla(221, 35%, 45%, 0.14);
+  color: hsla(221, 30%, 30%, 0.90);
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
