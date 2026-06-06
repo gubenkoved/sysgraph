@@ -684,6 +684,20 @@ body {
   font-weight: 500;
 }
 
+/* Color-picker popup. The pane's base background is intentionally transparent
+   (the frosted card chrome lives on #settingsPane), but the picker popover
+   floats over other controls and needs its own opaque surface so it doesn't
+   render see-through. */
+#settingsPane .tp-popv,
+#settingsPane .tp-colpv {
+  background-color: var(--bg-panel);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 12px var(--shadow-sm);
+}
+
 #settingsPane.open {
   display: block;
 }
