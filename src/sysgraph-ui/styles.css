@@ -27,6 +27,7 @@
   /* surfaces & text (theme-aware — overridden in [data-theme="dark"]) */
   --bg-canvas: #ffffff;
   --bg-pill: rgba(255, 255, 255, 0.78);
+  --bg-glass-light: rgba(255, 255, 255, 0.45);
   --bg-input: #ffffff;
   --bg-input-disabled: #f3f4f6;
   --active-button-bg: #d0e1ff;
@@ -106,6 +107,7 @@
   /* surfaces & text */
   --bg-canvas: #14171c;
   --bg-pill: rgba(30, 34, 42, 0.82);
+  --bg-glass-light: rgba(30, 34, 42, 0.45);
   --bg-input: rgba(255, 255, 255, 0.06);
   --bg-input-disabled: rgba(255, 255, 255, 0.03);
   --active-button-bg: rgba(91, 141, 239, 0.28);
@@ -344,6 +346,103 @@ body {
   height: 100%;
   position: relative;
   background: var(--bg-canvas);
+}
+
+/* ── Quick-start (empty-graph) panel ─────────────────────── */
+
+.quick-start {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--z-details-panel);
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-lg);
+  padding: 28px 32px;
+  /* lightweight liquid-glass container */
+  background: var(--bg-glass-light);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 12px var(--shadow-sm);
+  /* let canvas interactions pass through the empty area around the panel */
+  pointer-events: none;
+}
+
+.quick-start.visible {
+  display: flex;
+}
+
+.quick-start .quick-start-title {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  pointer-events: none;
+}
+
+.quick-start .quick-start-close {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  --md-icon-button-icon-size: 18px;
+  width: 28px;
+  height: 28px;
+  pointer-events: auto;
+}
+
+.quick-start .quick-start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  /* re-enable interaction for the buttons themselves */
+  pointer-events: auto;
+}
+
+.quick-start .quick-start-action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.quick-start .quick-start-action md-outlined-icon-button {
+  /* icon button is purely visual; the whole row is the click target */
+  pointer-events: none;
+  /* subtle outline that blends with the glass background */
+  --md-outlined-icon-button-outline-color: var(--border-subtle);
+  --md-outlined-icon-button-icon-color: var(--icon-muted);
+  --md-outlined-icon-button-container-shape: var(--radius-sm);
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.quick-start .quick-start-action:hover md-outlined-icon-button,
+.quick-start .quick-start-action:focus-visible md-outlined-icon-button {
+  --md-outlined-icon-button-outline-color: var(--accent-primary);
+  --md-outlined-icon-button-icon-color: var(--accent-primary);
+  background: var(--active-button-bg);
+  border-radius: var(--radius-sm);
+}
+
+.quick-start .quick-start-label {
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.quick-start .quick-start-action:hover .quick-start-label,
+.quick-start .quick-start-action:focus-visible .quick-start-label {
+  color: var(--accent-primary);
 }
 
 /* ── Details Panel ───────────────────────────────────────── */

@@ -1,6 +1,6 @@
 import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
 import { showContextMenu } from './context-menu.js';
 import { loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -112,6 +112,7 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
         emit(EVT_SEARCH_CHANGED, '');
     }
 
+    emit(EVT_TOOL_CHANGED, null);
     updateGraphInfo();
 }
 

@@ -13,6 +13,7 @@ export const EVT_NODE_CLICKED = 'node-clicked';
 export const EVT_LINK_CLICKED = 'link-clicked';
 export const EVT_BACKGROUND_CLICK = 'background-click';
 export const EVT_THEME_CHANGED = 'theme-changed';
+export const EVT_TOOL_CHANGED = 'tool-changed';
 
 // ── Command names ───────────────────────────────────────────
 export const CMD_RELOAD = 'reload-graph';

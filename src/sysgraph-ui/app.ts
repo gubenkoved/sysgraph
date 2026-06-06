@@ -2,12 +2,13 @@ import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } fro
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI } from './modules/graph-ui.js';
+import { initQuickStart } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { getGraph, isGraphDirty, resetState, setGraphDirty, setSearch, state, updateGraph } from './modules/state.js';
 import { initTheme } from './modules/theme.js';
-import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
+import { initToolbar, setTool, updateGraphInfo } from './modules/toolbar.js';
 import { dismissError, showError } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
 import './modules/details-panel.js';
@@ -22,9 +23,11 @@ import {CMD_EXPORT, CMD_IMPORT,
     STANDALONE,
 } from './modules/constants.js';
 import '@material/web/button/filled-tonal-button.js';
+import '@material/web/button/outlined-button.js';
 import '@material/web/button/text-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
+import '@material/web/iconbutton/outlined-icon-button.js';
 import '@material/web/textfield/outlined-text-field.js';
 
 // --- cached DOM elements ---
@@ -183,6 +186,7 @@ registerHandler(CMD_RELOAD, async () => {
 // --- initialize selection overlay, toolbar & zoom indicator ---
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
+initQuickStart(() => setTool('edit', selectionCanvas, canvas));
 initZoomIndicator();
 
 // --- guard against losing unexported graph data on close/reload ---
