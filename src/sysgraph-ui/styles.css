@@ -24,6 +24,23 @@
   --accent-info: #1a73e8;
   --accent-danger: #dc2626;
 
+  /* surfaces & text (theme-aware — overridden in [data-theme="dark"]) */
+  --bg-canvas: #ffffff;
+  --bg-pill: rgba(255, 255, 255, 0.78);
+  --bg-input: #ffffff;
+  --bg-input-disabled: #f3f4f6;
+  --active-button-bg: #d0e1ff;
+  --hover-overlay: rgba(0, 0, 0, 0.06);
+  --text-primary: #333333;
+  --text-secondary: #555555;
+  --text-muted: #666666;
+  --text-faint: rgba(0, 0, 0, 0.3);
+  --icon-muted: #5f6368;
+  --icon-default: #444b54;
+  --badge-accent: rgb(30, 100, 200);
+  --badge-accent-bg: rgba(30, 100, 200, 0.1);
+  --badge-accent-border: rgba(30, 100, 200, 0.35);
+
   /* spacing */
   --spacing-xs: 4px;
   --spacing-sm: 6px;
@@ -71,6 +88,73 @@
   --tp-monitor-foreground-color: hsla(221, 25%, 30%, 0.60);
 }
 
+/* ── Dark theme ──────────────────────────────────────────── */
+
+:root[data-theme="dark"] {
+  /* colors */
+  --bg-toolbar: rgba(30, 34, 42, 0.95);
+  --bg-panel: rgba(30, 34, 42, 0.97);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.12);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --shadow-xs: rgba(0, 0, 0, 0.40);
+  --shadow-sm: rgba(0, 0, 0, 0.50);
+  --shadow-md: rgba(0, 0, 0, 0.60);
+  --accent-primary: #5b8def;
+  --accent-info: #5b9bf3;
+
+  /* surfaces & text */
+  --bg-canvas: #14171c;
+  --bg-pill: rgba(30, 34, 42, 0.82);
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-input-disabled: rgba(255, 255, 255, 0.03);
+  --active-button-bg: rgba(91, 141, 239, 0.28);
+  --hover-overlay: rgba(255, 255, 255, 0.08);
+  --text-primary: #e4e6eb;
+  --text-secondary: #b0b3b8;
+  --text-muted: #9498a0;
+  --text-faint: rgba(255, 255, 255, 0.30);
+  --icon-muted: #b0b3b8;
+  --icon-default: #c5c8ce;
+  --badge-accent: rgb(120, 175, 255);
+  --badge-accent-bg: rgba(120, 175, 255, 0.12);
+  --badge-accent-border: rgba(120, 175, 255, 0.40);
+
+  /* Material Web (MD3) system colors — dark variants so all md-* components
+     (icon buttons, text field) render legibly on dark surfaces. */
+  --md-sys-color-primary: #5b8def;
+  --md-sys-color-on-primary: #0b1b33;
+  --md-sys-color-surface: #1e222a;
+  --md-sys-color-on-surface: #e4e6eb;
+  --md-sys-color-on-surface-variant: #c5c8ce;
+  --md-sys-color-surface-container-highest: #2a2f38;
+  --md-sys-color-outline: #8a8f98;
+  --md-sys-color-outline-variant: #3a3f48;
+
+  /* tweakpane — dark variants */
+  --tp-base-background-color: hsla(220, 15%, 20%, 0.00);
+  --tp-base-shadow-color: hsla(220, 20%, 5%, 0.40);
+  --tp-button-background-color: hsla(220, 15%, 30%, 1.00);
+  --tp-button-background-color-active: hsla(220, 30%, 45%, 1.00);
+  --tp-button-background-color-focus: hsla(220, 25%, 40%, 1.00);
+  --tp-button-background-color-hover: hsla(220, 20%, 35%, 1.00);
+  --tp-button-foreground-color: hsla(220, 15%, 90%, 1.00);
+  --tp-container-background-color: hsla(220, 15%, 60%, 0.10);
+  --tp-container-background-color-active: hsla(220, 20%, 60%, 0.20);
+  --tp-container-background-color-focus: hsla(220, 20%, 60%, 0.16);
+  --tp-container-background-color-hover: hsla(220, 15%, 60%, 0.14);
+  --tp-container-foreground-color: hsla(220, 15%, 85%, 1.00);
+  --tp-groove-foreground-color: hsla(220, 15%, 60%, 0.12);
+  --tp-input-background-color: hsla(220, 15%, 60%, 0.10);
+  --tp-input-background-color-active: hsla(220, 30%, 60%, 0.24);
+  --tp-input-background-color-focus: hsla(220, 30%, 60%, 0.20);
+  --tp-input-background-color-hover: hsla(220, 15%, 60%, 0.16);
+  --tp-input-foreground-color: hsla(220, 15%, 90%, 1.00);
+  --tp-label-foreground-color: hsla(220, 10%, 75%, 0.85);
+  --tp-monitor-background-color: hsla(220, 15%, 60%, 0.10);
+  --tp-monitor-foreground-color: hsla(220, 15%, 80%, 0.70);
+}
+
 /* ── Reset & Base ────────────────────────────────────────── */
 
 html,
@@ -93,7 +177,7 @@ body {
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs);
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--bg-pill);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
@@ -124,6 +208,7 @@ body {
 /* low specificity (:where) so later area-scoped md-icon-button rules win */
 :where(#toolbar) md-icon-button {
   --md-icon-button-icon-size: 24px;
+  --md-icon-button-icon-color: var(--icon-default);
   --md-icon-button-state-layer-height: 34px;
   --md-icon-button-state-layer-width: 34px;
   height: 34px;
@@ -133,7 +218,7 @@ body {
 
 #toolbar md-icon-button.active {
   --md-icon-button-icon-color: var(--accent-primary);
-  background: #d0e1ff;
+  background: var(--active-button-bg);
 }
 
 #toolbar md-icon-button.danger {
@@ -156,7 +241,7 @@ body {
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--bg-pill);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
@@ -165,7 +250,7 @@ body {
 }
 
 .search-bar-icon {
-  color: #5f6368;
+  color: var(--icon-muted);
   font-size: 20px;
   margin-left: var(--spacing-xs);
 }
@@ -186,9 +271,9 @@ body {
   transform: translateY(-50%);
   margin-left: var(--spacing-sm);
   font-size: var(--font-size-sm);
-  color: #555;
+  color: var(--text-secondary);
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--bg-pill);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
@@ -258,6 +343,7 @@ body {
   width: 100%;
   height: 100%;
   position: relative;
+  background: var(--bg-canvas);
 }
 
 /* ── Details Panel ───────────────────────────────────────── */
@@ -305,7 +391,7 @@ body {
 .details-panel .panel-title {
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -350,7 +436,7 @@ body {
 
 .edit-form-row > label {
   flex: 0 0 52px;
-  color: #666;
+  color: var(--text-muted);
   font-size: var(--font-size-sm);
 }
 
@@ -362,8 +448,8 @@ body {
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  background: #fff;
-  color: #222;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .edit-form-input:focus {
@@ -372,8 +458,8 @@ body {
 }
 
 .edit-form-input:disabled {
-  background: #f3f4f6;
-  color: #888;
+  background: var(--bg-input-disabled);
+  color: var(--text-muted);
 }
 
 .edit-form-props {
@@ -388,7 +474,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #666;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -426,7 +512,7 @@ body {
   padding: 6px 12px;
   border: 1px solid var(--accent-danger);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--bg-input);
   color: var(--accent-danger);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -467,7 +553,7 @@ body {
 }
 
 .context-menu-item:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-overlay);
 }
 
 .context-menu-divider {
@@ -579,7 +665,7 @@ body {
    (zoom indicator, status pill) so they look cohesive. */
 #zoom-indicator,
 #graphInfo {
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--bg-pill);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
@@ -604,7 +690,7 @@ body {
   align-items: center;
   height: var(--button-height);
   font-size: var(--font-size-sm);
-  color: #555;
+  color: var(--text-secondary);
   padding: 0 var(--spacing-lg);
   white-space: nowrap;
 }
@@ -624,7 +710,7 @@ body {
   gap: var(--spacing-xs);
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
-  color: rgba(0, 0, 0, 0.3);
+  color: var(--text-faint);
 }
 
 #standalone-badge {
@@ -632,9 +718,9 @@ body {
   letter-spacing: 0.05em;
   font-size: calc(var(--font-size-xs) * 0.85);
   font-weight: 600;
-  color: rgb(30, 100, 200);
-  background: rgba(30, 100, 200, 0.1);
-  border: 1px solid rgba(30, 100, 200, 0.35);
+  color: var(--badge-accent);
+  background: var(--badge-accent-bg);
+  border: 1px solid var(--badge-accent-border);
   border-radius: var(--radius-sm);
   padding: 0 var(--spacing-xs);
 }
@@ -664,7 +750,7 @@ body {
 #zoomLevel {
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
-  color: #555;
+  color: var(--text-secondary);
   min-width: 34px;
   text-align: center;
   user-select: none;
@@ -675,11 +761,11 @@ body {
 }
 
 #zoomLevel:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-overlay);
 }
 
 .muted {
-  color: #666;
+  color: var(--text-muted);
 }
 
 hr {

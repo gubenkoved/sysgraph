@@ -1,11 +1,14 @@
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, STANDALONE } from './constants.js';
+import iconLight from '../icon.png';
+import iconDark from '../icon-dark.png';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, STANDALONE } from './constants.js';
 import { showContextMenu } from './context-menu.js';
 import { loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
-import { emit, handle } from './event-bus.js';
+import { emit, handle, on } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
 import { setCurrentTool, setEditActive, setEditSubTool, state } from './state.js';
+import { getTheme, toggleTheme } from './theme.js';
 import { showError } from './util.js';
 
 // cached DOM elements
@@ -26,6 +29,8 @@ const loadExampleBtn = document.getElementById('loadExample') as HTMLElement;
 const exportDataBtn = document.getElementById('exportData') as HTMLElement;
 const clearGraphBtn = document.getElementById('clearGraph') as HTMLElement;
 const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLElement;
+const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
+const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
 const settingsPane = document.getElementById('settingsPane') as HTMLElement;
 const importFileInput = document.getElementById('importFile') as HTMLInputElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
@@ -38,6 +43,18 @@ const searchMatchCount = document.getElementById('searchMatchCount') as HTMLElem
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 
 type Tool = 'pointer' | 'rect-select' | 'search' | 'edit';
+
+/** Reflects the current theme on the toggle button's icon. */
+function updateThemeIcon(): void {
+    const dark = getTheme() === 'dark';
+    const icon = themeToggleBtn.querySelector('md-icon');
+    if (icon) {
+        icon.textContent = dark ? 'light_mode' : 'dark_mode';
+    }
+    if (toolbarLogo) {
+        toolbarLogo.src = dark ? iconDark : iconLight;
+    }
+}
 
 /** Updates the edit sub-tool buttons' active state and cancels any pending edge. */
 function applyEditSubTool(subTool: EditSubTool): void {
@@ -297,6 +314,13 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         const open = settingsPane.classList.toggle('open');
         toggleSettingsBtn.classList.toggle('active', open);
     });
+
+    // dark mode toggle
+    themeToggleBtn.addEventListener('click', () => {
+        toggleTheme();
+    });
+    on(EVT_THEME_CHANGED, updateThemeIcon);
+    updateThemeIcon();
 
     // keyboard shortcuts
     document.addEventListener('keydown', async (event) => {

@@ -12,6 +12,7 @@ export const EVT_SEARCH_CYCLE = 'search-cycle';
 export const EVT_NODE_CLICKED = 'node-clicked';
 export const EVT_LINK_CLICKED = 'link-clicked';
 export const EVT_BACKGROUND_CLICK = 'background-click';
+export const EVT_THEME_CHANGED = 'theme-changed';
 
 // ── Command names ───────────────────────────────────────────
 export const CMD_RELOAD = 'reload-graph';
@@ -61,6 +62,12 @@ export const GRID_LINE_COLOR = 'rgba(0, 0, 0, 0.15)';
 export const GRID_LINE_COLOR_UNSTRESSED = 'rgba(0, 0, 0, 0.07)';
 export const GRID_CENTER_COLOR = 'rgba(255, 0, 0, 0.3)';
 export const GRID_CENTER_COLOR_UNSTRESSED = 'rgba(255, 0, 0, 0.1)';
+
+// dark-theme grid variants (lighter lines on a dark canvas)
+export const GRID_LINE_COLOR_DARK = 'rgba(255, 255, 255, 0.12)';
+export const GRID_LINE_COLOR_UNSTRESSED_DARK = 'rgba(255, 255, 255, 0.05)';
+export const GRID_CENTER_COLOR_DARK = 'rgba(255, 80, 80, 0.45)';
+export const GRID_CENTER_COLOR_UNSTRESSED_DARK = 'rgba(255, 80, 80, 0.18)';
 
 // ── Search & highlight ──────────────────────────────────────
 export const SEARCH_NOT_MATCHING_OPACITY = 0.5;

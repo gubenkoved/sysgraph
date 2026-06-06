@@ -5,8 +5,8 @@ import { ColorScale } from './color-scale.js';
 import {
     D3_CHARGE_STRENGTH,
     D3_COLLISION_BASE_RADIUS, D3_COLLISION_ITERATIONS,D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,EVT_BACKGROUND_CLICK,EVT_LINK_CLICKED,
-    EVT_NODE_CLICKED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_UNSTRESSED,GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
-    GRID_LINE_COLOR, GRID_LINE_COLOR_UNSTRESSED,
+    EVT_NODE_CLICKED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_DARK, GRID_CENTER_COLOR_UNSTRESSED, GRID_CENTER_COLOR_UNSTRESSED_DARK,GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
+    GRID_LINE_COLOR, GRID_LINE_COLOR_DARK, GRID_LINE_COLOR_UNSTRESSED, GRID_LINE_COLOR_UNSTRESSED_DARK,
     GRID_SPACING, MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
     MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,nodePointerRadius,
     nodeRadius, SCORE_EPSILON,
@@ -32,6 +32,7 @@ import { labelHelpers } from './graph-ui-helpers.js';
 import { callFramePost, callFramePre } from './render-hooks.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
 import { getGraph, setAdjacencyFilter, setEditSubTool, setHighlight, state } from './state.js';
+import { getTheme } from './theme.js';
 
 // ---------------------------------------------------------------------------
 // Double-click detection (force-graph has no native onNodeDblClick)
@@ -223,6 +224,20 @@ function darkerColor(color: string): string {
     const col = d3.color(color);
     if (!col) return color;
     return col.darker().toString();
+}
+
+function brighterColor(color: string): string {
+    const col = d3.color(color);
+    if (!col) return color;
+    return col.brighter().toString();
+}
+
+/**
+ * Node outline color: darker than the fill in light mode, lighter in dark mode
+ * so the outline stays visible against the dark canvas.
+ */
+function nodeOutlineColor(color: string): string {
+    return getTheme() === 'dark' ? brighterColor(color) : darkerColor(color);
 }
 
 // ---------------------------------------------------------------------------
@@ -445,7 +460,7 @@ ForceGraphInstance
 
         ctx.beginPath();
         (ctx as unknown as Record<string, unknown>).strokeWidth = 1;
-        ctx.strokeStyle = darkerColor(fillStyle);
+        ctx.strokeStyle = nodeOutlineColor(fillStyle);
         ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
         ctx.stroke();
 
@@ -472,7 +487,7 @@ ForceGraphInstance
         }
 
         const label = getNodeLabel(node);
-        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, NODE_LABEL_FONT_SIZE, colorAdjustAlpha('rgba(0,0,0,0.75)', alphaMultiplier));
+        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, NODE_LABEL_FONT_SIZE, colorAdjustAlpha(getTheme() === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier));
 
         // show hidden nodes counters in adjacency filtered mode
         if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
@@ -689,8 +704,14 @@ ForceGraphInstance
         ctx.save();
         ctx.lineWidth = lw;
 
+        const dark = getTheme() === 'dark';
+        const gridLineColor = dark ? GRID_LINE_COLOR_DARK : GRID_LINE_COLOR;
+        const gridLineColorUnstressed = dark ? GRID_LINE_COLOR_UNSTRESSED_DARK : GRID_LINE_COLOR_UNSTRESSED;
+        const gridCenterColor = dark ? GRID_CENTER_COLOR_DARK : GRID_CENTER_COLOR;
+        const gridCenterColorUnstressed = dark ? GRID_CENTER_COLOR_UNSTRESSED_DARK : GRID_CENTER_COLOR_UNSTRESSED;
+
         if (drawGrid) {
-            ctx.strokeStyle = state.highlight ? GRID_LINE_COLOR_UNSTRESSED : GRID_LINE_COLOR;
+            ctx.strokeStyle = state.highlight ? gridLineColorUnstressed : gridLineColor;
 
             ctx.beginPath();
             for (let gx = xMin; gx <= xMax; gx += spacing) {
@@ -705,7 +726,7 @@ ForceGraphInstance
             ctx.stroke();
         }
 
-        ctx.strokeStyle = state.highlight ? GRID_CENTER_COLOR_UNSTRESSED : GRID_CENTER_COLOR;
+        ctx.strokeStyle = state.highlight ? gridCenterColorUnstressed : gridCenterColor;
         ctx.lineWidth = lw * 1.5;
         ctx.beginPath();
         ctx.moveTo(-halfBig, 0);

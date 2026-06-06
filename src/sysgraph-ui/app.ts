@@ -6,6 +6,7 @@ import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
 import { updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { getGraph, resetState, setSearch, state, updateGraph } from './modules/state.js';
+import { initTheme } from './modules/theme.js';
 import { initToolbar, updateGraphInfo } from './modules/toolbar.js';
 import { dismissError, showError } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
@@ -35,6 +36,9 @@ if (STANDALONE) {
     const standaloneBadge = document.getElementById('standalone-badge');
     if (standaloneBadge) standaloneBadge.hidden = false;
 }
+
+// --- theme (apply persisted choice before the UI renders) ---
+initTheme();
 
 // --- event wiring ---
 on(EVT_GRAPH_UPDATED, async () => {
