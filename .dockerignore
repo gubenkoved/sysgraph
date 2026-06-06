@@ -1,5 +1,6 @@
 node_modules/
 src/sysgraph/dist/
+src/sysgraph/temp/
 src/sysgraph-ui/public/
 .venv/
 .idea/

@@ -5,9 +5,11 @@ CUR_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$CUR_DIR/.." && pwd)"
 
 UPDATE_LATEST=false
+NO_CACHE=false
 for arg in "$@"; do
   case "$arg" in
     --update-latest) UPDATE_LATEST=true ;;
+    --no-cache) NO_CACHE=true ;;
   esac
 done
 
@@ -21,7 +23,12 @@ fi
 
 echo "Publishing sysgraph version: $VERSION"
 
-"$CUR_DIR/build-image.sh" "$VERSION"
+BUILD_ARGS=()
+if [ "$NO_CACHE" = true ]; then
+  BUILD_ARGS+=(--no-cache)
+fi
+
+"$CUR_DIR/build-image.sh" "$VERSION" "${BUILD_ARGS[@]}"
 
 docker tag "sysgraph:$VERSION" "gubenkoved/sysgraph:$VERSION"
 docker push "gubenkoved/sysgraph:$VERSION"

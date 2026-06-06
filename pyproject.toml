@@ -45,6 +45,9 @@ version = { attr = "sysgraph.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["sysgraph*"]
+# keep dev scratch (temp/) and tests out of the published wheel
+exclude = ["sysgraph.temp*", "sysgraph.tests*"]
 
 [tool.setuptools.package-data]
 sysgraph = ["dist/*", "dist/**/*"]
