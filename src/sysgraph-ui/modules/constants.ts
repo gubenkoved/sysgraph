@@ -64,8 +64,8 @@ export const GRID_CENTER_COLOR = 'rgba(255, 0, 0, 0.3)';
 export const GRID_CENTER_COLOR_UNSTRESSED = 'rgba(255, 0, 0, 0.1)';
 
 // dark-theme grid variants (lighter lines on a dark canvas)
-export const GRID_LINE_COLOR_DARK = 'rgba(255, 255, 255, 0.12)';
-export const GRID_LINE_COLOR_UNSTRESSED_DARK = 'rgba(255, 255, 255, 0.05)';
+export const GRID_LINE_COLOR_DARK = 'rgba(255, 255, 255, 0.28)';
+export const GRID_LINE_COLOR_UNSTRESSED_DARK = 'rgba(255, 255, 255, 0.12)';
 export const GRID_CENTER_COLOR_DARK = 'rgba(255, 80, 80, 0.45)';
 export const GRID_CENTER_COLOR_UNSTRESSED_DARK = 'rgba(255, 80, 80, 0.18)';
 
