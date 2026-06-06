@@ -431,6 +431,29 @@ function rebuildPresetsFolder(): void {
 rebuildPresetsFolder();
 
 /**
+ * Attaches Plotly-style "double-click to isolate" behaviour to a filter toggle.
+ * Double-clicking enables ONLY this type (disabling all others in the group);
+ * double-clicking again when already isolated re-enables all types.
+ */
+function attachIsolateOnDoubleClick(
+    binding: { element: HTMLElement },
+    filters: Record<string, boolean>,
+    allKeys: Iterable<string>,
+    key: string,
+): void {
+    const element = binding.element;
+    element.addEventListener('dblclick', () => {
+        const keys = [...allKeys];
+        const isIsolated = keys.every((k) => (k === key ? filters[k] !== false : filters[k] === false));
+        for (const k of keys) {
+            filters[k] = isIsolated ? true : k === key;
+        }
+        pane.refresh();
+        emit(EVT_FILTERS_UPDATED, null);
+    });
+}
+
+/**
  * Rebuilds the dynamic filter and colour panes in the settings UI based on the
  * current graph's node/edge types.
  */
@@ -467,18 +490,22 @@ export function updateDynamicGraphPanes(): void {
         if (!(key in nodeFilters)) {
             nodeFilters[key] = true;
         }
-        nodeFiltersFolder.addBinding(nodeFilters as unknown as Record<string, unknown>, key).on('change', () => {
+        const binding = nodeFiltersFolder.addBinding(nodeFilters as unknown as Record<string, unknown>, key);
+        binding.on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
+        attachIsolateOnDoubleClick(binding, nodeFilters, nodeTypes, key);
     }
 
     for (const key of edgeTypes) {
         if (!(key in edgeFilters)) {
             edgeFilters[key] = true;
         }
-        edgeFiltersFolder.addBinding(edgeFilters as unknown as Record<string, unknown>, key).on('change', () => {
+        const binding = edgeFiltersFolder.addBinding(edgeFilters as unknown as Record<string, unknown>, key);
+        binding.on('change', () => {
             emit(EVT_FILTERS_UPDATED, null);
         });
+        attachIsolateOnDoubleClick(binding, edgeFilters, edgeTypes, key);
     }
 
     for (const key of nodeTypes) {
