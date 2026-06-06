@@ -1,16 +1,12 @@
 import type { FpsGraphBladeApi } from '@tweakpane/plugin-essentials';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-import type { FolderApi, ListBladeApi } from 'tweakpane';
+import type { FolderApi } from 'tweakpane';
 import { Pane } from 'tweakpane';
-import {CMD_EXPORT, CMD_IMPORT,
-    CMD_LOAD_EXAMPLE,
-    CMD_RELOAD,
-    EVT_CLEAR_CLICKED, EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
+import {
+    EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
     EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
-    STANDALONE,
 } from './constants.js';
-import { loadExamplesManifest } from './data-io.js';
-import { emit, handle } from './event-bus.js';
+import { emit } from './event-bus.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { setFrameHooks } from './render-hooks.js';
 import type { SettingsShape } from './settings.js';
@@ -41,16 +37,7 @@ function getRequiredElement(id: string): HTMLElement {
     return element;
 }
 
-function getRequiredInputElement(id: string): HTMLInputElement {
-    const element = document.getElementById(id);
-    if (!(element instanceof HTMLInputElement)) {
-        throw new Error(`Missing input element: ${id}`);
-    }
-    return element;
-}
-
 const settingsPaneElement = getRequiredElement('settingsPane');
-const importFileInput = getRequiredInputElement('importFile');
 
 const pane = new Pane({
     title: 'parameters',
@@ -217,21 +204,6 @@ function syncStaticSettingsPane(): void {
 
 const actionsFolder = pane.addFolder({ title: 'actions', expanded: true });
 
-// "reload sysgraph" pulls a fresh graph from the backend — unavailable in
-// standalone builds, which never contact the backend.
-if (!STANDALONE) {
-    actionsFolder.addButton({ title: 'reload sysgraph' }).on('click', async () => {
-        try {
-            await handle(CMD_RELOAD);
-        } catch (err) {
-            console.error('reload failed:', err);
-            showError(`Reload failed: ${getErrorMessage(err)}`);
-        }
-    });
-
-    actionsFolder.addBlade({ view: 'separator' });
-}
-
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
     for (const node of graphData.nodes) {
@@ -245,73 +217,6 @@ actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
         unpinNode(node);
     }
 });
-
-actionsFolder.addBlade({ view: 'separator' });
-
-actionsFolder.addButton({ title: 'clear' }).on('click', async () => {
-    emit(EVT_CLEAR_CLICKED, null);
-});
-
-actionsFolder.addButton({ title: 'export data' }).on('click', () => {
-    const blob = handle<undefined, Blob>(CMD_EXPORT);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${timestamp}_graph.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-});
-
-actionsFolder.addButton({ title: 'import data' }).on('click', () => {
-    importFileInput.click();
-});
-
-importFileInput.addEventListener('change', async () => {
-    const file = importFileInput.files?.[0];
-    if (!file) return;
-
-    try {
-        const text = await file.text();
-        await handle(CMD_IMPORT, text);
-    } catch (err) {
-        console.error('import failed:', err);
-        showError(`Import failed: ${getErrorMessage(err)}`);
-    }
-
-    importFileInput.value = '';
-});
-
-// Built-in example graphs (bundled into dist/examples/). The picker is only
-// shown when at least one example is available, so missing examples degrade
-// gracefully to no UI.
-async function initExamplesPicker(): Promise<void> {
-    const examples = await loadExamplesManifest();
-    if (examples.length === 0) return;
-
-    actionsFolder.addBlade({ view: 'separator' });
-
-    const exampleBlade = actionsFolder.addBlade({
-        view: 'list',
-        label: 'example',
-        options: examples.map((e) => ({
-            text: `${e.title} (${e.nodes}n / ${e.edges}e)`,
-            value: e.file,
-        })),
-        value: examples[0].file,
-    }) as ListBladeApi<string>;
-
-    actionsFolder.addButton({ title: 'load example' }).on('click', async () => {
-        try {
-            await handle(CMD_LOAD_EXAMPLE, exampleBlade.value);
-        } catch (err) {
-            console.error('load example failed:', err);
-            showError(`Load example failed: ${getErrorMessage(err)}`);
-        }
-    });
-}
-
-void initExamplesPicker();
 
 // --- filter panes ---
 let nodeFiltersFolder: FolderApi = pane.addFolder({ title: 'node filters', expanded: false });

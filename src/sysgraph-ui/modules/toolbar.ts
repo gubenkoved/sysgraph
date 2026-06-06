@@ -1,9 +1,12 @@
-import { EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, STANDALONE } from './constants.js';
+import { showContextMenu } from './context-menu.js';
+import { loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
-import { emit } from './event-bus.js';
+import { emit, handle } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
 import { setCurrentTool, setEditActive, setEditSubTool, state } from './state.js';
+import { showError } from './util.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
@@ -17,6 +20,14 @@ const actionGroup = document.getElementById('actionGroup') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
 const invertSelectionBtn = document.getElementById('invertSelection') as HTMLButtonElement;
+const reloadGraphBtn = document.getElementById('reloadGraph') as HTMLElement;
+const importDataBtn = document.getElementById('importData') as HTMLElement;
+const loadExampleBtn = document.getElementById('loadExample') as HTMLElement;
+const exportDataBtn = document.getElementById('exportData') as HTMLElement;
+const clearGraphBtn = document.getElementById('clearGraph') as HTMLElement;
+const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLElement;
+const settingsPane = document.getElementById('settingsPane') as HTMLElement;
+const importFileInput = document.getElementById('importFile') as HTMLInputElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
 const searchBar = document.getElementById('searchBar') as HTMLElement;
 const searchInput = document.getElementById('searchInput') as HTMLInputElement;
@@ -115,6 +126,38 @@ export function updateGraphInfo(): void {
 }
 
 /**
+ * Loads the bundled example manifest and, when at least one example exists,
+ * reveals the toolbar button that opens a compact picker menu.
+ */
+async function initExamplesButton(): Promise<void> {
+    const examples = await loadExamplesManifest();
+    if (examples.length === 0) return;
+
+    loadExampleBtn.style.display = 'inline-flex';
+
+    loadExampleBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const rect = loadExampleBtn.getBoundingClientRect();
+        showContextMenu(
+            rect.left,
+            rect.bottom + 4,
+            examples.map((example) => ({
+                label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
+                icon: 'category',
+                action: async () => {
+                    try {
+                        await handle(CMD_LOAD_EXAMPLE, example.file);
+                    } catch (err) {
+                        console.error('load example failed:', err);
+                        showError(`Load example failed: ${err instanceof Error ? err.message : String(err)}`);
+                    }
+                },
+            })),
+        );
+    });
+}
+
+/**
  * Wires up toolbar buttons, search input, and keyboard shortcuts.
  */
 export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement): void {
@@ -196,6 +239,63 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             }
             updateGraphInfo();
         }
+    });
+
+    // data action handlers (import / export / clear)
+    importDataBtn.addEventListener('click', () => {
+        importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', async () => {
+        const file = importFileInput.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            await handle(CMD_IMPORT, text);
+        } catch (err) {
+            console.error('import failed:', err);
+            showError(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        importFileInput.value = '';
+    });
+
+    exportDataBtn.addEventListener('click', () => {
+        const blob = handle<undefined, Blob>(CMD_EXPORT);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${timestamp}_graph.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    clearGraphBtn.addEventListener('click', () => {
+        emit(EVT_CLEAR_CLICKED, null);
+    });
+
+    // "reload sysgraph" pulls a fresh graph from the backend — unavailable in
+    // standalone builds, which never contact the backend.
+    if (!STANDALONE) {
+        reloadGraphBtn.style.display = 'inline-flex';
+        reloadGraphBtn.addEventListener('click', async () => {
+            try {
+                await handle(CMD_RELOAD);
+            } catch (err) {
+                console.error('reload failed:', err);
+                showError(`Reload failed: ${err instanceof Error ? err.message : String(err)}`);
+            }
+        });
+    }
+
+    // example graphs — populate a compact dropdown next to the import button.
+    // The button stays hidden when no examples are bundled.
+    void initExamplesButton();
+
+    // settings (parameters) pane toggle
+    toggleSettingsBtn.addEventListener('click', () => {
+        const open = settingsPane.classList.toggle('open');
+        toggleSettingsBtn.classList.toggle('active', open);
     });
 
     // keyboard shortcuts

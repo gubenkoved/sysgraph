@@ -510,6 +510,11 @@ body {
   overflow-y: auto;
   right: 10px;
   top: 10px;
+  display: none;
+}
+
+#settingsPane.open {
+  display: block;
 }
 
 .has-count-badge {
