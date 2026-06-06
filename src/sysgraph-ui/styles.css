@@ -671,15 +671,6 @@ body {
   box-shadow: 0 2px 12px var(--shadow-sm);
 }
 
-/* Pane title ("parameters") styled as a subtle uppercase header. */
-#settingsPane > .tp-rotv > .tp-rotv_b {
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: var(--font-size-xs);
-  color: var(--accent-primary);
-}
-
 /* Folder titles ("d3 forces settings", "display options", …). */
 #settingsPane .tp-fldv_b {
   font-weight: 500;

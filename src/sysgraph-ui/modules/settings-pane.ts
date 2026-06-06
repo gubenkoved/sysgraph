@@ -40,7 +40,6 @@ function getRequiredElement(id: string): HTMLElement {
 const settingsPaneElement = getRequiredElement('settingsPane');
 
 const pane = new Pane({
-    title: 'parameters',
     container: settingsPaneElement,
 });
 
