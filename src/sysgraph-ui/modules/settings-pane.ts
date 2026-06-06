@@ -122,6 +122,14 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
     emit(EVT_CURVATURE_UPDATED, null);
 });
 
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'globalEdgeAlphaOffset', { label: 'edge alpha offset', min: -1, max: 1, step: 0.01 }).on('change', () => {
+    emit(EVT_COLORS_UPDATED, null);
+});
+
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'globalEdgeWidthMultiplier', { label: 'edge width mult', min: 0.1, max: 5, step: 0.1 }).on('change', () => {
+    emit(EVT_COLORS_UPDATED, null);
+});
+
 // --- label settings ---
 displayOptionsFolder.addBlade({ view: 'separator' });
 

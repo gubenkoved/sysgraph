@@ -25,6 +25,8 @@ export interface SettingsShape {
     showIsolated: boolean;
     showGrid: boolean;
     curvatureStep: number;
+    globalEdgeAlphaOffset: number;
+    globalEdgeWidthMultiplier: number;
     nodeLabelMode: string;
     nodeLabelExpression: string;
     nodeSizingMode: string;
@@ -53,6 +55,9 @@ export function createDefaultSettings(): SettingsShape {
         showGrid: true,
 
         curvatureStep: 0.005,
+
+        globalEdgeAlphaOffset: 0,
+        globalEdgeWidthMultiplier: 1,
 
         nodeLabelMode: 'expression',
         nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
@@ -220,14 +225,17 @@ export function getNodeColor(node_type: string): RgbaColor {
  * then curated defaults, then palette hash.
  */
 export function getEdgeColor(edge_type: string): RgbaColor {
+    let color: RgbaColor;
     if (edge_type in settings.edgeColors) {
-        return settings.edgeColors[edge_type]!;
+        color = settings.edgeColors[edge_type]!;
+    } else if (edge_type in defaultEdgeColors) {
+        color = defaultEdgeColors[edge_type]!;
+    } else {
+        const hash = fnv1a(edge_type);
+        color = { ...palette[hash % palette.length]!, a: defaultLinkOpacity };
     }
-    if (edge_type in defaultEdgeColors) {
-        return defaultEdgeColors[edge_type]!;
-    }
-    const hash = fnv1a(edge_type);
-    return { ...palette[hash % palette.length]!, a: defaultLinkOpacity };
+    const a = Math.max(0, Math.min(1, color.a + settings.globalEdgeAlphaOffset));
+    return { ...color, a };
 }
 
 /**
@@ -249,11 +257,13 @@ export function getEdgeCssColor(edge_type: string): string {
  * then curated defaults, then global default.
  */
 export function getEdgeWidth(edge_type: string): number {
+    let width: number;
     if (edge_type in settings.edgeWidths) {
-        return settings.edgeWidths[edge_type]!;
+        width = settings.edgeWidths[edge_type]!;
+    } else if (edge_type in defaultEdgeWidths) {
+        width = defaultEdgeWidths[edge_type]!;
+    } else {
+        width = defaultEdgeWidth;
     }
-    if (edge_type in defaultEdgeWidths) {
-        return defaultEdgeWidths[edge_type]!;
-    }
-    return defaultEdgeWidth;
+    return width * settings.globalEdgeWidthMultiplier;
 }
