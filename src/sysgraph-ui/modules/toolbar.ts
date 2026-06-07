@@ -7,6 +7,7 @@ import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
+import { getVisibleGraph } from './graph-ui.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
 import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
@@ -151,11 +152,18 @@ export function updateGraphInfo(): void {
         }
     } else {
         actionGroup.style.display = 'none';
-        const nodeCount = state.graph.nodesMap.size;
-        const edgeCount = state.graph.edgesMap.size;
-        graphInfoEl.textContent = nodeCount > 0
-            ? `${nodeCount} nodes · ${edgeCount} relationships`
-            : '';
+        const totalNodes = state.graph.nodesMap.size;
+        const totalEdges = state.graph.edgesMap.size;
+        if (totalNodes === 0) {
+            graphInfoEl.textContent = '';
+            return;
+        }
+        const visible = getVisibleGraph();
+        const visibleNodes = visible.nodesMap.size;
+        const visibleEdges = visible.edgesMap.size;
+        const nodesText = visibleNodes !== totalNodes ? `${visibleNodes} / ${totalNodes}` : `${totalNodes}`;
+        const edgesText = visibleEdges !== totalEdges ? `${visibleEdges} / ${totalEdges}` : `${totalEdges}`;
+        graphInfoEl.textContent = `${nodesText} nodes · ${edgesText} relationships`;
     }
 }
 

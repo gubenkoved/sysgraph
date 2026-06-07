@@ -4,10 +4,10 @@ import { DEFAULT_EDGE_WEIGHT_EXPRESSION, makeEdgeWeightFn } from './analytics-he
 import { EVT_ANALYTICS_UPDATED } from './constants.js';
 import { emit } from './event-bus.js';
 import type { FGNode } from './graph-ui.js';
+import { getVisibleGraph } from './graph-ui.js';
 import {
     type AnalyticsAlgorithmId,
     clearAnalyticsRun,
-    getGraph,
     setAnalyticsAlgorithm,
     setAnalyticsAwaitingPick,
     setAnalyticsDecoration,
@@ -179,7 +179,9 @@ export function runAlgorithm(): string | null {
     const id = state.analytics.algorithmId;
     if (!id) return 'No algorithm selected';
 
-    const graph = getGraph();
+    // operate on the graph as currently rendered (post type/adjacency/isolated
+    // filters) so results match what the user sees
+    const graph = getVisibleGraph();
 
     if (id === 'stats') {
         const stats = computeStats(graph);

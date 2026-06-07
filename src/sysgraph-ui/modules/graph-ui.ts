@@ -29,13 +29,14 @@ import {
 } from './edit-mode.js';
 import { emit } from './event-bus.js';
 import type { GraphEdge, GraphNode } from './graph.js';
-import { computeNodeDegrees, filterGraph } from './graph.js';
+import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
 import { labelHelpers } from './graph-ui-helpers.js';
 import { callFramePost, callFramePre } from './render-hooks.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
 import { getGraph, setAdjacencyFilter, setEditSubTool, setHighlight, state } from './state.js';
 import { getTheme } from './theme.js';
+import { updateGraphInfo } from './toolbar.js';
 
 // ---------------------------------------------------------------------------
 // Double-click detection (force-graph has no native onNodeDblClick)
@@ -937,32 +938,47 @@ export function getNodeAtScreen(clientX: number, clientY: number): FGNode | null
 // Graph UI refresh
 // ---------------------------------------------------------------------------
 
-export async function refreshGraphUI(): Promise<void> {
-    clearColorCaches();
-
-    const graph = filterGraph(
+/**
+ * Builds the graph as currently rendered on the canvas by applying, in order:
+ * node/edge type filters, the adjacency focus filter and the hide-isolated
+ * toggle. This is the single source of truth for "what is visible", shared by
+ * rendering and analytics so they can never diverge.
+ */
+export function getVisibleGraph(): Graph {
+    const typeFiltered = filterGraph(
         getGraph(),
         node => settings.nodeFilters[node.type] !== false,
         edge => settings.edgeFilters[edge.type] !== false,
     );
 
-    let nodes: FGNode[] = graph.getNodes().map(n => ({ ...(n as GraphNode), kind: 'node' } as FGNode));
-    let edges: FGLink[] = graph.getEdges().map(e => ({ ...(e as GraphEdge), kind: 'edge' } as FGLink));
+    let nodes = typeFiltered.getNodes();
+    let edges = typeFiltered.getEdges();
 
     if (state.adjacencyFilter) {
         const visible = state.adjacencyFilter.visibleNodeIds;
         nodes = nodes.filter(n => visible.has(n.id));
-        edges = edges.filter(e => visible.has(e.source_id!) && visible.has(e.target_id!));
+        edges = edges.filter(e => visible.has(e.source_id) && visible.has(e.target_id));
     }
 
     if (!settings.showIsolated) {
         const connected = new Set<string>();
-        for (const l of edges) {
-            connected.add(l.source_id!);
-            connected.add(l.target_id!);
+        for (const e of edges) {
+            connected.add(e.source_id);
+            connected.add(e.target_id);
         }
         nodes = nodes.filter(n => connected.has(n.id));
     }
+
+    return new Graph(nodes, edges);
+}
+
+export async function refreshGraphUI(): Promise<void> {
+    clearColorCaches();
+
+    const graph = getVisibleGraph();
+
+    const nodes: FGNode[] = graph.getNodes().map(n => ({ ...(n as GraphNode), kind: 'node' } as FGNode));
+    const edges: FGLink[] = graph.getEdges().map(e => ({ ...(e as GraphEdge), kind: 'edge' } as FGLink));
 
     const nodeDegreesMap = computeNodeDegrees(graph);
     for (const n of nodes) {
@@ -971,6 +987,7 @@ export async function refreshGraphUI(): Promise<void> {
     }
 
     mergeGraphDataIntoForceGraph(nodes, edges);
+    updateGraphInfo();
 }
 
 export function refreshGraphColors(): void {
