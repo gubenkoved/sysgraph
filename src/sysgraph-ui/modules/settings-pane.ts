@@ -38,7 +38,7 @@ import {
     snapshotCurrentSettings,
 } from './settings-presets.js';
 import { getGraph, setGraphDirty } from './state.js';
-import { showActionToast, showError } from './util.js';
+import { showActionToast, showError, showInfoToast } from './util.js';
 
 function getRequiredElement(id: string): HTMLElement {
     const element = document.getElementById(id);
@@ -280,8 +280,24 @@ export function maybeApplyGraphDisplay(display: GraphDisplay | undefined): void 
     if (mode === 'apply') {
         if (hasDisplay) {
             applyGraphDisplayAndRefresh(display as GraphDisplay);
+            showInfoToast(
+                'Your colors, filters and layout were overridden by this graph. Change this under "settings embedding".',
+                {
+                    id: 'graph-display-prompt',
+                    title: 'Display settings applied',
+                    icon: 'palette',
+                },
+            );
         } else {
             resetGraphDisplayAndRefresh();
+            showInfoToast(
+                'This graph has no embedded settings, so display was reset to defaults. Change this under "settings embedding".',
+                {
+                    id: 'graph-display-prompt',
+                    title: 'Display settings reset',
+                    icon: 'restart_alt',
+                },
+            );
         }
         return;
     }

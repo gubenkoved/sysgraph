@@ -77,6 +77,78 @@ export function dismissError(id: string): void {
 }
 
 /**
+ * Shows a brief, theme-aware informational toast (no action button).
+ * Auto-dismisses after `durationMs` (default 5 s). Reuses the `.action-toast`
+ * styling so it tracks the active theme.
+ */
+export function showInfoToast(
+    message: string,
+    {
+        durationMs = 5000,
+        id = null,
+        title = null,
+        icon = 'info',
+    }: {
+        durationMs?: number;
+        id?: string | null;
+        title?: string | null;
+        icon?: string | null;
+    } = {},
+): HTMLDivElement {
+    if (id && _activeToasts.has(id)) {
+        _activeToasts.get(id)!.remove();
+        _activeToasts.delete(id);
+    }
+
+    const el = document.createElement('div');
+    el.className = 'action-toast';
+    if (id) {
+        _activeToasts.set(id, el);
+    }
+
+    const remove = () => {
+        el.remove();
+        if (id) _activeToasts.delete(id);
+    };
+
+    if (icon) {
+        const iconEl = document.createElement('span');
+        iconEl.className = 'action-toast__icon material-symbols-outlined';
+        iconEl.textContent = icon;
+        iconEl.setAttribute('aria-hidden', 'true');
+        el.appendChild(iconEl);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'action-toast__body';
+    if (title) {
+        const titleEl = document.createElement('span');
+        titleEl.className = 'action-toast__title';
+        titleEl.textContent = title;
+        body.appendChild(titleEl);
+    }
+    const messageEl = document.createElement('span');
+    messageEl.className = 'action-toast__message';
+    messageEl.textContent = message;
+    body.appendChild(messageEl);
+    el.appendChild(body);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'action-toast__close';
+    closeBtn.textContent = '✕';
+    closeBtn.title = 'Dismiss';
+    closeBtn.setAttribute('aria-label', 'Dismiss');
+    closeBtn.addEventListener('click', remove);
+    el.appendChild(closeBtn);
+
+    document.body.appendChild(el);
+    if (durationMs > 0) {
+        setTimeout(remove, durationMs);
+    }
+    return el;
+}
+
+/**
  * Shows a prominent, theme-aware notification with a single primary action.
  * The toast is dismissed when the action is clicked, when the close icon is
  * clicked, or after `durationMs` (default 12 s; pass 0 to keep it sticky).
