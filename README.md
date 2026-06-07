@@ -12,7 +12,7 @@ An interactive force-directed **network graph visualizer** for the browser — w
 ## Features
 
 - **Import any graph** — load a JSON file with nodes and edges to visualize any network, social graph, dependency tree, or dataset
-- **Export/Import** — save and reload graph snapshots as JSON; use the sample at [`data/simplest-graph.json`](data/simplest-graph.json) as a format reference
+- **Export/Import** — save and reload graph snapshots as JSON; use the sample at [`data/simple-graph.json`](data/simple-graph.json) as a format reference
 - **Interactive graph** — force-directed graph rendered in the browser with zoom, pan, drag, and search
 - **Fuzzy search** — find nodes by any property
 - **Adjacency filtering** — right-click a node to show only its neighbors
@@ -68,7 +68,7 @@ Use the **Import** button in the UI to load any JSON file in the following forma
 }
 ```
 
-See [`data/simplest-graph.json`](data/simplest-graph.json) for a minimal example.
+See [`data/simple-graph.json`](data/simple-graph.json) for a minimal example.
 
 ### Live process graph
 

@@ -74,7 +74,7 @@ sysgraph/
 ├── MANIFEST.in             # Includes dist/ in Python package
 ├── .pre-commit-config.yaml # pre-commit hooks
 ├── data/                   # Built-in example graphs (bundled into dist/examples/)
-│   ├── simplest-graph.json
+│   ├── simple-graph.json
 │   └── greek-mythology.json
 ├── scripts/
 │   ├── build-image.sh      # Build Docker image

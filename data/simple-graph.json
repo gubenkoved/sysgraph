@@ -1,0 +1,162 @@
+{
+    "title": "Simple Graph",
+    "nodes": [
+        {
+            "id": "1",
+            "type": "foo",
+            "properties": {
+                "label": "foo-1"
+            }
+        },
+        {
+            "id": "2",
+            "type": "foo",
+            "properties": {
+                "label": "foo-2"
+            }
+        },
+        {
+            "id": "3",
+            "type": "foo",
+            "properties": {
+                "label": "foo-3"
+            }
+        },
+        {
+            "id": "4",
+            "type": "foo",
+            "properties": {
+                "label": "foo-4"
+            }
+        },
+        {
+            "id": "5",
+            "type": "bar",
+            "properties": {
+                "label": "bar-1"
+            }
+        },
+        {
+            "id": "6",
+            "type": "bar",
+            "properties": {
+                "label": "bar-2"
+            }
+        },
+        {
+            "id": "7",
+            "type": "bar",
+            "properties": {
+                "label": "bar-3"
+            }
+        },
+        {
+            "id": "8",
+            "type": "baz",
+            "properties": {
+                "label": "baz-1"
+            }
+        },
+        {
+            "id": "9",
+            "type": "baz",
+            "properties": {
+                "label": "baz-2"
+            }
+        },
+        {
+            "id": "10",
+            "type": "baz",
+            "properties": {
+                "label": "baz-3"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "source_id": "1",
+            "target_id": "2",
+            "type": "A"
+        },
+        {
+            "source_id": "1",
+            "target_id": "3",
+            "type": "A"
+        },
+        {
+            "source_id": "2",
+            "target_id": "4",
+            "type": "A"
+        },
+        {
+            "source_id": "3",
+            "target_id": "4",
+            "type": "A"
+        },
+        {
+            "source_id": "1",
+            "target_id": "5",
+            "type": "B"
+        },
+        {
+            "source_id": "2",
+            "target_id": "6",
+            "type": "B"
+        },
+        {
+            "source_id": "3",
+            "target_id": "7",
+            "type": "B"
+        },
+        {
+            "source_id": "4",
+            "target_id": "5",
+            "type": "B"
+        },
+        {
+            "source_id": "5",
+            "target_id": "6",
+            "type": "A"
+        },
+        {
+            "source_id": "6",
+            "target_id": "7",
+            "type": "A"
+        },
+        {
+            "source_id": "5",
+            "target_id": "8",
+            "type": "B"
+        },
+        {
+            "source_id": "6",
+            "target_id": "9",
+            "type": "B"
+        },
+        {
+            "source_id": "7",
+            "target_id": "10",
+            "type": "B"
+        },
+        {
+            "source_id": "8",
+            "target_id": "9",
+            "type": "A"
+        },
+        {
+            "source_id": "9",
+            "target_id": "10",
+            "type": "A"
+        },
+        {
+            "source_id": "8",
+            "target_id": "1",
+            "type": "B"
+        },
+        {
+            "source_id": "10",
+            "target_id": "4",
+            "type": "B"
+        }
+    ]
+}
