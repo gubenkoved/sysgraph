@@ -11,7 +11,7 @@ import {
 import { validateEdgeWeightExpression } from './analytics-helpers.js';
 import { EVT_ANALYTICS_UPDATED } from './constants.js';
 import { emit, on } from './event-bus.js';
-import { centerOnNode } from './graph-ui.js';
+import { analyticsHeatmapColorScale, centerOnNode } from './graph-ui.js';
 import { getGraph, setAnalyticsParam, state } from './state.js';
 import { showError } from './util.js';
 
@@ -263,9 +263,105 @@ function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
         section.appendChild(statRow('tree edges', String(result.result.edgeIds.length)));
         section.appendChild(statRow('total weight', result.result.totalWeight.toFixed(4)));
         section.appendChild(statRow('components', String(result.result.components)));
+    } else if (result.kind === 'degree') {
+        const r = result.result;
+        section.appendChild(statRow('nodes ranked', String(r.entries.length)));
+        section.appendChild(statRow('degree (min/max)', `${r.minDegree} / ${r.maxDegree}`));
+
+        section.appendChild(buildHeatmapLegend(r.minDegree, r.maxDegree));
+
+        const directed = r.respectDirection;
+        section.appendChild(
+            buildRankList(
+                r.entries.map(e => ({
+                    nodeId: e.nodeId,
+                    primary: String(e.degree),
+                    secondary: directed ? `in ${e.inDegree} · out ${e.outDegree}` : undefined,
+                })),
+            ),
+        );
     }
 
     return section;
+}
+
+// maximum number of ranked rows rendered to keep the panel responsive
+const RANK_LIST_LIMIT = 100;
+
+/** Builds a cold-to-hot gradient legend with min/max value labels. */
+function buildHeatmapLegend(min: number, max: number): HTMLElement {
+    const wrap = el('div', 'analytics-legend');
+
+    // sample the shared scale so the bar matches the canvas colors exactly
+    const samples = 12;
+    const stops: string[] = [];
+    for (let i = 0; i < samples; i++) {
+        const t = samples > 1 ? i / (samples - 1) : 0;
+        stops.push(analyticsHeatmapColorScale.getColor(t));
+    }
+    const bar = el('div', 'analytics-legend-bar');
+    bar.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+    wrap.appendChild(bar);
+
+    const labels = el('div', 'analytics-legend-labels');
+    labels.appendChild(el('span', 'analytics-legend-min', String(min)));
+    labels.appendChild(el('span', 'analytics-legend-max', String(max)));
+    wrap.appendChild(labels);
+
+    return wrap;
+}
+
+interface RankRow {
+    nodeId: string;
+    // headline value shown on the right (e.g. degree)
+    primary: string;
+    // optional supporting detail (e.g. in/out split)
+    secondary?: string;
+}
+
+/**
+ * Builds a ranked, clickable node list. Each row centers the camera on its
+ * node. Long lists are capped at RANK_LIST_LIMIT with a "showing top N" note.
+ */
+function buildRankList(rows: RankRow[]): HTMLElement {
+    const list = el('div', 'analytics-rank-list');
+
+    const header = el('div', 'analytics-rank-head');
+    header.appendChild(el('span', 'analytics-rank-index', '#'));
+    header.appendChild(el('span', 'analytics-rank-node-label', 'node'));
+    header.appendChild(el('span', 'analytics-rank-value', 'value'));
+    list.appendChild(header);
+
+    const shown = rows.slice(0, RANK_LIST_LIMIT);
+    shown.forEach((row, i) => {
+        const item = el('div', 'analytics-rank-row');
+        item.appendChild(el('span', 'analytics-rank-index', String(i + 1)));
+
+        const btn = el('button', 'analytics-rank-node');
+        btn.title = `Center on ${row.nodeId}`;
+        const icon = document.createElement('md-icon');
+        icon.textContent = 'my_location';
+        btn.appendChild(icon);
+        btn.appendChild(el('span', 'analytics-rank-node-label', nodeLabel(row.nodeId)));
+        btn.addEventListener('click', () => centerOnNode(row.nodeId));
+        item.appendChild(btn);
+
+        const value = el('span', 'analytics-rank-value');
+        value.appendChild(el('span', 'analytics-rank-value-primary', row.primary));
+        if (row.secondary) {
+            value.appendChild(el('span', 'analytics-rank-value-secondary', row.secondary));
+        }
+        item.appendChild(value);
+        list.appendChild(item);
+    });
+
+    if (rows.length > shown.length) {
+        list.appendChild(
+            el('div', 'analytics-rank-note', `showing top ${shown.length} of ${rows.length}`),
+        );
+    }
+
+    return list;
 }
 
 function render(): void {

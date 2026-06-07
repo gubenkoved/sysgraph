@@ -84,6 +84,11 @@ export const SEARCH_COLOR_BEST = 'rgb(255, 0, 0)';
 export const SEARCH_COLOR_MID = 'rgb(255, 140, 0)';
 export const SEARCH_COLOR_WORST = 'rgb(195, 179, 41)';
 
+// ── Analytics heatmap scale (cold → hot) ────────────────────
+export const HEATMAP_COLOR_LOW = 'rgb(44, 123, 182)';
+export const HEATMAP_COLOR_MID = 'rgb(255, 225, 100)';
+export const HEATMAP_COLOR_HIGH = 'rgb(215, 25, 28)';
+
 // ── Animation & zoom ────────────────────────────────────────
 export const MAX_ZOOM_BOOST = 3;
 export const REHEAT_ALPHA = 0.25;

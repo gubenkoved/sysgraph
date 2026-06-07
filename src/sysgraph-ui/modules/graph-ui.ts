@@ -9,7 +9,8 @@ import {
     EDGE_DARK_MIN_LIGHTNESS,EVT_BACKGROUND_CLICK,EVT_LINK_CLICKED,
     EVT_NODE_CLICKED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_DARK, GRID_CENTER_COLOR_UNSTRESSED, GRID_CENTER_COLOR_UNSTRESSED_DARK,GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
     GRID_LINE_COLOR, GRID_LINE_COLOR_DARK, GRID_LINE_COLOR_UNSTRESSED, GRID_LINE_COLOR_UNSTRESSED_DARK,
-    GRID_SPACING, MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
+    GRID_SPACING,
+    HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
     MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,nodePointerRadius,
     nodeRadius, SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
@@ -156,6 +157,13 @@ const searchMatchColorScale = new ColorScale([
     [SEARCH_COLOR_BEST, 0],
     [SEARCH_COLOR_MID, 0.5],
     [SEARCH_COLOR_WORST, 1],
+]);
+
+/** Cold-to-hot scale used by analytics heatmap decorations (value in [0, 1]). */
+export const analyticsHeatmapColorScale = new ColorScale([
+    [HEATMAP_COLOR_LOW, 0],
+    [HEATMAP_COLOR_MID, 0.5],
+    [HEATMAP_COLOR_HIGH, 1],
 ]);
 
 /**
@@ -452,6 +460,10 @@ ForceGraphInstance
         // hidden) when the user switches to another tool such as search
         const decoration = state.analytics.active ? state.analytics.decoration : null;
         if (decoration) {
+            // heatmap recolors nodes only; leave edges at their normal color
+            if (decoration.kind === 'heatmap') {
+                return fillStyle;
+            }
             alphaMultiplier = decoration.edgeIds.has(l.id)
                 ? 1.0
                 : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
@@ -500,15 +512,26 @@ ForceGraphInstance
         const zoomBoost = Math.min(MAX_ZOOM_BOOST, Math.max(1, 1 / globalScale));
 
         let alphaMultiplier = 1.0;
+        let baseColor = nodeColorFor(node);
 
         // persistent analytics decoration takes precedence over hover/search,
         // but only while the analytics tool is active; it is preserved (yet
         // hidden) when the user switches to another tool such as search
         const decoration = state.analytics.active ? state.analytics.decoration : null;
         if (decoration) {
-            alphaMultiplier = decoration.nodeIds.has(node.id)
-                ? 1.0
-                : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+            if (decoration.kind === 'heatmap') {
+                const value = decoration.nodeValues.get(node.id);
+                if (value !== undefined) {
+                    baseColor = analyticsHeatmapColorScale.getColor(value);
+                } else {
+                    // nodes without a score are dimmed
+                    alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+                }
+            } else {
+                alphaMultiplier = decoration.nodeIds.has(node.id)
+                    ? 1.0
+                    : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+            }
         } else {
             if (!state.highlight && state.search && !state.search.matchesMap.has(node.id)) {
                 alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
@@ -524,7 +547,7 @@ ForceGraphInstance
             }
         }
 
-        const fillStyle = colorAdjustAlpha(nodeColorFor(node), alphaMultiplier);
+        const fillStyle = colorAdjustAlpha(baseColor, alphaMultiplier);
 
         ctx.beginPath();
         ctx.fillStyle = fillStyle;

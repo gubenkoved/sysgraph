@@ -288,3 +288,71 @@ export function minimumSpanningTree(graph: Graph, weightFn: EdgeWeightFn): MstRe
         components: roots.size,
     };
 }
+
+// ---------------------------------------------------------------------------
+// degree centrality
+// ---------------------------------------------------------------------------
+
+export interface DegreeEntry {
+    nodeId: string;
+    // total incident edges (counts both directions)
+    degree: number;
+    // edges pointing at the node (only meaningful when respectDirection)
+    inDegree: number;
+    // edges leaving the node (only meaningful when respectDirection)
+    outDegree: number;
+    // degree divided by (N - 1); the classic degree-centrality measure
+    normalized: number;
+}
+
+export interface DegreeCentralityResult {
+    // entries sorted by degree descending
+    entries: DegreeEntry[];
+    minDegree: number;
+    maxDegree: number;
+    respectDirection: boolean;
+}
+
+/**
+ * Computes degree centrality for every node. The total degree counts all
+ * incident edges; when respectDirection is true the in/out split is also
+ * reported (self-loops contribute to both). Ranking is always by total degree.
+ */
+export function degreeCentrality(graph: Graph, respectDirection = false): DegreeCentralityResult {
+    const nodes = graph.getNodes();
+    const denominator = nodes.length > 1 ? nodes.length - 1 : 1;
+
+    const entries: DegreeEntry[] = [];
+    let minDegree = Number.POSITIVE_INFINITY;
+    let maxDegree = 0;
+
+    for (const node of nodes) {
+        const adjacent = graph.getAdjacentEdges(node.id);
+        const degree = adjacent.length;
+
+        let inDegree = 0;
+        let outDegree = 0;
+        if (respectDirection) {
+            for (const edge of adjacent) {
+                if (edge.target_id === node.id) inDegree++;
+                if (edge.source_id === node.id) outDegree++;
+            }
+        }
+
+        minDegree = Math.min(minDegree, degree);
+        maxDegree = Math.max(maxDegree, degree);
+
+        entries.push({
+            nodeId: node.id,
+            degree,
+            inDegree,
+            outDegree,
+            normalized: degree / denominator,
+        });
+    }
+
+    if (nodes.length === 0) minDegree = 0;
+    entries.sort((a, b) => b.degree - a.degree);
+
+    return { entries, minDegree, maxDegree, respectDirection };
+}

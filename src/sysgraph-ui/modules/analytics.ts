@@ -1,5 +1,10 @@
-import type { MstResult, ShortestPathResult, StatsResult } from './analytics-algs.js';
-import { computeStats, minimumSpanningTree, shortestPath } from './analytics-algs.js';
+import type {
+    DegreeCentralityResult,
+    MstResult,
+    ShortestPathResult,
+    StatsResult,
+} from './analytics-algs.js';
+import { computeStats, degreeCentrality, minimumSpanningTree, shortestPath } from './analytics-algs.js';
 import { DEFAULT_EDGE_WEIGHT_EXPRESSION, makeEdgeWeightFn } from './analytics-helpers.js';
 import { EVT_ANALYTICS_UPDATED } from './constants.js';
 import { emit } from './event-bus.js';
@@ -92,6 +97,15 @@ export const ALGORITHMS: AlgorithmDescriptor[] = [
         picks: [],
         highlights: true,
     },
+    {
+        id: 'degree',
+        label: 'Degree centrality',
+        icon: 'hub',
+        description: 'Ranks nodes by their number of connections (heatmap).',
+        params: [respectDirectionParam],
+        picks: [],
+        highlights: true,
+    },
 ];
 
 export function getAlgorithm(id: AnalyticsAlgorithmId): AlgorithmDescriptor | undefined {
@@ -119,7 +133,16 @@ export interface MstResultModel {
     result: MstResult;
 }
 
-export type AnalyticsResultModel = StatsResultModel | ShortestPathResultModel | MstResultModel;
+export interface DegreeResultModel {
+    kind: 'degree';
+    result: DegreeCentralityResult;
+}
+
+export type AnalyticsResultModel =
+    | StatsResultModel
+    | ShortestPathResultModel
+    | MstResultModel
+    | DegreeResultModel;
 
 // ---------------------------------------------------------------------------
 // algorithm selection
@@ -166,9 +189,19 @@ export function handleAnalyticsNodeClick(node: FGNode): void {
  */
 function decorateSubset(nodeIds: Iterable<string>, edgeIds: Iterable<string>): void {
     setAnalyticsDecoration({
+        kind: 'subset',
         nodeIds: new Set(nodeIds),
         edgeIds: new Set(edgeIds),
     });
+}
+
+/**
+ * Applies a persistent heatmap decoration that recolors nodes on a cold-to-hot
+ * scale by their normalized value in [0, 1]. Nodes absent from the map are
+ * dimmed. Remains until the algorithm result is cleared.
+ */
+function decorateHeatmap(nodeValues: Map<string, number>): void {
+    setAnalyticsDecoration({ kind: 'heatmap', nodeValues });
 }
 
 /**
@@ -220,6 +253,22 @@ export function runAlgorithm(): string | null {
         const result = minimumSpanningTree(graph, weightFn);
         decorateSubset(result.nodeIds, result.edgeIds);
         setAnalyticsResult({ kind: 'mst', result } satisfies MstResultModel);
+        emit(EVT_ANALYTICS_UPDATED, null);
+        return null;
+    }
+
+    if (id === 'degree') {
+        const respectDirection = state.analytics.params.respectDirection === 'true';
+        const result = degreeCentrality(graph, respectDirection);
+        // normalize degree into [0, 1] for the heatmap (min-max across the graph)
+        const span = result.maxDegree - result.minDegree;
+        const nodeValues = new Map<string, number>();
+        for (const entry of result.entries) {
+            const t = span > 0 ? (entry.degree - result.minDegree) / span : 0;
+            nodeValues.set(entry.nodeId, t);
+        }
+        decorateHeatmap(nodeValues);
+        setAnalyticsResult({ kind: 'degree', result } satisfies DegreeResultModel);
         emit(EVT_ANALYTICS_UPDATED, null);
         return null;
     }

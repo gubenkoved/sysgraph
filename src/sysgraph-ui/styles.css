@@ -1037,6 +1037,126 @@ body {
   font-style: italic;
 }
 
+/* ── Analytics heatmap legend ────────────────────────────── */
+
+.analytics-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: var(--spacing-xs) 0;
+}
+
+.analytics-legend-bar {
+  height: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-medium);
+}
+
+.analytics-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Analytics ranked node list ──────────────────────────── */
+
+.analytics-rank-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--spacing-xs);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.analytics-rank-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-xs) var(--spacing-xs);
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.analytics-rank-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.analytics-rank-index {
+  flex: 0 0 22px;
+  text-align: right;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-rank-node {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 2px var(--spacing-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-rank-node:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.analytics-rank-node md-icon {
+  --md-icon-size: 14px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.analytics-rank-node-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.analytics-rank-value {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-rank-value-primary {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.analytics-rank-value-secondary {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted);
+}
+
+.analytics-rank-note {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
 /* ── Context Menu ────────────────────────────────────────── */
 
 #contextMenu {

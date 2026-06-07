@@ -35,17 +35,33 @@ export interface EditState {
     pendingEdgeSourceId: string | null;
 }
 
-export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst';
+export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst' | 'degree';
 
 /**
- * Persistent visual decoration produced by an analytics algorithm. Nodes and
- * edges in these sets stay emphasized while everything else is dimmed; unlike
- * the transient hover highlight, it survives until the result is cleared.
+ * Subset decoration: the listed nodes/edges stay emphasized while everything
+ * else is dimmed (e.g. a shortest path or spanning tree).
  */
-export interface AnalyticsDecoration {
+export interface SubsetDecoration {
+    kind: 'subset';
     nodeIds: Set<string>;
     edgeIds: Set<string>;
 }
+
+/**
+ * Heatmap decoration: each node is recolored on a cold-to-hot scale by its
+ * normalized value in [0, 1]; nodes absent from the map are dimmed (e.g. a
+ * centrality score across the graph).
+ */
+export interface HeatmapDecoration {
+    kind: 'heatmap';
+    nodeValues: Map<string, number>;
+}
+
+/**
+ * Persistent visual decoration produced by an analytics algorithm; unlike the
+ * transient hover highlight, it survives until the result is cleared.
+ */
+export type AnalyticsDecoration = SubsetDecoration | HeatmapDecoration;
 
 export interface AnalyticsState {
     active: boolean;
