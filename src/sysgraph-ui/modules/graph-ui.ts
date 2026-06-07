@@ -447,8 +447,10 @@ ForceGraphInstance
         let fillStyle = edgeColorFor(l);
         let alphaMultiplier = 1.0;
 
-        // persistent analytics decoration takes precedence over hover/search
-        const decoration = state.analytics.decoration;
+        // persistent analytics decoration takes precedence over hover/search,
+        // but only while the analytics tool is active; it is preserved (yet
+        // hidden) when the user switches to another tool such as search
+        const decoration = state.analytics.active ? state.analytics.decoration : null;
         if (decoration) {
             alphaMultiplier = decoration.edgeIds.has(l.id)
                 ? 1.0
@@ -499,8 +501,10 @@ ForceGraphInstance
 
         let alphaMultiplier = 1.0;
 
-        // persistent analytics decoration takes precedence over hover/search
-        const decoration = state.analytics.decoration;
+        // persistent analytics decoration takes precedence over hover/search,
+        // but only while the analytics tool is active; it is preserved (yet
+        // hidden) when the user switches to another tool such as search
+        const decoration = state.analytics.active ? state.analytics.decoration : null;
         if (decoration) {
             alphaMultiplier = decoration.nodeIds.has(node.id)
                 ? 1.0
@@ -619,8 +623,8 @@ ForceGraphInstance
     })
     .onNodeHover((node, _prevNode) => {
         // keep a persistent analytics decoration in place; don't let hover
-        // override the algorithm result highlight
-        if (state.analytics.decoration) {
+        // override the algorithm result highlight (only while it is shown)
+        if (state.analytics.active && state.analytics.decoration) {
             return;
         }
         if (node != null) {

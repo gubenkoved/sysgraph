@@ -1,8 +1,8 @@
 import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
-import { clearAnalytics, selectAlgorithm } from './analytics.js';
+import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -95,12 +95,21 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
     if (tool === 'analytics') {
         setAnalyticsActive(true);
         openAnalyticsPanel();
-        // seed the default algorithm; the panel's tabs drive further selection
-        selectAlgorithm(state.analytics.algorithmId ?? 'stats');
+        if (!state.analytics.algorithmId) {
+            // first entry: seed the default algorithm; the panel's tabs drive
+            // further selection (and intentionally clear the run on switch)
+            selectAlgorithm('stats');
+        } else {
+            // re-entry: keep the preserved picks/result/decoration and just
+            // refresh the panel to reflect them
+            emit(EVT_ANALYTICS_UPDATED, null);
+        }
     } else {
+        // leaving analytics: preserve the run so it can be resumed later, only
+        // cancel a dangling pending pick
         setAnalyticsActive(false);
         closeAnalyticsPanel();
-        clearAnalytics();
+        suspendAnalytics();
     }
 
     if (tool === 'rect-select') {

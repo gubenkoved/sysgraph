@@ -890,9 +890,17 @@ body {
   font-style: italic;
 }
 
+.analytics-run-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
 .analytics-run {
   align-self: flex-start;
+  --md-filled-tonal-button-container-height: var(--button-height);
   --md-filled-tonal-button-container-shape: var(--radius-sm);
+  --md-filled-tonal-button-label-text-size: var(--font-size-sm);
   /* use the app blue accent instead of the MD3 default magenta */
   --md-filled-tonal-button-container-color: var(--accent-primary);
   --md-filled-tonal-button-hover-container-color: var(--accent-primary);
@@ -902,6 +910,16 @@ body {
   --md-filled-tonal-button-hover-label-text-color: #fff;
   --md-filled-tonal-button-focus-label-text-color: #fff;
   --md-filled-tonal-button-pressed-label-text-color: #fff;
+}
+
+.analytics-reset {
+  --md-text-button-container-height: var(--button-height);
+  --md-text-button-container-shape: var(--radius-sm);
+  --md-text-button-label-text-size: var(--font-size-sm);
+  --md-text-button-label-text-color: var(--text-muted);
+  --md-text-button-hover-label-text-color: var(--text-primary);
+  --md-text-button-focus-label-text-color: var(--text-primary);
+  --md-text-button-pressed-label-text-color: var(--text-primary);
 }
 
 .analytics-results {

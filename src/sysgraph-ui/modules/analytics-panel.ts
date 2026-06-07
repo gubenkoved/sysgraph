@@ -1,6 +1,7 @@
 import {
     ALGORITHMS,
     type AnalyticsResultModel,
+    clearAnalytics,
     getAlgorithm,
     type ParamSpec,
     runAlgorithm,
@@ -166,6 +167,8 @@ function buildInputsSection(algoId: string): HTMLElement | null {
 
 function buildRunSection(): HTMLElement {
     const section = el('div', 'analytics-section');
+    const row = el('div', 'analytics-run-row');
+
     const runBtn = document.createElement('md-filled-tonal-button') as HTMLElement;
     runBtn.className = 'analytics-run';
     runBtn.textContent = 'Run';
@@ -173,7 +176,17 @@ function buildRunSection(): HTMLElement {
         const error = runAlgorithm();
         if (error) showError(error, { id: 'analytics-run' });
     });
-    section.appendChild(runBtn);
+    row.appendChild(runBtn);
+
+    // reset picks, result and decoration for the current algorithm (keeps the
+    // selected algorithm and its parameters)
+    const resetBtn = document.createElement('md-text-button') as HTMLElement;
+    resetBtn.className = 'analytics-reset';
+    resetBtn.textContent = 'Reset';
+    resetBtn.addEventListener('click', () => clearAnalytics());
+    row.appendChild(resetBtn);
+
+    section.appendChild(row);
     return section;
 }
 

@@ -232,3 +232,13 @@ export function clearAnalytics(): void {
     clearAnalyticsRun();
     emit(EVT_ANALYTICS_UPDATED, null);
 }
+
+/**
+ * Suspends analytics when switching away to another tool: cancels any pending
+ * node pick so it doesn't dangle, but preserves picks, result and decoration so
+ * the run can be resumed when the tool is re-entered.
+ */
+export function suspendAnalytics(): void {
+    setAnalyticsAwaitingPick(null);
+    emit(EVT_ANALYTICS_UPDATED, null);
+}
