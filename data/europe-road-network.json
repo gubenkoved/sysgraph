@@ -1,5 +1,32 @@
 {
   "title": "Europe Road Network",
+  "display": {
+    "d3EnablePhysics": true,
+    "d3Charge": -300,
+    "d3LinkDistance": 275,
+    "d3LinkStrength": 0.15,
+    "d3CollisionMultiplier": 0.65,
+    "nodeSizingMode": "constant",
+    "nodeSizingConstant": 3,
+    "nodeLabelMode": "expression",
+    "nodeLabelExpression": "properties.label",
+    "nodeColors": {
+      "city": {
+        "r": 75.9483173076923,
+        "g": 150.86682692307696,
+        "b": 200.8125,
+        "a": 1
+      }
+    },
+    "edgeColors": {
+      "road": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 0.14285714285714285
+      }
+    }
+  },
   "nodes": [
     {
       "id": "city_39",

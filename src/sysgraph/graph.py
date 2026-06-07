@@ -52,6 +52,8 @@ class Graph:
         self.edges: dict[NodeId, dict[NodeId, list[Relationship]]] = (
             defaultdict(lambda: defaultdict(list))
         )
+        # optional display-settings override embedded in the graph output
+        self.display: dict[str, Any] | None = None
 
     def add_node(
         self,
@@ -84,7 +86,11 @@ class Graph:
             for edge_list in by_target.values()
             for edge in edge_list
         ]
-        return {
-            "nodes": [node.as_dict() for node in self.nodes.values()],
-            "edges": edges,
-        }
+        result: dict[str, Any] = {}
+        # keep display first so it stays easy to find when present, before the
+        # (potentially huge) node/edge arrays
+        if self.display is not None:
+            result["display"] = self.display
+        result["nodes"] = [node.as_dict() for node in self.nodes.values()]
+        result["edges"] = edges
+        return result

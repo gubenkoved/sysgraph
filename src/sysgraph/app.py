@@ -66,6 +66,9 @@ class GraphEdgeSchema(BaseModel):
 
 
 class GraphSchema(BaseModel):
+    # display first so it stays easy to find in the response, before the
+    # (potentially huge) node/edge arrays
+    display: dict[str, Any] | None = None
     nodes: list[GraphNodeSchema]
     edges: list[GraphEdgeSchema]
 

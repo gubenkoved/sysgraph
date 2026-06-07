@@ -77,6 +77,14 @@ function snapshotSettings(): SettingsSnapshot {
     return cloneJsonValue(settings);
 }
 
+/**
+ * Returns a deep clone of the current settings (the full settings snapshot).
+ * Used both for presets and for embedding display settings into a graph.
+ */
+export function snapshotCurrentSettings(): SettingsSnapshot {
+    return snapshotSettings();
+}
+
 function applyObjectInPlace(
     target: Record<string, unknown>,
     source: Record<string, unknown>,
@@ -182,5 +190,52 @@ export function resetSettingsToDefaults(): void {
         settings as unknown as Record<string, unknown>,
         createDefaultSettings() as unknown as Record<string, unknown>,
         true,
+    );
+}
+
+/**
+ * Applies a graph-embedded display block onto a fresh set of default
+ * settings, then commits the result. Starting from defaults (rather than the
+ * current settings) makes applying a graph's display predictable: the outcome
+ * depends only on the defaults and the graph's overrides, never on whatever
+ * the user had configured before. Nested maps the block provides (e.g.
+ * nodeColors) replace the corresponding default map.
+ */
+export function applyEmbeddedDisplaySettings(
+    display: Record<string, unknown>,
+): void {
+    // start from defaults so the result is independent of current settings
+    const base = createDefaultSettings() as unknown as Record<string, unknown>;
+    applyObjectInPlace(base, display, false);
+    applyObjectInPlace(
+        settings as unknown as Record<string, unknown>,
+        base,
+        true,
+    );
+}
+
+/**
+ * Serializes the current settings snapshot to a pretty-printed JSON string.
+ * The shape matches a preset value (and a graph's embedded display block), so
+ * exported files interoperate with both.
+ */
+export function exportSettingsToJson(): string {
+    return JSON.stringify(snapshotSettings(), null, 2);
+}
+
+/**
+ * Parses a settings JSON file and applies it onto the current settings as a
+ * partial override (so partial files are tolerated). Throws on invalid JSON or
+ * a non-object payload.
+ */
+export function importSettingsFromJson(text: string): void {
+    const parsed: unknown = JSON.parse(text);
+    if (!isObjectRecord(parsed)) {
+        throw new Error('settings file must contain a JSON object');
+    }
+    applyObjectInPlace(
+        settings as unknown as Record<string, unknown>,
+        parsed,
+        false,
     );
 }

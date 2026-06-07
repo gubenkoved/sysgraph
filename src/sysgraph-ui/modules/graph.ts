@@ -13,17 +13,31 @@ export interface GraphEdge {
 }
 
 /**
+ * Display settings a graph may carry to drive the UI on load. This is a
+ * partial settings override (same shape as a settings preset); kept as a loose
+ * record here to avoid coupling the graph model to the settings module.
+ */
+export type GraphDisplay = Record<string, unknown>;
+
+/**
  * Directed graph with pre-computed adjacency lists.
  */
 export class Graph {
     readonly nodesMap: Map<string, GraphNode>;
     readonly edgesMap: Map<string, GraphEdge>;
     readonly adjacency: Map<string, GraphEdge[]>;
+    /** Optional display-settings override embedded in the graph. */
+    display?: GraphDisplay;
 
-    constructor(nodes: GraphNode[] = [], edges: GraphEdge[] = []) {
+    constructor(
+        nodes: GraphNode[] = [],
+        edges: GraphEdge[] = [],
+        display?: GraphDisplay,
+    ) {
         this.nodesMap = new Map(nodes.map(n => [n.id, n]));
         this.edgesMap = new Map(edges.map(edge => [edge.id, edge]));
         this.adjacency = new Map();
+        this.display = display;
 
         for (const nodeId of this.nodesMap.keys()) {
             this.adjacency.set(nodeId, []);
@@ -119,11 +133,15 @@ export class Graph {
         this.adjacency.delete(nodeId);
     }
 
-    toData(): { nodes: GraphNode[]; edges: GraphEdge[] } {
-        return {
+    toData(): { display?: GraphDisplay; nodes: GraphNode[]; edges: GraphEdge[] } {
+        const data: { display?: GraphDisplay; nodes: GraphNode[]; edges: GraphEdge[] } = {
+            // keep display first so it stays easy to find when present, before
+            // the (potentially huge) node/edge arrays
+            ...(this.display ? { display: this.display } : {}),
             nodes: this.getNodes(),
             edges: this.getEdges(),
         };
+        return data;
     }
 }
 

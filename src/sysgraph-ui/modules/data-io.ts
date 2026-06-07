@@ -1,9 +1,25 @@
-import { type Graph, type GraphEdge, type GraphNode, generateId } from './graph.js';
+import { type Graph, type GraphDisplay, type GraphEdge, type GraphNode, generateId } from './graph.js';
+
+/** Result of loading or parsing graph data, including any embedded display block. */
+export interface LoadedGraphData {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
+    display?: GraphDisplay;
+}
+
+/** Extracts a top-level display block when it is a plain object. */
+function extractDisplay(data: Record<string, unknown>): GraphDisplay | undefined {
+    const display = data.display;
+    if (display != null && typeof display === 'object' && !Array.isArray(display)) {
+        return display as GraphDisplay;
+    }
+    return undefined;
+}
 
 /**
  * Fetches graph data from the backend API.
  */
-export async function loadDataFromApi(): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
+export async function loadDataFromApi(): Promise<LoadedGraphData> {
     let res: Response;
     try {
         res = await fetch('/api/graph');
@@ -44,9 +60,8 @@ export async function loadDataFromApi(): Promise<{ nodes: GraphNode[]; edges: Gr
         };
     });
 
-    return { nodes, edges };
+    return { nodes, edges, display: extractDisplay(response) };
 }
-
 /**
  * Serialises a Graph instance to a pretty-printed JSON string.
  */
@@ -113,13 +128,14 @@ function normalizeEdges(raw: unknown[] | Record<string, unknown>): GraphEdge[] {
 /**
  * Parses a JSON string into normalized graph data.
  */
-export function parseGraphData(text: string): { nodes: GraphNode[]; edges: GraphEdge[] } {
+export function parseGraphData(text: string): LoadedGraphData {
     const data = JSON.parse(text) as Record<string, unknown>;
     return {
         nodes: normalizeNodes((data.nodes as unknown[] | undefined) ?? []),
         edges: normalizeEdges(
             (data.edges ?? data.relationships ?? data.links ?? []) as unknown[],
         ),
+        display: extractDisplay(data),
     };
 }
 
@@ -151,7 +167,7 @@ export async function loadExamplesManifest(): Promise<ExampleInfo[]> {
  */
 export async function loadExampleGraph(
     file: string,
-): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
+): Promise<LoadedGraphData> {
     const url = `${import.meta.env.BASE_URL}examples/${file}`;
     let res: Response;
     try {

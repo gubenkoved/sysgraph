@@ -23,6 +23,7 @@ from sysgraph.constants import (
     NODE_PROCESS,
     NODE_SOCKET,
     NODE_UDS,
+    default_display,
     external_ip_node_id,
     pipe_node_id,
     process_node_id,
@@ -562,6 +563,9 @@ def build_graph(discover_uds_connectivity: bool = True) -> Graph:
     _add_uds_nodes(graph, uds, pid_to_node, discover_uds_connectivity)
     _add_pipe_nodes(graph, open_files_map, pid_to_node)
     _add_network_nodes(graph, processes, all_net_connections, pid_to_node)
+
+    # drive the UI display identity (colors/widths) from the backend
+    graph.display = default_display()
 
     LOGGER.info(
         f"discovery completed in {time.monotonic() - started_at:.2f} seconds"

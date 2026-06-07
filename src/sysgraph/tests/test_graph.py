@@ -1,5 +1,6 @@
 import unittest
 
+from sysgraph.constants import default_display, hex_to_rgba
 from sysgraph.graph import Graph, Node, Relationship
 
 
@@ -126,6 +127,49 @@ class GraphTest(unittest.TestCase):
         d = g.as_dict()
         self.assertEqual(len(d["nodes"]), 3)
         self.assertEqual(len(d["edges"]), 3)
+
+    def test_as_dict_omits_display_when_unset(self):
+        g = Graph()
+        g.add_node("a", "process")
+        d = g.as_dict()
+        self.assertNotIn("display", d)
+
+    def test_as_dict_includes_display_when_set(self):
+        g = Graph()
+        g.add_node("a", "process")
+        g.display = {
+            "nodeColors": {"process": {"r": 1, "g": 2, "b": 3, "a": 1}}
+        }
+        d = g.as_dict()
+        self.assertIn("display", d)
+        self.assertEqual(d["display"], g.display)
+
+
+class DisplayDefaultsTest(unittest.TestCase):
+    def test_hex_to_rgba(self):
+        self.assertEqual(
+            hex_to_rgba("#157fc8", 1.0),
+            {"r": 21, "g": 127, "b": 200, "a": 1.0},
+        )
+
+    def test_hex_to_rgba_shorthand(self):
+        self.assertEqual(
+            hex_to_rgba("#abc", 0.5),
+            {"r": 170, "g": 187, "b": 204, "a": 0.5},
+        )
+
+    def test_hex_to_rgba_rejects_bad_input(self):
+        with self.assertRaises(ValueError):
+            hex_to_rgba("#12", 1.0)
+
+    def test_default_display_shape(self):
+        display = default_display()
+        self.assertIn("nodeColors", display)
+        self.assertIn("edgeColors", display)
+        self.assertIn("edgeWidths", display)
+        # node colors are opaque, edge colors use the default link opacity
+        self.assertEqual(display["nodeColors"]["process"]["a"], 1.0)
+        self.assertEqual(display["edgeColors"]["socket"]["a"], 0.5)
 
 
 if __name__ == "__main__":

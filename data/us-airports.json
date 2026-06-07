@@ -1,5 +1,29 @@
 {
   "title": "US Airports",
+  "display": {
+    "d3Charge": -420,
+    "d3LinkDistance": 500,
+    "d3LinkStrength": 0.02,
+    "d3CollisionMultiplier": 1.2,
+    "nodeLabelMode": "expression",
+    "nodeLabelExpression": "properties.iata + \"\\n\" + properties.city",
+    "nodeColors": {
+      "airport": {
+        "r": 103,
+        "g": 58,
+        "b": 183,
+        "a": 1
+      }
+    },
+    "edgeColors": {
+      "route": {
+        "r": 0,
+        "g": 65.54166666666663,
+        "b": 120.99999999999999,
+        "a": 0.2761904761904762
+      }
+    }
+  },
   "nodes": [
     {
       "id": "ABE",

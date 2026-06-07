@@ -87,32 +87,6 @@ export const defaultEdgeWidth = 1;
 /** Alpha multipliers for highlight distances 0, 1, 2, 3+. */
 export const highlightAlphaMultipliers: number[] = [1.0, 1.0, 0.5, 0.1];
 
-const defaultNodeColorHexes: AuthoredColorMap = {
-    process: '#157fc8',
-    socket: '#dc4b2f',
-    uds: '#36bc7b',
-    pipe: '#a939f9',
-    external_ip: '#ff6700',
-};
-
-const defaultEdgeColorHexes: AuthoredColorMap = {
-    uds: '#1b7c4d',
-    uds_connection: '#1b7c4d',
-    pipe: '#cf6eff',
-    socket_connection: '#ff4c28',
-    socket: '#ff4c28',
-    child_process: '#282828',
-};
-
-const defaultEdgeWidths: EdgeWidthMap = {
-    child_process: 1,
-    pipe: 1,
-    socket: 1,
-    socket_connection: 1,
-    uds: 1,
-    uds_connection: 1,
-};
-
 const paletteHexes: string[] = [
     // --- Blues & Cyans (dominant group)
     '#3498db', '#2980b9', '#1f618d', '#5dade2',
@@ -148,54 +122,27 @@ function hexToRgbaColor(hex: string, alpha: number): RgbaColor {
     };
 }
 
-function normalizeAuthoredColorMap(authoredColors: AuthoredColorMap, alpha: number): ColorMap {
-    return Object.fromEntries(
-        Object.entries(authoredColors).map(([key, value]) => [key, hexToRgbaColor(value, alpha)])
-    );
-}
-
 function normalizeAuthoredPalette(authoredPalette: string[], alpha: number): RgbaColor[] {
     return authoredPalette.map((value) => hexToRgbaColor(value, alpha));
 }
 
-const defaultNodeColors: ColorMap = normalizeAuthoredColorMap(defaultNodeColorHexes, 1.0);
-const defaultEdgeColors: ColorMap = normalizeAuthoredColorMap(defaultEdgeColorHexes, defaultLinkOpacity);
 const palette: RgbaColor[] = normalizeAuthoredPalette(paletteHexes, 1.0);
 
-/** Canonical display order for known node types (declared colour order). */
-const nodeTypeOrder: string[] = Object.keys(defaultNodeColorHexes);
-/** Canonical display order for known edge types (declared colour order). */
-const edgeTypeOrder: string[] = Object.keys(defaultEdgeColorHexes);
-
 /**
- * Sorts type names by their position in a canonical order list. Known types
- * keep their canonical order; unknown types are appended alphabetically.
+ * Sorts type names alphabetically for stable display in the settings UI.
  */
-function sortByCanonicalOrder(types: Iterable<string>, order: string[]): string[] {
-    return [...types].sort((a, b) => {
-        const ia = order.indexOf(a);
-        const ib = order.indexOf(b);
-        if (ia !== -1 && ib !== -1) {
-            return ia - ib;
-        }
-        if (ia !== -1) {
-            return -1;
-        }
-        if (ib !== -1) {
-            return 1;
-        }
-        return a.localeCompare(b);
-    });
+function sortTypesAlphabetically(types: Iterable<string>): string[] {
+    return [...types].sort((a, b) => a.localeCompare(b));
 }
 
 /** Sorts node type names for stable display in the settings UI. */
 export function sortNodeTypes(types: Iterable<string>): string[] {
-    return sortByCanonicalOrder(types, nodeTypeOrder);
+    return sortTypesAlphabetically(types);
 }
 
 /** Sorts edge type names for stable display in the settings UI. */
 export function sortEdgeTypes(types: Iterable<string>): string[] {
-    return sortByCanonicalOrder(types, edgeTypeOrder);
+    return sortTypesAlphabetically(types);
 }
 
 /**
@@ -207,14 +154,11 @@ export function colorToCss(color: RgbaColor): string {
 
 /**
  * Returns the RGBA colour for a node type — checks user settings first,
- * then curated defaults, then palette hash.
+ * then falls back to a stable palette hash.
  */
 export function getNodeColor(node_type: string): RgbaColor {
     if (node_type in settings.nodeColors) {
         return settings.nodeColors[node_type]!;
-    }
-    if (node_type in defaultNodeColors) {
-        return defaultNodeColors[node_type]!;
     }
     const hash = fnv1a(node_type);
     return { ...palette[hash % palette.length]!, a: 1.0 };
@@ -222,14 +166,12 @@ export function getNodeColor(node_type: string): RgbaColor {
 
 /**
  * Returns the RGBA colour for an edge type — checks user settings first,
- * then curated defaults, then palette hash.
+ * then falls back to a stable palette hash.
  */
 export function getEdgeColor(edge_type: string): RgbaColor {
     let color: RgbaColor;
     if (edge_type in settings.edgeColors) {
         color = settings.edgeColors[edge_type]!;
-    } else if (edge_type in defaultEdgeColors) {
-        color = defaultEdgeColors[edge_type]!;
     } else {
         const hash = fnv1a(edge_type);
         color = { ...palette[hash % palette.length]!, a: defaultLinkOpacity };
@@ -254,14 +196,12 @@ export function getEdgeCssColor(edge_type: string): string {
 
 /**
  * Returns the width for an edge type — checks user settings first,
- * then curated defaults, then global default.
+ * then the global default.
  */
 export function getEdgeWidth(edge_type: string): number {
     let width: number;
     if (edge_type in settings.edgeWidths) {
         width = settings.edgeWidths[edge_type]!;
-    } else if (edge_type in defaultEdgeWidths) {
-        width = defaultEdgeWidths[edge_type]!;
     } else {
         width = defaultEdgeWidth;
     }

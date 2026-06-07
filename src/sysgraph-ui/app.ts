@@ -7,7 +7,7 @@ import { initLongPress } from './modules/long-press.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
-import { updateDynamicGraphPanes } from './modules/settings-pane.js';
+import { maybeApplyGraphDisplay, updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { getGraph, isGraphDirty, resetState, setGraphDirty, setSearch, state, updateGraph } from './modules/state.js';
 import { initTheme } from './modules/theme.js';
 import { initToolbar, setTool, updateGraphInfo } from './modules/toolbar.js';
@@ -146,7 +146,8 @@ registerHandler(CMD_IMPORT, async (text?: string) => {
     try {
         const loadedData = parseGraphData(text);
         resetState();
-        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges, loadedData.display));
+        maybeApplyGraphDisplay(loadedData.display);
         requestRecenterView();
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
@@ -161,7 +162,8 @@ registerHandler(CMD_LOAD_EXAMPLE, async (file?: string) => {
     try {
         const loadedData = await loadExampleGraph(file);
         resetState();
-        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges, loadedData.display));
+        maybeApplyGraphDisplay(loadedData.display);
         requestRecenterView();
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
@@ -177,7 +179,8 @@ registerHandler(CMD_RELOAD, async () => {
     loadingOverlay.classList.add('visible');
     try {
         const loadedData = await loadDataFromApi();
-        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges, loadedData.display));
+        maybeApplyGraphDisplay(loadedData.display);
         setGraphDirty(false);
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {
@@ -219,7 +222,8 @@ window.addEventListener('load', async () => {
     loadingOverlay.classList.add('visible');
     try {
         const loadedData = await loadDataFromApi();
-        updateGraph(new Graph(loadedData.nodes, loadedData.edges));
+        updateGraph(new Graph(loadedData.nodes, loadedData.edges, loadedData.display));
+        maybeApplyGraphDisplay(loadedData.display);
         setGraphDirty(false);
         emit(EVT_GRAPH_UPDATED, null);
     } catch (err) {

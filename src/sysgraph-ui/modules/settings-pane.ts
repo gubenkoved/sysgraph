@@ -7,6 +7,13 @@ import {
     EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
 } from './constants.js';
 import { emit } from './event-bus.js';
+import type { GraphDisplay } from './graph.js';
+import {
+    GRAPH_DISPLAY_MODES,
+    type GraphDisplayMode,
+    getGraphDisplayMode,
+    setGraphDisplayMode,
+} from './graph-display.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
 import { setFrameHooks } from './render-hooks.js';
 import type { SettingsShape } from './settings.js';
@@ -20,14 +27,18 @@ import {
 } from './settings.js';
 import type { PresetEntry, PresetSource } from './settings-presets.js';
 import {
+    applyEmbeddedDisplaySettings,
     applySettingsPreset,
     deleteSettingsPreset,
+    exportSettingsToJson,
+    importSettingsFromJson,
     listAllPresets,
     resetSettingsToDefaults,
     saveSettingsPreset,
+    snapshotCurrentSettings,
 } from './settings-presets.js';
-import { getGraph } from './state.js';
-import { showError } from './util.js';
+import { getGraph, setGraphDirty } from './state.js';
+import { showActionToast, showError } from './util.js';
 
 function getRequiredElement(id: string): HTMLElement {
     const element = document.getElementById(id);
@@ -209,6 +220,94 @@ function syncStaticSettingsPane(): void {
     pane.refresh();
 }
 
+/**
+ * Fully refreshes the settings pane and graph rendering after the settings
+ * object was mutated wholesale (preset load, embedded display, file import).
+ */
+function refreshAfterSettingsChange(): void {
+    updateDynamicGraphPanes();
+    syncStaticSettingsPane();
+    emit(EVT_D3_PARAMS_CHANGED, null);
+    emit(EVT_SETTINGS_UPDATED, null);
+    emit(EVT_COLORS_UPDATED, null);
+}
+
+/**
+ * Applies a graph-embedded display block onto the current settings and fully
+ * refreshes the settings pane and graph rendering (mirrors the preset-load
+ * refresh flow).
+ */
+export function applyGraphDisplayAndRefresh(display: GraphDisplay): void {
+    applyEmbeddedDisplaySettings(display);
+    refreshAfterSettingsChange();
+}
+
+/**
+ * Resets settings back to defaults and fully refreshes the pane and rendering.
+ * Used when a loaded graph carries no display block so it renders in its
+ * canonical look instead of inheriting the previous graph's tweaks.
+ */
+function resetGraphDisplayAndRefresh(): void {
+    resetSettingsToDefaults();
+    refreshAfterSettingsChange();
+}
+
+/**
+ * Reconciles a loaded graph with the user's settings according to the
+ * persisted graph-display mode (apply / ask / ignore).
+ *
+ * A graph "drives" the display: when it carries a display block we apply it,
+ * and when it does NOT we reset to defaults so the graph renders in its
+ * canonical look instead of inheriting the previous graph's tweaks. The mode
+ * gates this: 'apply' acts automatically, 'ask' prompts, 'ignore' never
+ * touches settings.
+ */
+export function maybeApplyGraphDisplay(display: GraphDisplay | undefined): void {
+    const mode = getGraphDisplayMode();
+    if (mode === 'ignore') {
+        return;
+    }
+
+    const hasDisplay = !!display && Object.keys(display).length > 0;
+
+    if (mode === 'apply') {
+        if (hasDisplay) {
+            applyGraphDisplayAndRefresh(display as GraphDisplay);
+        } else {
+            resetGraphDisplayAndRefresh();
+        }
+        return;
+    }
+
+    // mode === 'ask' → prompt with a prominent, sticky action toast
+    if (hasDisplay) {
+        showActionToast(
+            'This graph carries its own colors, filters and layout. Apply them?',
+            'Apply settings',
+            () => applyGraphDisplayAndRefresh(display as GraphDisplay),
+            {
+                id: 'graph-display-prompt',
+                title: 'Graph display settings available',
+                icon: 'palette',
+                durationMs: 0,
+            },
+        );
+        return;
+    }
+
+    showActionToast(
+        'This graph has no display settings. Reset to defaults so it renders in its canonical look?',
+        'Reset to defaults',
+        () => resetGraphDisplayAndRefresh(),
+        {
+            id: 'graph-display-prompt',
+            title: 'No graph display settings',
+            icon: 'restart_alt',
+            durationMs: 0,
+        },
+    );
+}
+
 const actionsFolder = pane.addFolder({ title: 'actions', expanded: true });
 
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
@@ -265,7 +364,19 @@ function rebuildPresetsFolder(): void {
     presetsFolder.dispose();
     presetsFolder = pane.addFolder({ title: 'presets', expanded });
 
-    presetsFolder.addButton({ title: 'save' }).on('click', () => {
+    if (dropdownOptions.length > 0) {
+        presetsFolder.addBinding(presetUiState as unknown as Record<string, unknown>, 'selectedPresetKey', {
+            label: 'name',
+            view: 'list',
+            options: dropdownOptions,
+        }).on('change', () => {
+            updatePresetButtonState();
+        });
+    }
+
+    const loadBtn = presetsFolder.addButton({ title: 'load from browser' });
+
+    presetsFolder.addButton({ title: 'save to browser' }).on('click', () => {
         const rawName = window.prompt('Preset name');
         const presetName = rawName ? rawName.trim() : '';
 
@@ -281,19 +392,6 @@ function rebuildPresetsFolder(): void {
         }
     });
 
-    presetsFolder.addBlade({ view: 'separator' });
-
-    if (dropdownOptions.length > 0) {
-        presetsFolder.addBinding(presetUiState as unknown as Record<string, unknown>, 'selectedPresetKey', {
-            label: 'name',
-            view: 'list',
-            options: dropdownOptions,
-        }).on('change', () => {
-            updatePresetButtonState();
-        });
-    }
-
-    const loadBtn = presetsFolder.addButton({ title: 'load' });
     const deleteBtn = presetsFolder.addButton({ title: 'delete' });
 
     function updatePresetButtonState(): void {
@@ -333,6 +431,8 @@ function rebuildPresetsFolder(): void {
         }
     });
 
+    presetsFolder.addBlade({ view: 'separator' });
+
     presetsFolder.addButton({ title: 'reset' }).on('click', () => {
         try {
             resetSettingsToDefaults();
@@ -345,9 +445,88 @@ function rebuildPresetsFolder(): void {
             showError(`Reset settings failed: ${getErrorMessage(err)}`);
         }
     });
+
+    presetsFolder.addBlade({ view: 'separator' });
+
+    presetsFolder.addButton({ title: 'export to file' }).on('click', () => {
+        try {
+            exportSettingsToFile();
+        } catch (err) {
+            console.error('export settings failed:', err);
+            showError(`Export settings failed: ${getErrorMessage(err)}`);
+        }
+    });
+
+    presetsFolder.addButton({ title: 'import from file' }).on('click', () => {
+        settingsImportInput.click();
+    });
+}
+
+// --- settings file import/export ---
+// dedicated hidden input so it never clashes with the graph import input
+const settingsImportInput = document.createElement('input');
+settingsImportInput.type = 'file';
+settingsImportInput.accept = '.json,application/json';
+settingsImportInput.style.display = 'none';
+document.body.appendChild(settingsImportInput);
+
+settingsImportInput.addEventListener('change', async () => {
+    const file = settingsImportInput.files?.[0];
+    if (!file) return;
+    try {
+        importSettingsFromJson(await file.text());
+        refreshAfterSettingsChange();
+    } catch (err) {
+        console.error('import settings failed:', err);
+        showError(`Import settings failed: ${getErrorMessage(err)}`);
+    } finally {
+        // reset so selecting the same file again re-triggers change
+        settingsImportInput.value = '';
+    }
+});
+
+/** Serializes current display settings and triggers a file download. */
+function exportSettingsToFile(): void {
+    const blob = new Blob([exportSettingsToJson()], { type: 'application/json' });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${timestamp}_display-settings.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 rebuildPresetsFolder();
+
+// --- graph display pane (embedded-display reconciliation + authoring) ---
+const graphDisplayFolder = pane.addFolder({ title: 'graph display', expanded: false });
+
+const graphDisplayUiState = {
+    mode: getGraphDisplayMode() as GraphDisplayMode,
+};
+
+graphDisplayFolder.addBinding(graphDisplayUiState, 'mode', {
+    label: 'on load',
+    view: 'list',
+    options: GRAPH_DISPLAY_MODES.map((mode) => ({ text: mode, value: mode })),
+}).on('change', () => {
+    setGraphDisplayMode(graphDisplayUiState.mode);
+});
+
+graphDisplayFolder.addButton({ title: 'save settings → graph' }).on('click', () => {
+    const graph = getGraph();
+    graph.display = snapshotCurrentSettings() as unknown as GraphDisplay;
+    setGraphDirty(true);
+});
+
+graphDisplayFolder.addButton({ title: 'clear graph display' }).on('click', () => {
+    const graph = getGraph();
+    if (graph.display) {
+        graph.display = undefined;
+        setGraphDirty(true);
+    }
+});
 
 /**
  * Attaches Plotly-style "double-click to isolate" behaviour to a filter toggle.
