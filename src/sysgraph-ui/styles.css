@@ -1275,6 +1275,38 @@ body {
   font-weight: 500;
 }
 
+/* Category color-coding for settings folders. A left accent stripe plus a
+   subtly tinted title bar makes each functional group easy to locate at a
+   glance. The hue is driven per-category by --sg-folder-hue. */
+#settingsPane .sg-folder {
+  border-left: 3px solid hsl(var(--sg-folder-hue, 221), 55%, 55%);
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+  margin-bottom: 2px;
+}
+
+#settingsPane .sg-folder > .tp-fldv_b {
+  background-color: hsla(var(--sg-folder-hue, 221), 55%, 55%, 0.12);
+}
+
+#settingsPane .sg-folder > .tp-fldv_b:hover {
+  background-color: hsla(var(--sg-folder-hue, 221), 55%, 55%, 0.22);
+}
+
+/* persistence / save-restore groups share a violet family */
+#settingsPane .sg-folder-embed   { --sg-folder-hue: 270; }
+#settingsPane .sg-folder-presets { --sg-folder-hue: 290; }
+/* layout & physics */
+#settingsPane .sg-folder-forces  { --sg-folder-hue: 145; }
+/* display options */
+#settingsPane .sg-folder-display { --sg-folder-hue: 190; }
+/* type filters */
+#settingsPane .sg-folder-filters { --sg-folder-hue: 35; }
+/* colors & widths */
+#settingsPane .sg-folder-colors  { --sg-folder-hue: 215; }
+/* actions */
+#settingsPane .sg-folder-actions { --sg-folder-hue: 350; }
+
 /* Color-picker popup. The pane's base background is intentionally transparent
    (the frosted card chrome lives on #settingsPane), but the picker popover
    floats over other controls and needs its own opaque surface so it doesn't
@@ -1313,6 +1345,12 @@ body {
   line-height: 1.4;
   text-align: center;
   pointer-events: none;
+}
+
+/* dark theme: lighten the badge so the count reads clearly on dark panels */
+:root[data-theme="dark"] .type-count-badge {
+  background: hsla(221, 45%, 65%, 0.22);
+  color: hsla(221, 40%, 88%, 0.95);
 }
 
 /* ── Misc ────────────────────────────────────────────────── */

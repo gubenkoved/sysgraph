@@ -56,6 +56,13 @@ const pane = new Pane({
 
 pane.registerPlugin(EssentialsPlugin);
 
+// tags a folder's root element with a category class so it can be visually
+// color-coded via CSS (left accent stripe + tinted title bar)
+function tagFolder(folder: FolderApi, category: string): FolderApi {
+    folder.element.classList.add('sg-folder', `sg-folder-${category}`);
+    return folder;
+}
+
 const presetUiState = {
     selectedPresetKey: '' as string,
 };
@@ -77,7 +84,7 @@ function getErrorMessage(err: unknown): string {
 }
 
 // --- d3 simulation parameters (data-driven) ---
-const d3RenderingSettingsFolder = pane.addFolder({ title: 'd3 forces settings', expanded: false });
+const d3RenderingSettingsFolder = tagFolder(pane.addFolder({ title: 'd3 forces settings', expanded: false }), 'forces');
 
 const d3Params: { key: keyof SettingsShape; label: string; min: number; max: number; step: number }[] = [
     { key: 'd3Charge', label: 'charge force', min: -800, max: 100, step: 10 },
@@ -118,7 +125,7 @@ const fpsGraph = d3RenderingSettingsFolder.addBlade({
 setFrameHooks(() => fpsGraph.begin(), () => fpsGraph.end());
 
 // --- graph display settings ---
-const displayOptionsFolder = pane.addFolder({ title: 'display options', expanded: false });
+const displayOptionsFolder = tagFolder(pane.addFolder({ title: 'display options', expanded: false }), 'display');
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showIsolated', { label: 'show isolated' }).on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
@@ -308,7 +315,7 @@ export function maybeApplyGraphDisplay(display: GraphDisplay | undefined): void 
     );
 }
 
-const actionsFolder = pane.addFolder({ title: 'actions', expanded: true });
+const actionsFolder = tagFolder(pane.addFolder({ title: 'actions', expanded: true }), 'actions');
 
 actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
     const graphData = ForceGraphInstance.graphData();
@@ -325,18 +332,18 @@ actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
 });
 
 // --- filter panes ---
-let nodeFiltersFolder: FolderApi = pane.addFolder({ title: 'node filters', expanded: false });
-let edgeFiltersFolder: FolderApi = pane.addFolder({ title: 'edge filters', expanded: false });
+let nodeFiltersFolder: FolderApi = tagFolder(pane.addFolder({ title: 'node filters', expanded: false }), 'filters');
+let edgeFiltersFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge filters', expanded: false }), 'filters');
 
 // --- color panes ---
-let nodeColorsFolder: FolderApi = pane.addFolder({ title: 'node colors', expanded: true });
-let edgeColorsFolder: FolderApi = pane.addFolder({ title: 'edge colors', expanded: true });
+let nodeColorsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'node colors', expanded: true }), 'colors');
+let edgeColorsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge colors', expanded: true }), 'colors');
 
 // --- edge width pane ---
-let edgeWidthsFolder: FolderApi = pane.addFolder({ title: 'edge widths', expanded: false });
+let edgeWidthsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge widths', expanded: false }), 'colors');
 
 // --- presets pane ---
-let presetsFolder: FolderApi = pane.addFolder({ title: 'presets', expanded: true });
+let presetsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'presets', expanded: true }), 'presets');
 
 function updateSelectedPresetKey(keys: string[]): void {
     if (keys.length === 0) {
@@ -362,7 +369,7 @@ function rebuildPresetsFolder(): void {
     updateSelectedPresetKey(allKeys);
 
     presetsFolder.dispose();
-    presetsFolder = pane.addFolder({ title: 'presets', expanded });
+    presetsFolder = tagFolder(pane.addFolder({ title: 'presets', expanded }), 'presets');
 
     if (dropdownOptions.length > 0) {
         presetsFolder.addBinding(presetUiState as unknown as Record<string, unknown>, 'selectedPresetKey', {
@@ -500,7 +507,7 @@ function exportSettingsToFile(): void {
 rebuildPresetsFolder();
 
 // --- graph display pane (embedded-display reconciliation + authoring) ---
-const graphDisplayFolder = pane.addFolder({ title: 'settings embedding', expanded: false, index: 0 });
+const graphDisplayFolder = tagFolder(pane.addFolder({ title: 'settings embedding', expanded: false, index: 0 }), 'embed');
 
 const graphDisplayUiState = {
     mode: getGraphDisplayMode() as GraphDisplayMode,
@@ -589,11 +596,11 @@ export function updateDynamicGraphPanes(): void {
     edgeColorsFolder.dispose();
     edgeWidthsFolder.dispose();
 
-    nodeFiltersFolder = pane.addFolder({ title: 'node filters', expanded: nfExpanded });
-    edgeFiltersFolder = pane.addFolder({ title: 'edge filters', expanded: efExpanded });
-    nodeColorsFolder = pane.addFolder({ title: 'node colors', expanded: ncExpanded });
-    edgeColorsFolder = pane.addFolder({ title: 'edge colors', expanded: ecExpanded });
-    edgeWidthsFolder = pane.addFolder({ title: 'edge widths', expanded: ewExpanded });
+    nodeFiltersFolder = tagFolder(pane.addFolder({ title: 'node filters', expanded: nfExpanded }), 'filters');
+    edgeFiltersFolder = tagFolder(pane.addFolder({ title: 'edge filters', expanded: efExpanded }), 'filters');
+    nodeColorsFolder = tagFolder(pane.addFolder({ title: 'node colors', expanded: ncExpanded }), 'colors');
+    edgeColorsFolder = tagFolder(pane.addFolder({ title: 'edge colors', expanded: ecExpanded }), 'colors');
+    edgeWidthsFolder = tagFolder(pane.addFolder({ title: 'edge widths', expanded: ewExpanded }), 'colors');
 
     const graph = getGraph();
     const nodeFilters = settings.nodeFilters;
