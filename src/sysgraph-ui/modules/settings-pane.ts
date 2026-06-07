@@ -500,27 +500,27 @@ function exportSettingsToFile(): void {
 rebuildPresetsFolder();
 
 // --- graph display pane (embedded-display reconciliation + authoring) ---
-const graphDisplayFolder = pane.addFolder({ title: 'graph display', expanded: false });
+const graphDisplayFolder = pane.addFolder({ title: 'settings embedding', expanded: false, index: 0 });
 
 const graphDisplayUiState = {
     mode: getGraphDisplayMode() as GraphDisplayMode,
 };
 
 graphDisplayFolder.addBinding(graphDisplayUiState, 'mode', {
-    label: 'on load',
+    label: 'on graph load',
     view: 'list',
     options: GRAPH_DISPLAY_MODES.map((mode) => ({ text: mode, value: mode })),
 }).on('change', () => {
     setGraphDisplayMode(graphDisplayUiState.mode);
 });
 
-graphDisplayFolder.addButton({ title: 'save settings → graph' }).on('click', () => {
+graphDisplayFolder.addButton({ title: 'embed into graph' }).on('click', () => {
     const graph = getGraph();
     graph.display = snapshotCurrentSettings() as unknown as GraphDisplay;
     setGraphDirty(true);
 });
 
-graphDisplayFolder.addButton({ title: 'clear graph display' }).on('click', () => {
+graphDisplayFolder.addButton({ title: 'clear embedded settings' }).on('click', () => {
     const graph = getGraph();
     if (graph.display) {
         graph.display = undefined;
