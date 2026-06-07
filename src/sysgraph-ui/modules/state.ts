@@ -35,6 +35,33 @@ export interface EditState {
     pendingEdgeSourceId: string | null;
 }
 
+export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst';
+
+/**
+ * Persistent visual decoration produced by an analytics algorithm. Nodes and
+ * edges in these sets stay emphasized while everything else is dimmed; unlike
+ * the transient hover highlight, it survives until the result is cleared.
+ */
+export interface AnalyticsDecoration {
+    nodeIds: Set<string>;
+    edgeIds: Set<string>;
+}
+
+export interface AnalyticsState {
+    active: boolean;
+    algorithmId: AnalyticsAlgorithmId | null;
+    // per-algorithm parameter values keyed by parameter id
+    params: Record<string, string>;
+    // picked node ids keyed by role (e.g. 'source', 'target')
+    pickedNodeIds: Record<string, string>;
+    // role currently awaiting a node click, or null when not picking
+    awaitingPickRole: string | null;
+    // latest computed result (algorithm-specific shape)
+    result: unknown | null;
+    // persistent canvas decoration for the latest result
+    decoration: AnalyticsDecoration | null;
+}
+
 export interface AppState {
     graph: Graph;
     highlight: HighlightState | null;
@@ -43,6 +70,7 @@ export interface AppState {
     selection: SelectionState;
     search: SearchState | null;
     edit: EditState;
+    analytics: AnalyticsState;
 }
 
 function initializeSelectionState(): SelectionState {
@@ -64,6 +92,18 @@ function initializeEditState(): EditState {
     };
 }
 
+function initializeAnalyticsState(): AnalyticsState {
+    return {
+        active: false,
+        algorithmId: null,
+        params: {},
+        pickedNodeIds: {},
+        awaitingPickRole: null,
+        result: null,
+        decoration: null,
+    };
+}
+
 export function initializeEmptyGraph(): Graph {
     return new Graph();
 }
@@ -76,6 +116,7 @@ export const state: AppState = {
     selection: initializeSelectionState(),
     search: null,
     edit: initializeEditState(),
+    analytics: initializeAnalyticsState(),
 };
 
 /** Resets all application state to initial defaults. */
@@ -86,6 +127,10 @@ export function resetState(): void {
     state.highlight = null;
     state.search = null;
     state.edit.pendingEdgeSourceId = null;
+    state.analytics.pickedNodeIds = {};
+    state.analytics.awaitingPickRole = null;
+    state.analytics.result = null;
+    state.analytics.decoration = null;
     graphDirty = false;
 }
 
@@ -123,6 +168,46 @@ export function setEditSubTool(subTool: EditSubTool): void {
 
 export function setPendingEdgeSource(nodeId: string | null): void {
     state.edit.pendingEdgeSourceId = nodeId;
+}
+
+export function setAnalyticsActive(active: boolean): void {
+    state.analytics.active = active;
+}
+
+export function setAnalyticsAlgorithm(id: AnalyticsAlgorithmId | null): void {
+    state.analytics.algorithmId = id;
+}
+
+export function setAnalyticsParam(key: string, value: string): void {
+    state.analytics.params[key] = value;
+}
+
+export function setAnalyticsPick(role: string, nodeId: string): void {
+    state.analytics.pickedNodeIds[role] = nodeId;
+}
+
+export function clearAnalyticsPick(role: string): void {
+    delete state.analytics.pickedNodeIds[role];
+}
+
+export function setAnalyticsAwaitingPick(role: string | null): void {
+    state.analytics.awaitingPickRole = role;
+}
+
+export function setAnalyticsResult(result: unknown | null): void {
+    state.analytics.result = result;
+}
+
+export function setAnalyticsDecoration(decoration: AnalyticsDecoration | null): void {
+    state.analytics.decoration = decoration;
+}
+
+/** Clears analytics picks, awaiting state, result and decoration (keeps params). */
+export function clearAnalyticsRun(): void {
+    state.analytics.pickedNodeIds = {};
+    state.analytics.awaitingPickRole = null;
+    state.analytics.result = null;
+    state.analytics.decoration = null;
 }
 
 // --- unsaved-changes tracking -------------------------------------------

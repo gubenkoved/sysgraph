@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import type { ForceGraphGeneric, LinkObject, NodeObject } from 'force-graph';
 import ForceGraph from 'force-graph';
+import { handleAnalyticsNodeClick } from './analytics.js';
 import { ColorScale } from './color-scale.js';
 import {
     D3_CHARGE_STRENGTH,
@@ -424,6 +425,14 @@ export function requestRecenterView(): void {
     requestAnimationFrame(() => recenterView(RECENTER_VIEW_DURATION_MS));
 }
 
+/** Pans the camera to center on the given node, if present and positioned. */
+export function centerOnNode(nodeId: string, durationMs = 500): void {
+    const node = (ForceGraphInstance.graphData().nodes as FGNode[]).find(n => n.id === nodeId);
+    if (node?.x != null && node.y != null) {
+        ForceGraphInstance.centerAt(node.x, node.y, durationMs);
+    }
+}
+
 ForceGraphInstance
     .nodeId('id')
     .graphData({ nodes: [], links: [] })
@@ -436,6 +445,15 @@ ForceGraphInstance
     .linkColor(l => {
         let fillStyle = edgeColorFor(l);
         let alphaMultiplier = 1.0;
+
+        // persistent analytics decoration takes precedence over hover/search
+        const decoration = state.analytics.decoration;
+        if (decoration) {
+            alphaMultiplier = decoration.edgeIds.has(l.id)
+                ? 1.0
+                : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+            return colorAdjustAlpha(fillStyle, alphaMultiplier);
+        }
 
         if (!state.highlight && state.search) {
             alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
@@ -480,16 +498,24 @@ ForceGraphInstance
 
         let alphaMultiplier = 1.0;
 
-        if (!state.highlight && state.search && !state.search.matchesMap.has(node.id)) {
-            alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
-        }
+        // persistent analytics decoration takes precedence over hover/search
+        const decoration = state.analytics.decoration;
+        if (decoration) {
+            alphaMultiplier = decoration.nodeIds.has(node.id)
+                ? 1.0
+                : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+        } else {
+            if (!state.highlight && state.search && !state.search.matchesMap.has(node.id)) {
+                alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
+            }
 
-        if (state.highlight) {
-            alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-            const nodeDistance = state.highlight.nodeDistancesMap.get(node.id);
+            if (state.highlight) {
+                alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+                const nodeDistance = state.highlight.nodeDistancesMap.get(node.id);
 
-            if (nodeDistance !== undefined && nodeDistance < highlightAlphaMultipliers.length - 1) {
-                alphaMultiplier = highlightAlphaMultipliers[nodeDistance]!;
+                if (nodeDistance !== undefined && nodeDistance < highlightAlphaMultipliers.length - 1) {
+                    alphaMultiplier = highlightAlphaMultipliers[nodeDistance]!;
+                }
             }
         }
 
@@ -565,6 +591,11 @@ ForceGraphInstance
             return;
         }
 
+        if (state.analytics.active && state.analytics.awaitingPickRole) {
+            handleAnalyticsNodeClick(node);
+            return;
+        }
+
         if (state.currentTool === 'pointer') {
             if (event?.altKey) {
                 unpinNode(node);
@@ -586,6 +617,11 @@ ForceGraphInstance
         pinNode(node);
     })
     .onNodeHover((node, _prevNode) => {
+        // keep a persistent analytics decoration in place; don't let hover
+        // override the algorithm result highlight
+        if (state.analytics.decoration) {
+            return;
+        }
         if (node != null) {
             const graph = getGraph();
             const { nodeDistancesMap, edgeDistancesMap } = bfs(graph, node.id, 2);

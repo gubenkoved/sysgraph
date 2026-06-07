@@ -1,3 +1,4 @@
+import { initAnalyticsPanel } from './modules/analytics-panel.js';
 import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
@@ -29,6 +30,7 @@ import '@material/web/button/text-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/iconbutton/outlined-icon-button.js';
+import '@material/web/switch/switch.js';
 import '@material/web/textfield/outlined-text-field.js';
 
 // --- cached DOM elements ---
@@ -189,6 +191,7 @@ registerHandler(CMD_RELOAD, async () => {
 // --- initialize selection overlay, toolbar & zoom indicator ---
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
+initAnalyticsPanel(() => setTool('pointer', selectionCanvas, canvas));
 initQuickStart(() => setTool('edit', selectionCanvas, canvas));
 initZoomIndicator();
 initLongPress();

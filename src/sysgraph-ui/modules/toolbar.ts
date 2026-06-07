@@ -1,5 +1,7 @@
 import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
+import { clearAnalytics, selectAlgorithm } from './analytics.js';
+import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
 import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
@@ -7,7 +9,7 @@ import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
-import { setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
+import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
 import { getTheme, toggleTheme } from './theme.js';
 import { showError } from './util.js';
 
@@ -16,6 +18,7 @@ const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
 const toolRectSelectBtn = document.getElementById('toolRectSelect') as HTMLElement;
 const toolSearchBtn = document.getElementById('toolSearch') as HTMLElement;
 const toolEditBtn = document.getElementById('toolEdit') as HTMLElement;
+const toolAnalyticsBtn = document.getElementById('toolAnalytics') as HTMLElement;
 const editSubToolGroup = document.getElementById('editSubToolGroup') as HTMLElement;
 const editModifyBtn = document.getElementById('editModify') as HTMLElement;
 const editConnectBtn = document.getElementById('editConnect') as HTMLElement;
@@ -38,7 +41,7 @@ const searchHelpPopover = document.getElementById('searchHelp') as HTMLElement;
 const searchMatchCount = document.getElementById('searchMatchCount') as HTMLElement;
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 
-type Tool = 'pointer' | 'rect-select' | 'search' | 'edit';
+type Tool = 'pointer' | 'rect-select' | 'search' | 'edit' | 'analytics';
 
 // bundled example graphs, loaded once on init; the logo menu only offers the
 // "load example" entry when at least one example is available
@@ -74,6 +77,7 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
     toolRectSelectBtn.classList.toggle('active', tool === 'rect-select');
     toolSearchBtn.classList.toggle('active', tool === 'search');
     toolEditBtn.classList.toggle('active', tool === 'edit');
+    toolAnalyticsBtn.classList.toggle('active', tool === 'analytics');
 
     // edit mode setup / teardown
     if (tool === 'edit') {
@@ -84,6 +88,18 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
         setEditActive(false);
         cancelPendingEdge();
         editSubToolGroup.style.display = 'none';
+    }
+
+    // analytics mode setup / teardown
+    if (tool === 'analytics') {
+        setAnalyticsActive(true);
+        openAnalyticsPanel();
+        // seed the default algorithm; the panel's tabs drive further selection
+        selectAlgorithm(state.analytics.algorithmId ?? 'stats');
+    } else {
+        setAnalyticsActive(false);
+        closeAnalyticsPanel();
+        clearAnalytics();
     }
 
     if (tool === 'rect-select') {
@@ -294,6 +310,10 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         setTool('edit', selectionCanvas, canvas);
     });
 
+    toolAnalyticsBtn.addEventListener('click', () => {
+        setTool('analytics', selectionCanvas, canvas);
+    });
+
     editModifyBtn.addEventListener('click', () => {
         applyEditSubTool('modify');
     });
@@ -388,6 +408,8 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             setTool('rect-select', selectionCanvas, canvas);
         } else if (event.key === 'e' || event.key === 'E') {
             setTool('edit', selectionCanvas, canvas);
+        } else if (event.key === 'a' || event.key === 'A') {
+            setTool('analytics', selectionCanvas, canvas);
         } else if (event.key === 'Escape' && state.edit.active) {
             cancelPendingEdge();
         } else if (event.key === 'Delete' && state.currentTool === 'rect-select' && state.selection.selectedNodeIds.size > 0) {
