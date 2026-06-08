@@ -27,6 +27,7 @@ const actionGroup = document.getElementById('actionGroup') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
 const invertSelectionBtn = document.getElementById('invertSelection') as HTMLButtonElement;
+const rectAddModeBtn = document.getElementById('rectAddMode') as HTMLButtonElement;
 const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLElement;
 const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
 const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonElement;
@@ -148,6 +149,10 @@ export function updateGraphInfo(): void {
 
     if (isSelectionTool) {
         actionGroup.style.display = 'inline-flex';
+        // the additive toggle is a touch affordance for the rect-select tool
+        // only (the search tool has its own "add matches" button)
+        rectAddModeBtn.style.display = state.currentTool === 'rect-select' ? 'inline-flex' : 'none';
+        rectAddModeBtn.classList.toggle('active', state.selection.additive);
         if (state.selection.selectedNodeIds.size > 0) {
             graphInfoEl.textContent = `${state.selection.selectedNodeIds.size} node${state.selection.selectedNodeIds.size !== 1 ? 's' : ''} selected`;
             deleteBtn.disabled = false;
@@ -367,6 +372,11 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
                 state.selection.selectedNodeIds.add(id);
             }
         }
+        updateGraphInfo();
+    });
+
+    rectAddModeBtn.addEventListener('click', () => {
+        state.selection.additive = !state.selection.additive;
         updateGraphInfo();
     });
 

@@ -63,6 +63,9 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
     selectionCanvas.style.display = 'block';
     selectionCanvas.style.pointerEvents = 'none';
     selectionCanvas.style.background = 'transparent';
+    // prevent the browser from claiming touch gestures (scroll/pinch) on the
+    // overlay so a one-finger drag can draw the selection rectangle instead
+    selectionCanvas.style.touchAction = 'none';
     graphContainer.appendChild(selectionCanvas);
 
     function resizeGraphViewport(): void {
@@ -147,71 +150,114 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         }
     });
 
+    // begins a rectangular selection at the given overlay-local coordinates
+    function beginSelection(localX: number, localY: number): void {
+        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
+        state.selection.isSelecting = true;
+        state.selection.selectionStart = graphCoords;
+        state.selection.selectionEnd = graphCoords;
+        state.selection.selectionStartCanvas = { x: localX, y: localY };
+        state.selection.selectionEndCanvas = { x: localX, y: localY };
+        drawSelectionRectangle();
+    }
+
+    // updates the in-progress selection rectangle's far corner
+    function updateSelection(localX: number, localY: number): void {
+        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
+        state.selection.selectionEnd = graphCoords;
+        state.selection.selectionEndCanvas = { x: localX, y: localY };
+        drawSelectionRectangle();
+    }
+
+    // finalizes the selection: hit-tests nodes against the rectangle and
+    // updates the selected set. when `additive` is false the previous
+    // selection is replaced, otherwise the matched nodes are added
+    function finishSelection(localX: number, localY: number, additive: boolean): void {
+        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
+        state.selection.selectionEnd = graphCoords;
+        state.selection.selectionEndCanvas = { x: localX, y: localY };
+        state.selection.isSelecting = false;
+
+        const rect: Rect = {
+            x1: state.selection.selectionStart!.x,
+            y1: state.selection.selectionStart!.y,
+            x2: state.selection.selectionEnd!.x,
+            y2: state.selection.selectionEnd!.y,
+        };
+
+        if (!additive) {
+            state.selection.selectedNodeIds.clear();
+        }
+
+        const nodes = ForceGraphInstance.graphData().nodes as Array<{ id: string; x: number; y: number; val?: number }>;
+        for (const node of nodes) {
+            if (isNodeInRect(node, rect)) {
+                state.selection.selectedNodeIds.add(node.id);
+            }
+        }
+
+        emit(EVT_SELECTION_CHANGED, null);
+        state.selection.selectionStartCanvas = null;
+        state.selection.selectionEndCanvas = null;
+        drawSelectionRectangle();
+    }
+
     // mouse event handlers
     selectionCanvas.addEventListener('mousedown', (event) => {
         if (state.currentTool === 'rect-select') {
             if (event.button !== 0) return;
 
             const graphRect = graphContainer.getBoundingClientRect();
-            const localX = event.clientX - graphRect.left;
-            const localY = event.clientY - graphRect.top;
-            const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
-            state.selection.isSelecting = true;
-            state.selection.selectionStart = graphCoords;
-            state.selection.selectionEnd = graphCoords;
-            state.selection.selectionStartCanvas = { x: localX, y: localY };
-            state.selection.selectionEndCanvas = { x: localX, y: localY };
-            drawSelectionRectangle();
+            beginSelection(event.clientX - graphRect.left, event.clientY - graphRect.top);
         }
     });
 
     selectionCanvas.addEventListener('mousemove', (event) => {
         if (state.selection.isSelecting && state.currentTool === 'rect-select') {
             const graphRect = graphContainer.getBoundingClientRect();
-            const localX = event.clientX - graphRect.left;
-            const localY = event.clientY - graphRect.top;
-            const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
-            state.selection.selectionEnd = graphCoords;
-            state.selection.selectionEndCanvas = { x: localX, y: localY };
-            drawSelectionRectangle();
+            updateSelection(event.clientX - graphRect.left, event.clientY - graphRect.top);
         }
     });
 
     selectionCanvas.addEventListener('mouseup', (event) => {
         if (state.selection.isSelecting && state.currentTool === 'rect-select') {
             const graphRect = graphContainer.getBoundingClientRect();
-            const localX = event.clientX - graphRect.left;
-            const localY = event.clientY - graphRect.top;
-            const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
-
-            state.selection.selectionEnd = graphCoords;
-            state.selection.selectionEndCanvas = { x: localX, y: localY };
-            state.selection.isSelecting = false;
-
-            const rect: Rect = {
-                x1: state.selection.selectionStart!.x,
-                y1: state.selection.selectionStart!.y,
-                x2: state.selection.selectionEnd!.x,
-                y2: state.selection.selectionEnd!.y,
-            };
-
-            if (!event.shiftKey) {
-                state.selection.selectedNodeIds.clear();
-            }
-
-            const nodes = ForceGraphInstance.graphData().nodes as Array<{ id: string; x: number; y: number; val?: number }>;
-            for (const node of nodes) {
-                if (isNodeInRect(node, rect)) {
-                    state.selection.selectedNodeIds.add(node.id);
-                }
-            }
-
-            emit(EVT_SELECTION_CHANGED, null);
-            state.selection.selectionStartCanvas = null;
-            state.selection.selectionEndCanvas = null;
-            drawSelectionRectangle();
+            const additive = event.shiftKey || state.selection.additive;
+            finishSelection(event.clientX - graphRect.left, event.clientY - graphRect.top, additive);
         }
     });
+
+    // touch event handlers (mobile); the overlay only receives these while the
+    // rect-select tool is active (pointer-events toggled by the toolbar), so a
+    // single-finger drag draws the selection rectangle instead of panning
+    selectionCanvas.addEventListener('touchstart', (event) => {
+        if (state.currentTool !== 'rect-select') return;
+        if (event.touches.length !== 1) return;
+
+        event.preventDefault();
+        const touch = event.touches[0];
+        const graphRect = graphContainer.getBoundingClientRect();
+        beginSelection(touch.clientX - graphRect.left, touch.clientY - graphRect.top);
+    }, { passive: false });
+
+    selectionCanvas.addEventListener('touchmove', (event) => {
+        if (!state.selection.isSelecting || state.currentTool !== 'rect-select') return;
+        if (event.touches.length !== 1) return;
+
+        event.preventDefault();
+        const touch = event.touches[0];
+        const graphRect = graphContainer.getBoundingClientRect();
+        updateSelection(touch.clientX - graphRect.left, touch.clientY - graphRect.top);
+    }, { passive: false });
+
+    selectionCanvas.addEventListener('touchend', (event) => {
+        if (!state.selection.isSelecting || state.currentTool !== 'rect-select') return;
+
+        event.preventDefault();
+        const touch = event.changedTouches[0];
+        const graphRect = graphContainer.getBoundingClientRect();
+        finishSelection(touch.clientX - graphRect.left, touch.clientY - graphRect.top, state.selection.additive);
+    }, { passive: false });
 
     return { selectionCanvas, canvas };
 }

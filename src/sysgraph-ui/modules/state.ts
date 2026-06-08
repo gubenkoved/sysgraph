@@ -8,6 +8,9 @@ export interface SelectionState {
     selectionEnd: { x: number; y: number } | null;
     selectionStartCanvas: { x: number; y: number } | null;
     selectionEndCanvas: { x: number; y: number } | null;
+    // when true, a new rectangle adds to the existing selection instead of
+    // replacing it; primarily a touch affordance since mobile lacks Shift
+    additive: boolean;
 }
 
 export interface AdjacencyFilter {
@@ -97,6 +100,7 @@ function initializeSelectionState(): SelectionState {
         selectionEnd: null,
         selectionStartCanvas: null,
         selectionEndCanvas: null,
+        additive: false,
     };
 }
 
