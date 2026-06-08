@@ -1539,7 +1539,32 @@ hr {
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   word-break: break-word;
+  /* clip the auto-dismiss progress bar to the rounded corners */
+  overflow: hidden;
   animation: action-toast-in 0.22s ease-out;
+}
+
+/* thin line that shrinks left-to-right over the toast's lifetime to hint at
+   the pending auto-dismiss; driven entirely by an inline animation-duration */
+.action-toast__progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent-primary);
+  opacity: 0.5;
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+@keyframes action-toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @keyframes action-toast-in {

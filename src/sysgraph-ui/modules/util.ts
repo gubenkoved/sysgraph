@@ -18,6 +18,24 @@ export function fnv1a(str: string): number {
 const _activeToasts = new Map<string, HTMLDivElement>();
 
 /**
+ * Appends a thin `.action-toast__progress` bar that shrinks left-to-right over
+ * `durationMs`, hinting at the pending auto-dismiss. The shrink is driven by a
+ * CSS keyframe; the duration is set inline so it matches the toast's lifetime.
+ */
+function appendToastProgressBar(el: HTMLDivElement, durationMs: number): void {
+    const bar = document.createElement('div');
+    bar.className = 'action-toast__progress';
+    bar.setAttribute('aria-hidden', 'true');
+    Object.assign(bar.style, {
+        animationName: 'action-toast-progress',
+        animationDuration: `${durationMs}ms`,
+        animationTimingFunction: 'linear',
+        animationFillMode: 'forwards',
+    });
+    el.appendChild(bar);
+}
+
+/**
  * Shows a dismissible error toast at the bottom of the viewport.
  * Auto-dismisses after `durationMs` (default 8 s). Returns the DOM element.
  */
@@ -51,6 +69,8 @@ export function showError(
         cursor: 'pointer',
         maxWidth: 'min(600px, calc(100vw - 32px))',
         wordBreak: 'break-word',
+        // clip the auto-dismiss progress bar to the rounded corners
+        overflow: 'hidden',
     });
     el.title = 'Click to dismiss';
     const remove = () => {
@@ -58,6 +78,25 @@ export function showError(
         if (id) _activeToasts.delete(id);
     };
     el.addEventListener('click', remove);
+    if (durationMs > 0) {
+        const bar = document.createElement('div');
+        bar.setAttribute('aria-hidden', 'true');
+        Object.assign(bar.style, {
+            position: 'absolute',
+            left: '0',
+            bottom: '0',
+            width: '100%',
+            height: '2px',
+            background: 'rgba(255,255,255,0.55)',
+            transformOrigin: 'left center',
+            pointerEvents: 'none',
+            animationName: 'action-toast-progress',
+            animationDuration: `${durationMs}ms`,
+            animationTimingFunction: 'linear',
+            animationFillMode: 'forwards',
+        });
+        el.appendChild(bar);
+    }
     document.body.appendChild(el);
     if (durationMs > 0) {
         setTimeout(remove, durationMs);
@@ -141,6 +180,9 @@ export function showInfoToast(
     closeBtn.addEventListener('click', remove);
     el.appendChild(closeBtn);
 
+    if (durationMs > 0) {
+        appendToastProgressBar(el, durationMs);
+    }
     document.body.appendChild(el);
     if (durationMs > 0) {
         setTimeout(remove, durationMs);
@@ -225,6 +267,9 @@ export function showActionToast(
     closeBtn.addEventListener('click', remove);
     el.appendChild(closeBtn);
 
+    if (durationMs > 0) {
+        appendToastProgressBar(el, durationMs);
+    }
     document.body.appendChild(el);
     if (durationMs > 0) {
         setTimeout(remove, durationMs);
