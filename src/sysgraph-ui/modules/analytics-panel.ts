@@ -8,10 +8,11 @@ import {
     selectAlgorithm,
     startPick,
 } from './analytics.js';
+import type { Community } from './analytics-communities.js';
 import { validateEdgeWeightExpression } from './analytics-helpers.js';
-import { EVT_ANALYTICS_UPDATED } from './constants.js';
+import { EVT_ANALYTICS_UPDATED, EVT_NODE_CLICKED, EVT_SELECTION_CHANGED } from './constants.js';
 import { emit, on } from './event-bus.js';
-import { analyticsHeatmapColorScale, centerOnNode } from './graph-ui.js';
+import { analyticsHeatmapColorScale, centerOnNode, communityColor, refreshGraphColors } from './graph-ui.js';
 import { getGraph, setAnalyticsParam, state } from './state.js';
 import { showError } from './util.js';
 
@@ -96,6 +97,36 @@ function buildParamRow(param: ParamSpec): HTMLElement {
             setAnalyticsParam(param.id, sw.selected ? 'true' : 'false');
         });
         row.appendChild(sw);
+    } else if (param.type === 'slider') {
+        const control = el('div', 'analytics-slider');
+        const slider = el('input', 'analytics-slider-input');
+        slider.type = 'range';
+        if (param.min !== undefined) slider.min = String(param.min);
+        if (param.max !== undefined) slider.max = String(param.max);
+        if (param.step !== undefined) slider.step = String(param.step);
+        slider.value = state.analytics.params[param.id] ?? param.defaultValue;
+
+        const valueLabel = el('span', 'analytics-slider-value', slider.value);
+
+        // updates the filled-track percentage (consumed by the WebKit track css)
+        const syncFill = () => {
+            const min = Number(slider.min || '0');
+            const max = Number(slider.max || '100');
+            const span = max - min;
+            const pct = span > 0 ? ((Number(slider.value) - min) / span) * 100 : 0;
+            slider.style.setProperty('--fill', String(pct));
+        };
+        syncFill();
+
+        slider.addEventListener('input', () => {
+            valueLabel.textContent = slider.value;
+            syncFill();
+            setAnalyticsParam(param.id, slider.value);
+        });
+
+        control.appendChild(slider);
+        control.appendChild(valueLabel);
+        row.appendChild(control);
     } else {
         const input = el('input', 'edit-form-input');
         if (param.type === 'expression') {
@@ -280,6 +311,11 @@ function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
                 })),
             ),
         );
+    } else if (result.kind === 'community') {
+        const r = result.result;
+        section.appendChild(statRow('communities', String(r.communityCount)));
+        section.appendChild(statRow('modularity', r.modularity.toFixed(4)));
+        section.appendChild(buildCommunityLegend(r.communities));
     }
 
     return section;
@@ -307,6 +343,104 @@ function buildHeatmapLegend(min: number, max: number): HTMLElement {
     labels.appendChild(el('span', 'analytics-legend-min', String(min)));
     labels.appendChild(el('span', 'analytics-legend-max', String(max)));
     wrap.appendChild(labels);
+
+    return wrap;
+}
+
+// maximum number of community swatches rendered to keep the panel responsive
+const COMMUNITY_LEGEND_LIMIT = 50;
+
+/** Adds every node of a community to the current selection. */
+function addCommunityToSelection(community: Community): void {
+    for (const nodeId of community.nodeIds) {
+        state.selection.selectedNodeIds.add(nodeId);
+    }
+    emit(EVT_SELECTION_CHANGED, null);
+}
+
+/**
+ * Toggles isolation of a community: when one or more are focused, every other
+ * community and unassigned nodes are dimmed so the chosen ones stand out.
+ * Multiple communities can be focused at once.
+ */
+function toggleCommunityFocus(communityId: number): void {
+    const decoration = state.analytics.decoration;
+    if (!decoration || decoration.kind !== 'community') {
+        return;
+    }
+    const focused = decoration.focusedCommunities ?? new Set<number>();
+    if (focused.has(communityId)) {
+        focused.delete(communityId);
+    } else {
+        focused.add(communityId);
+    }
+    decoration.focusedCommunities = focused;
+    refreshGraphColors();
+    emit(EVT_ANALYTICS_UPDATED, null);
+}
+
+/** Builds a color-swatch legend listing each community and its size. */
+function buildCommunityLegend(communities: Community[]): HTMLElement {
+    const wrap = el('div', 'analytics-community-legend');
+
+    const decoration = state.analytics.decoration;
+    const focused =
+        decoration && decoration.kind === 'community' ? decoration.focusedCommunities : undefined;
+
+    const shown = communities.slice(0, COMMUNITY_LEGEND_LIMIT);
+    for (const community of shown) {
+        const row = el('div', 'analytics-community-row');
+
+        // main clickable area centers the camera on the community
+        const main = el('button', 'analytics-community-main');
+        main.type = 'button';
+
+        const swatch = el('span', 'analytics-community-swatch');
+        swatch.style.background = communityColor(community.id);
+        main.appendChild(swatch);
+
+        main.appendChild(el('span', 'analytics-community-label', `community ${community.id}`));
+        main.appendChild(el('span', 'analytics-community-size', String(community.size)));
+
+        // center on the first node so the user can locate the community
+        const firstNode = community.nodeIds[0];
+        if (firstNode) {
+            main.addEventListener('click', () => centerOnNode(firstNode));
+        }
+        row.appendChild(main);
+
+        // focus control: isolate this community and dim everything else
+        const focusBtn = el('button', 'analytics-community-focus');
+        focusBtn.type = 'button';
+        const isFocused = focused?.has(community.id) ?? false;
+        if (isFocused) {
+            focusBtn.classList.add('is-active');
+        }
+        focusBtn.title = isFocused ? 'stop highlighting this community' : 'highlight this community';
+        const focusIcon = document.createElement('md-icon');
+        focusIcon.textContent = isFocused ? 'visibility' : 'visibility_off';
+        focusBtn.appendChild(focusIcon);
+        focusBtn.addEventListener('click', () => toggleCommunityFocus(community.id));
+        row.appendChild(focusBtn);
+
+        // subtle add-to-selection control
+        const addBtn = el('button', 'analytics-community-add');
+        addBtn.type = 'button';
+        addBtn.title = 'add community to selection';
+        const addIcon = document.createElement('md-icon');
+        addIcon.textContent = 'add_circle';
+        addBtn.appendChild(addIcon);
+        addBtn.addEventListener('click', () => addCommunityToSelection(community));
+        row.appendChild(addBtn);
+
+        wrap.appendChild(row);
+    }
+
+    if (communities.length > shown.length) {
+        wrap.appendChild(
+            el('div', 'analytics-note', `showing ${shown.length} of ${communities.length} communities`),
+        );
+    }
 
     return wrap;
 }
@@ -433,6 +567,17 @@ export function initAnalyticsPanel(onClose: () => void): void {
     });
     attachDrag(panel);
     on(EVT_ANALYTICS_UPDATED, render);
+    // clicking a node toggles its community focus when a community result is shown
+    on<{ data: { id: string } }>(EVT_NODE_CLICKED, ({ data }) => {
+        const decoration = state.analytics.decoration;
+        if (!state.analytics.active || !decoration || decoration.kind !== 'community') {
+            return;
+        }
+        const community = decoration.nodeCommunity.get(data.id);
+        if (community !== undefined) {
+            toggleCommunityFocus(community);
+        }
+    });
     // re-render results/labels when the graph changes underneath us
     emit(EVT_ANALYTICS_UPDATED, null);
 }

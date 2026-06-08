@@ -38,7 +38,7 @@ export interface EditState {
     pendingEdgeSourceId: string | null;
 }
 
-export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst' | 'degree';
+export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst' | 'degree' | 'community';
 
 /**
  * Subset decoration: the listed nodes/edges stay emphasized while everything
@@ -61,10 +61,23 @@ export interface HeatmapDecoration {
 }
 
 /**
+ * Community decoration: each node is colored by its community index using a
+ * categorical palette; nodes absent from the map are dimmed (e.g. a community
+ * partition of the graph).
+ */
+export interface CommunityDecoration {
+    kind: 'community';
+    nodeCommunity: Map<string, number>;
+    communityCount: number;
+    // when non-empty, only these communities stay emphasized and the rest dims
+    focusedCommunities?: Set<number>;
+}
+
+/**
  * Persistent visual decoration produced by an analytics algorithm; unlike the
  * transient hover highlight, it survives until the result is cleared.
  */
-export type AnalyticsDecoration = SubsetDecoration | HeatmapDecoration;
+export type AnalyticsDecoration = SubsetDecoration | HeatmapDecoration | CommunityDecoration;
 
 export interface AnalyticsState {
     active: boolean;

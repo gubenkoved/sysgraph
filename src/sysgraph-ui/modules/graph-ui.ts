@@ -167,6 +167,22 @@ export const analyticsHeatmapColorScale = new ColorScale([
 ]);
 
 /**
+ * Categorical palette used by analytics community decorations. Colors repeat
+ * for graphs with more communities than entries.
+ */
+export const COMMUNITY_PALETTE: string[] = [
+    '#4e79a7', '#f28e2b', '#59a14f', '#e15759', '#b07aa1',
+    '#76b7b2', '#edc948', '#ff9da7', '#9c755f', '#bab0ac',
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+];
+
+/** Returns a stable CSS color for the given community index. */
+export function communityColor(index: number): string {
+    return COMMUNITY_PALETTE[index % COMMUNITY_PALETTE.length]!;
+}
+
+/**
  * Computes a normalized color map for a set of search matches.
  */
 export function computeMatchColors(matchesMap: Map<string, { score: number }>): Map<string, string> {
@@ -464,6 +480,24 @@ ForceGraphInstance
             if (decoration.kind === 'heatmap') {
                 return fillStyle;
             }
+            if (decoration.kind === 'community') {
+                // color edges within a community by its color, dim the rest
+                const sourceCommunity = decoration.nodeCommunity.get(linkSourceId(l));
+                const targetCommunity = decoration.nodeCommunity.get(linkTargetId(l));
+                const focused = decoration.focusedCommunities;
+                const hasFocus = focused !== undefined && focused.size > 0;
+                if (
+                    sourceCommunity !== undefined &&
+                    sourceCommunity === targetCommunity &&
+                    (!hasFocus || focused.has(sourceCommunity))
+                ) {
+                    return communityColor(sourceCommunity);
+                }
+                return colorAdjustAlpha(
+                    fillStyle,
+                    highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!,
+                );
+            }
             alphaMultiplier = decoration.edgeIds.has(l.id)
                 ? 1.0
                 : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
@@ -525,6 +559,16 @@ ForceGraphInstance
                     baseColor = analyticsHeatmapColorScale.getColor(value);
                 } else {
                     // nodes without a score are dimmed
+                    alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+                }
+            } else if (decoration.kind === 'community') {
+                const community = decoration.nodeCommunity.get(node.id);
+                const focused = decoration.focusedCommunities;
+                const hasFocus = focused !== undefined && focused.size > 0;
+                if (community !== undefined && (!hasFocus || focused.has(community))) {
+                    baseColor = communityColor(community);
+                } else {
+                    // nodes outside any community (or outside the focused set) are dimmed
                     alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
                 }
             } else {

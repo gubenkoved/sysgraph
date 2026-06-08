@@ -4,7 +4,14 @@ import type {
     ShortestPathResult,
     StatsResult,
 } from './analytics-algs.js';
-import { computeStats, degreeCentrality, minimumSpanningTree, shortestPath } from './analytics-algs.js';
+import {
+    computeStats,
+    degreeCentrality,
+    minimumSpanningTree,
+    shortestPath,
+} from './analytics-algs.js';
+import type { CommunityResult } from './analytics-communities.js';
+import { DEFAULT_RESOLUTION, detectCommunities } from './analytics-communities.js';
 import { DEFAULT_EDGE_WEIGHT_EXPRESSION, makeEdgeWeightFn } from './analytics-helpers.js';
 import { EVT_ANALYTICS_UPDATED } from './constants.js';
 import { emit } from './event-bus.js';
@@ -29,10 +36,15 @@ import {
 export interface ParamSpec {
     id: string;
     label: string;
-    // 'expression' renders a text field; 'boolean' renders a checkbox toggle
-    type: 'expression' | 'boolean';
+    // 'expression' renders a text field; 'boolean' renders a toggle;
+    // 'slider' renders a range input bounded by min/max/step
+    type: 'expression' | 'boolean' | 'slider';
     placeholder?: string;
     defaultValue: string;
+    // slider bounds (only used when type is 'slider')
+    min?: number;
+    max?: number;
+    step?: number;
 }
 
 export interface PickSpec {
@@ -64,6 +76,16 @@ const respectDirectionParam: ParamSpec = {
     label: 'respect direction',
     type: 'boolean',
     defaultValue: 'false',
+};
+
+const resolutionParam: ParamSpec = {
+    id: 'resolution',
+    label: 'resolution',
+    type: 'slider',
+    min: 0.1,
+    max: 3,
+    step: 0.1,
+    defaultValue: String(DEFAULT_RESOLUTION),
 };
 
 export const ALGORITHMS: AlgorithmDescriptor[] = [
@@ -106,6 +128,15 @@ export const ALGORITHMS: AlgorithmDescriptor[] = [
         picks: [],
         highlights: true,
     },
+    {
+        id: 'community',
+        label: 'Communities',
+        icon: 'workspaces',
+        description: 'Detects densely-connected groups (Louvain) and colors them.',
+        params: [edgeWeightParam, resolutionParam],
+        picks: [],
+        highlights: true,
+    },
 ];
 
 export function getAlgorithm(id: AnalyticsAlgorithmId): AlgorithmDescriptor | undefined {
@@ -138,11 +169,17 @@ export interface DegreeResultModel {
     result: DegreeCentralityResult;
 }
 
+export interface CommunityResultModel {
+    kind: 'community';
+    result: CommunityResult;
+}
+
 export type AnalyticsResultModel =
     | StatsResultModel
     | ShortestPathResultModel
     | MstResultModel
-    | DegreeResultModel;
+    | DegreeResultModel
+    | CommunityResultModel;
 
 // ---------------------------------------------------------------------------
 // algorithm selection
@@ -202,6 +239,23 @@ function decorateSubset(nodeIds: Iterable<string>, edgeIds: Iterable<string>): v
  */
 function decorateHeatmap(nodeValues: Map<string, number>): void {
     setAnalyticsDecoration({ kind: 'heatmap', nodeValues });
+}
+
+/**
+ * Applies a persistent community decoration that colors each node by its
+ * community index using a categorical palette. Remains until the algorithm
+ * result is cleared.
+ */
+function decorateCommunity(nodeCommunity: Map<string, number>, communityCount: number): void {
+    setAnalyticsDecoration({ kind: 'community', nodeCommunity, communityCount });
+}
+
+/** Reads a numeric parameter from analytics state, falling back when unparseable. */
+function readNumberParam(id: string, fallback: number): number {
+    const raw = state.analytics.params[id];
+    if (raw === undefined) return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : fallback;
 }
 
 /**
@@ -269,6 +323,15 @@ export function runAlgorithm(): string | null {
         }
         decorateHeatmap(nodeValues);
         setAnalyticsResult({ kind: 'degree', result } satisfies DegreeResultModel);
+        emit(EVT_ANALYTICS_UPDATED, null);
+        return null;
+    }
+
+    if (id === 'community') {
+        const resolution = readNumberParam('resolution', DEFAULT_RESOLUTION);
+        const result = detectCommunities(graph, weightFn, { resolution });
+        decorateCommunity(result.nodeCommunity, result.communityCount);
+        setAnalyticsResult({ kind: 'community', result } satisfies CommunityResultModel);
         emit(EVT_ANALYTICS_UPDATED, null);
         return null;
     }
