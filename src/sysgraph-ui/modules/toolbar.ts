@@ -201,12 +201,23 @@ function doImport(): void {
 
 /** Serializes the current graph and triggers a download. */
 function doExport(): void {
-    const blob = handle<undefined, Blob>(CMD_EXPORT);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const defaultName = `${timestamp}_graph.json`;
+
+    // let the user pick a filename, pre-filled with the generated default
+    const input = window.prompt('Export graph as', defaultName);
+    if (input === null) return; // cancelled — keep the graph dirty
+
+    // fall back to the default for empty input and ensure a .json extension
+    const trimmed = input.trim();
+    const base = trimmed === '' ? defaultName : trimmed;
+    const filename = base.toLowerCase().endsWith('.json') ? base : `${base}.json`;
+
+    const blob = handle<undefined, Blob>(CMD_EXPORT);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${timestamp}_graph.json`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
     // the current graph is now safely on disk — no unexported data
@@ -263,7 +274,7 @@ function buildLogoMenu(): ContextMenuItem[] {
     }
 
     items.push({
-        label: 'Export graph',
+        label: 'Export graph…',
         icon: 'download',
         disabled: isEmpty,
         action: doExport,
