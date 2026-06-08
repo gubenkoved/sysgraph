@@ -18,6 +18,22 @@ export function fnv1a(str: string): number {
 const _activeToasts = new Map<string, HTMLDivElement>();
 
 /**
+ * Returns the shared toast stack, creating it on first use. All toasts are
+ * appended here (rather than directly to the body) so multiple concurrent
+ * toasts stack vertically instead of overlapping at the same anchor point.
+ */
+function getToastStack(): HTMLDivElement {
+    let stack = document.getElementById('toast-stack') as HTMLDivElement | null;
+    if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'toast-stack';
+        stack.className = 'toast-stack';
+        document.body.appendChild(stack);
+    }
+    return stack;
+}
+
+/**
  * Appends a thin `.action-toast__progress` bar that shrinks left-to-right over
  * `durationMs`, hinting at the pending auto-dismiss. The shrink is driven by a
  * CSS keyframe; the duration is set inline so it matches the toast's lifetime.
@@ -54,17 +70,13 @@ export function showError(
         _activeToasts.set(id, el);
     }
     Object.assign(el.style, {
-        position: 'fixed',
-        bottom: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        position: 'relative',
         background: '#dc2626',
         color: '#fff',
         padding: '10px 20px',
         borderRadius: '8px',
         fontSize: '13px',
         fontFamily: UI_FONT_FAMILY,
-        zIndex: '9999',
         boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
         cursor: 'pointer',
         maxWidth: 'min(600px, calc(100vw - 32px))',
@@ -97,7 +109,7 @@ export function showError(
         });
         el.appendChild(bar);
     }
-    document.body.appendChild(el);
+    getToastStack().appendChild(el);
     if (durationMs > 0) {
         setTimeout(remove, durationMs);
     }
@@ -183,7 +195,7 @@ export function showInfoToast(
     if (durationMs > 0) {
         appendToastProgressBar(el, durationMs);
     }
-    document.body.appendChild(el);
+    getToastStack().appendChild(el);
     if (durationMs > 0) {
         setTimeout(remove, durationMs);
     }
@@ -270,7 +282,7 @@ export function showActionToast(
     if (durationMs > 0) {
         appendToastProgressBar(el, durationMs);
     }
-    document.body.appendChild(el);
+    getToastStack().appendChild(el);
     if (durationMs > 0) {
         setTimeout(remove, durationMs);
     }

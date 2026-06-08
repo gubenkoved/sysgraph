@@ -1737,16 +1737,34 @@ hr {
   }
 }
 
+/* ── Toast Stack ─────────────────────────────────────────── */
+/* Shared fixed container that lays out all toasts (error, info, action) in a
+   bottom-anchored column so multiple concurrent toasts stack vertically
+   instead of overlapping at the same point. */
+.toast-stack {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-loading-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  /* let clicks pass through the gaps; individual toasts re-enable pointers */
+  pointer-events: none;
+}
+
+.toast-stack > * {
+  pointer-events: auto;
+}
+
 /* ── Action Toast ────────────────────────────────────────── */
 /* Prominent, theme-aware notification with a primary action (e.g. the
    "graph defines display settings" prompt). Styling lives here so it tracks
    the active theme via design tokens. */
 .action-toast {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: var(--z-loading-overlay);
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
@@ -1765,7 +1783,7 @@ hr {
   word-break: break-word;
   /* clip the auto-dismiss progress bar to the rounded corners */
   overflow: hidden;
-  animation: action-toast-in 0.22s ease-out;
+  animation: action-toast-in-mobile 0.22s ease-out;
 }
 
 /* thin line that shrinks left-to-right over the toast's lifetime to hint at
@@ -1788,17 +1806,6 @@ hr {
   }
   to {
     transform: scaleX(0);
-  }
-}
-
-@keyframes action-toast-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 12px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
   }
 }
 
@@ -1865,23 +1872,25 @@ hr {
 
 /* ── Action Toast (mobile) ───────────────────────────────── */
 /* Placed after the base rules above so these overrides win on narrow screens
-   (same specificity → later source order wins). Without this, the base
-   `left: 50%` / `transform` / `max-width` would keep the toast centered and
-   inset, leaving large side margins on phones. */
+   (same specificity → later source order wins). The stack handles positioning;
+   here we make the toast span the available width and stack its contents. */
 @media (max-width: 600px) {
-  /* span almost the full width and stack vertically so the message uses the
-     available width instead of being squeezed by the inline icon/buttons */
-  .action-toast {
+  /* widen the stack to the screen edges so toasts use the full width */
+  .toast-stack {
     left: var(--spacing-lg);
     right: var(--spacing-lg);
     transform: none;
+    align-items: stretch;
+  }
+
+  /* span almost the full width and stack vertically so the message uses the
+     available width instead of being squeezed by the inline icon/buttons */
+  .action-toast {
     max-width: none;
     flex-direction: column;
     align-items: stretch;
     gap: var(--spacing-sm);
     padding-right: 40px; /* room for the absolutely-positioned close button */
-    /* element is no longer centered, so skip the translateX-based entrance */
-    animation: action-toast-in-mobile 0.22s ease-out;
   }
 
   /* keep the status icon compact and top-aligned above the message */

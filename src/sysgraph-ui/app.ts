@@ -11,7 +11,7 @@ import { maybeApplyGraphDisplay, updateDynamicGraphPanes } from './modules/setti
 import { getGraph, isGraphDirty, resetState, setGraphDirty, setSearch, state, updateGraph } from './modules/state.js';
 import { initTheme } from './modules/theme.js';
 import { initToolbar, setTool, updateGraphInfo } from './modules/toolbar.js';
-import { dismissError, showError } from './modules/util.js';
+import { dismissError, showError, showInfoToast } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
 import './modules/details-panel.js';
 import {CMD_EXPORT, CMD_IMPORT,
@@ -152,6 +152,13 @@ registerHandler(CMD_IMPORT, async (text?: string) => {
         maybeApplyGraphDisplay(loadedData.display);
         requestRecenterView();
         emit(EVT_GRAPH_UPDATED, null);
+
+        const skipped = loadedData.skippedEdges ?? 0;
+        if (skipped > 0) {
+            showInfoToast(
+                `Imported ${loadedData.nodes.length} nodes, ${loadedData.edges.length} edges (skipped ${skipped} edge${skipped !== 1 ? 's' : ''} with unknown endpoints)`,
+            );
+        }
     } catch (err) {
         console.error('import failed:', err);
         showError(`Import failed: ${(err as Error).message}`);

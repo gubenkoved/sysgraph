@@ -5,6 +5,8 @@ export interface LoadedGraphData {
     nodes: GraphNode[];
     edges: GraphEdge[];
     display?: GraphDisplay;
+    /** Edges dropped during import because an endpoint did not match any node. */
+    skippedEdges?: number;
 }
 
 /** Extracts a top-level display block when it is a plain object. */
@@ -37,31 +39,9 @@ export async function loadDataFromApi(): Promise<LoadedGraphData> {
         throw new Error(`Invalid JSON from /api/graph: ${(err as Error).message}`);
     }
 
-    const rawNodes = (response.nodes as unknown[] | undefined) ?? [];
-    const rawEdges = (response.edges as unknown[] | undefined) ?? [];
-
-    const nodes: GraphNode[] = rawNodes.map(n => {
-        const node = n as Record<string, unknown>;
-        return {
-            id: node.id as string,
-            type: node.type as string,
-            properties: (node.properties as Record<string, unknown>) ?? {},
-        };
-    });
-
-    const edges: GraphEdge[] = rawEdges.map(e => {
-        const edge = e as Record<string, unknown>;
-        return {
-            id: edge.id as string,
-            source_id: edge.source_id as string,
-            target_id: edge.target_id as string,
-            type: edge.type as string,
-            properties: (edge.properties as Record<string, unknown>) ?? {},
-        };
-    });
-
-    return { nodes, edges, display: extractDisplay(response) };
+    return normalizeGraphData(response);
 }
+
 /**
  * Serialises a Graph instance to a pretty-printed JSON string.
  */
@@ -69,74 +49,168 @@ export function serializeGraph(graph: Graph): string {
     return JSON.stringify(graph.toData(), null, 2);
 }
 
-/** Keys that stay on the outer node object. */
-const NODE_KEYS = new Set(['id', 'type', 'properties']);
+/** Default node type when an imported node carries none. */
+const DEFAULT_NODE_TYPE = 'node';
 
-/** Keys that stay on the outer edge object. */
-const EDGE_KEYS = new Set(['id', 'type', 'source_id', 'target_id', 'properties']);
+/** Default edge type when an imported edge carries none. */
+const DEFAULT_EDGE_TYPE = 'edge';
+
+// keys consumed by the native schema (or known aliases) that must not leak into
+// the merged `properties` dict
+const NODE_KEYS = new Set(['id', 'key', 'type', 'properties', 'attributes']);
+const EDGE_KEYS = new Set([
+    'id',
+    'type',
+    'properties',
+    'attributes',
+    'source_id',
+    'target_id',
+    'source',
+    'target',
+    'from',
+    'to',
+    'start',
+    'end',
+]);
+
+/** Coerces an id-like value to a string, returning undefined for null/empty. */
+function coerceId(value: unknown): string | undefined {
+    if (value == null) return undefined;
+    if (typeof value === 'string') return value.length > 0 ? value : undefined;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return undefined;
+}
+
+/** Returns the first key present on `obj` from `keys`, else undefined. */
+function pickId(obj: Record<string, unknown>, keys: string[]): string | undefined {
+    for (const key of keys) {
+        const id = coerceId(obj[key]);
+        if (id !== undefined) return id;
+    }
+    return undefined;
+}
 
 /**
- * Merges properties that sit outside the `properties` dict into it.
+ * Converts a raw nodes/edges value into an array of plain entry objects.
+ * Accepts an array as-is, or an id-keyed map (injecting the key as `id`).
+ */
+function toEntries(raw: unknown): Record<string, unknown>[] {
+    if (Array.isArray(raw)) return raw as Record<string, unknown>[];
+    if (raw != null && typeof raw === 'object') {
+        return Object.entries(raw as Record<string, unknown>).map(
+            ([id, v]) => ({ ...(v as Record<string, unknown>), id }),
+        );
+    }
+    return [];
+}
+
+/**
+ * Merges properties that sit outside the `properties` dict into it. Also folds
+ * in a foreign `attributes` block (polinode/graphology style) so external
+ * metadata is preserved under the native `properties` key.
  */
 function collectProperties(
     obj: Record<string, unknown>,
     knownKeys: Set<string>,
 ): Record<string, unknown> {
     const inner = (obj.properties as Record<string, unknown> | undefined) ?? {};
+    const attributes = (obj.attributes as Record<string, unknown> | undefined) ?? {};
     const outer: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
         if (!knownKeys.has(key)) {
             outer[key] = obj[key];
         }
     }
-    return { ...inner, ...outer };
+    return { ...attributes, ...inner, ...outer };
 }
 
 /**
  * Normalises a raw nodes value (array or id-keyed map) into a uniform array.
+ * Accepts native (`id`/`type`/`properties`) as well as foreign shapes that use
+ * `key`/`attributes` and omit a type.
  */
-function normalizeNodes(raw: unknown[] | Record<string, unknown>): GraphNode[] {
-    const entries: Record<string, unknown>[] = Array.isArray(raw)
-        ? raw as Record<string, unknown>[]
-        : Object.entries(raw).map(([id, v]) => ({ ...(v as Record<string, unknown>), id }));
-
-    return entries.map(n => ({
-        id: n.id as string,
-        type: (n.type as string | undefined) ?? null as unknown as string,
+function normalizeNodes(raw: unknown): GraphNode[] {
+    return toEntries(raw).map(n => ({
+        id: pickId(n, ['id', 'key', 'name']) ?? `auto:${generateId()}`,
+        type: coerceId(n.type) ?? DEFAULT_NODE_TYPE,
         properties: collectProperties(n, NODE_KEYS),
     }));
 }
 
 /**
  * Normalises a raw edges value (array or id-keyed map) into a uniform array,
- * generating missing edge IDs automatically.
+ * generating missing edge IDs automatically. Accepts native
+ * (`source_id`/`target_id`) as well as the common `source`/`target` (and
+ * `from`/`to`, `start`/`end`) endpoint aliases.
  */
-function normalizeEdges(raw: unknown[] | Record<string, unknown>): GraphEdge[] {
-    const entries: Record<string, unknown>[] = Array.isArray(raw)
-        ? raw as Record<string, unknown>[]
-        : Object.entries(raw).map(([id, v]) => ({ ...(v as Record<string, unknown>), id }));
-
-    return entries.map(e => ({
-        id: (e.id as string | undefined) ?? (`auto:${generateId()}`),
-        source_id: e.source_id as string,
-        target_id: e.target_id as string,
-        type: (e.type as string | undefined) ?? null as unknown as string,
+function normalizeEdges(raw: unknown): GraphEdge[] {
+    return toEntries(raw).map(e => ({
+        id: coerceId(e.id) ?? `auto:${generateId()}`,
+        source_id: pickId(e, ['source_id', 'source', 'from', 'start']) ?? '',
+        target_id: pickId(e, ['target_id', 'target', 'to', 'end']) ?? '',
+        type: coerceId(e.type) ?? DEFAULT_EDGE_TYPE,
         properties: collectProperties(e, EDGE_KEYS),
     }));
+}
+
+/**
+ * Drops edges whose endpoints do not resolve to a known node id. This guards
+ * the force-graph layout, whose d3-force link binding throws on a missing node.
+ */
+function dropDanglingEdges(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+): { edges: GraphEdge[]; skipped: number } {
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const kept: GraphEdge[] = [];
+    for (const edge of edges) {
+        if (nodeIds.has(edge.source_id) && nodeIds.has(edge.target_id)) {
+            kept.push(edge);
+        }
+    }
+    return { edges: kept, skipped: edges.length - kept.length };
+}
+
+/** Unwraps a top-level `graph` (or `data`) container around nodes/edges. */
+function unwrapRoot(data: Record<string, unknown>): Record<string, unknown> {
+    for (const key of ['graph', 'data']) {
+        const inner = data[key];
+        if (
+            inner != null &&
+            typeof inner === 'object' &&
+            !Array.isArray(inner) &&
+            ('nodes' in inner || 'edges' in inner || 'links' in inner || 'relationships' in inner)
+        ) {
+            return inner as Record<string, unknown>;
+        }
+    }
+    return data;
+}
+
+/**
+ * Normalises an already-parsed graph object (native or foreign shape) into
+ * uniform graph data, dropping edges with unresolved endpoints.
+ */
+function normalizeGraphData(data: Record<string, unknown>): LoadedGraphData {
+    const inner = unwrapRoot(data);
+    const nodes = normalizeNodes(inner.nodes);
+    const allEdges = normalizeEdges(
+        inner.edges ?? inner.relationships ?? inner.links,
+    );
+    const { edges, skipped } = dropDanglingEdges(nodes, allEdges);
+    return {
+        nodes,
+        edges,
+        display: extractDisplay(inner),
+        skippedEdges: skipped,
+    };
 }
 
 /**
  * Parses a JSON string into normalized graph data.
  */
 export function parseGraphData(text: string): LoadedGraphData {
-    const data = JSON.parse(text) as Record<string, unknown>;
-    return {
-        nodes: normalizeNodes((data.nodes as unknown[] | undefined) ?? []),
-        edges: normalizeEdges(
-            (data.edges ?? data.relationships ?? data.links ?? []) as unknown[],
-        ),
-        display: extractDisplay(data),
-    };
+    return normalizeGraphData(JSON.parse(text) as Record<string, unknown>);
 }
 
 /** A built-in example graph as listed in examples/index.json. */
