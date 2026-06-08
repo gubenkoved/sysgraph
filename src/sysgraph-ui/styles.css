@@ -386,13 +386,13 @@ body {
   align-items: stretch;
   gap: var(--spacing-lg);
   padding: 28px 32px;
-  /* lightweight liquid-glass container */
-  background: var(--bg-glass-light);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  /* subtle backing so the canvas grid does not shine through; deliberately
+     flat (no shadow) so it never reads as a movable dialog */
+  background: var(--bg-panel);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 12px var(--shadow-sm);
   /* let canvas interactions pass through the empty area around the panel */
   pointer-events: none;
 }
@@ -410,16 +410,6 @@ body {
   color: var(--text-muted);
   text-align: center;
   pointer-events: none;
-}
-
-.quick-start .quick-start-close {
-  position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
-  --md-icon-button-icon-size: 18px;
-  width: 28px;
-  height: 28px;
-  pointer-events: auto;
 }
 
 .quick-start .quick-start-actions {

@@ -10,11 +10,7 @@ const quickStartEl = document.getElementById('quickStart') as HTMLElement;
 const importBtn = document.getElementById('quickStartImport') as HTMLElement;
 const exampleBtn = document.getElementById('quickStartExample') as HTMLElement;
 const editBtn = document.getElementById('quickStartEdit') as HTMLElement;
-const closeBtn = document.getElementById('quickStartClose') as HTMLElement;
 const importFileInput = document.getElementById('importFile') as HTMLInputElement;
-
-// once dismissed, stay hidden until the graph is populated again
-let dismissed = false;
 
 // suppress the panel until the initial backend load settles; standalone builds
 // have no backend, so they are ready immediately
@@ -32,11 +28,7 @@ export function markQuickStartReady(): void {
 /** Shows the quick-start panel only when the graph is empty and edit mode is inactive. */
 function refreshVisibility(): void {
     const isEmpty = state.graph.nodesMap.size === 0;
-    // a non-empty graph clears the dismissal so the panel can reappear later
-    if (!isEmpty) {
-        dismissed = false;
-    }
-    const visible = ready && isEmpty && !dismissed && state.currentTool !== 'edit';
+    const visible = ready && isEmpty && state.currentTool !== 'edit';
     quickStartEl.classList.toggle('visible', visible);
 }
 
@@ -68,11 +60,6 @@ export function initQuickStart(onEditMode: () => void): void {
         onEditMode();
     });
     activateOnKey(editBtn);
-
-    closeBtn.addEventListener('click', () => {
-        dismissed = true;
-        refreshVisibility();
-    });
 
     on(EVT_GRAPH_UPDATED, refreshVisibility);
     on(EVT_TOOL_CHANGED, refreshVisibility);
