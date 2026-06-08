@@ -562,8 +562,12 @@ ForceGraphInstance
 
         const locked = isNodePinned(node);
         if (locked) {
-            drawCircle(ctx, node.x!, node.y!, r + 1, 2, colorAdjustAlpha('rgba(0,0,0,0.95)', alphaMultiplier));
-            drawCircle(ctx, node.x!, node.y!, r, 1, colorAdjustAlpha('rgba(255,255,255,0.8)', alphaMultiplier));
+            // invert the ring colors in dark mode so the thicker outer ring
+            // stays visible against the dark canvas background
+            const outerRingColor = getTheme() === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.95)';
+            const innerRingColor = getTheme() === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
+            drawCircle(ctx, node.x!, node.y!, r + 1, 2, colorAdjustAlpha(outerRingColor, alphaMultiplier));
+            drawCircle(ctx, node.x!, node.y!, r, 1, colorAdjustAlpha(innerRingColor, alphaMultiplier));
         }
 
         if (state.selection.selectedNodeIds.has(node.id)) {
