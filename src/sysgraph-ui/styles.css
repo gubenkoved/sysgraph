@@ -292,15 +292,14 @@ body {
   transform: translateY(-50%);
   margin-left: var(--spacing-sm);
   font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
-  background: var(--bg-pill);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-medium);
   border-radius: 999px;
   padding: 3px 10px;
-  box-shadow: 0 1px 4px var(--shadow-xs);
+  box-shadow: 0 2px 8px var(--shadow-sm);
   visibility: hidden;
 }
 
@@ -1466,6 +1465,30 @@ hr {
     right: var(--spacing-md);
     transform: none;
     justify-content: flex-end;
+  }
+
+  /* The search bar is centered and near full-width on phones, so the match
+     count (normally pinned just outside the bar's right edge via left:100%)
+     ends up off-screen. Let the bar span the viewport with side insets, make
+     the input flexible, and drop the count badge centered just below the bar. */
+  #searchBar {
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    transform: none;
+  }
+
+  #searchInput {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+
+  #searchMatchCount {
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    margin-left: 0;
+    margin-top: var(--spacing-xs);
   }
 }
 
