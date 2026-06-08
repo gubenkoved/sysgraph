@@ -6,9 +6,13 @@
  *   Expression  ::= OrExpr
  *   OrExpr      ::= AndExpr ('OR' AndExpr)*
  *   AndExpr     ::= Atom ('AND'? Atom)*         // implicit AND via adjacency
- *   Atom        ::= '(' Expression ')' | Term
+ *   Atom        ::= [FieldPath ':'] '(' Expression ')' | Term
  *   Term        ::= [FieldPath ':'] Value
  *   Value       ::= QuotedString | BareWord
+ *
+ * A field specifier directly preceding a group (e.g. field:(A AND B)) scopes
+ * the field onto every field-less term inside the group, equivalent to
+ * (field:A AND field:B). Inner terms carrying their own field keep it.
  *
  * @module search-parser
  */
@@ -44,6 +48,8 @@ export interface Token {
     field?: string | null;
     pattern?: string;
 }
+
+// for an LPAREN token, an optional field scopes the group's terms
 
 // ---------------------------------------------------------------------------
 // AST node types
@@ -143,6 +149,13 @@ function tokenize(input: string): Token[] {
             const str = readQuotedString(input, i);
             i = str.end;
             tokens.push({ type: TokenType.TERM, field: fieldCandidate, pattern: str.value });
+            continue;
+        }
+
+        // case 1b: field:(grouped expression) - scope the field onto the group
+        if (valueAfterColon === '' && i < input.length && input[i] === '(') {
+            i++;
+            tokens.push({ type: TokenType.LPAREN, field: fieldCandidate });
             continue;
         }
 
@@ -260,7 +273,8 @@ export function parse(expression: string): AstNode {
                 throw new SearchSyntaxError('Missing closing parenthesis');
             }
             advance();
-            return expr;
+            const scope = tok.field ?? null;
+            return scope ? applyFieldScope(expr, scope) : expr;
         }
         if (tok.type === TokenType.TERM) {
             advance();
@@ -280,4 +294,21 @@ export function parse(expression: string): AstNode {
     }
 
     return ast;
+}
+
+/**
+ * Distribute a field specifier onto every field-less term within a subtree.
+ * Terms that already carry an explicit field are left untouched.
+ */
+function applyFieldScope(node: AstNode, field: string): AstNode {
+    switch (node.type) {
+        case 'term':
+            return node.field === null ? { ...node, field } : node;
+        case 'and':
+        case 'or':
+            return {
+                type: node.type,
+                children: node.children.map(c => applyFieldScope(c, field)),
+            };
+    }
 }
