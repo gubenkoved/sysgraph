@@ -39,9 +39,11 @@ const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButto
 const loadingOverlay = document.getElementById('loading-overlay') as HTMLElement;
 
 // --- standalone-mode indicator ---
+// in standalone builds, suffix the version with "s" (e.g. v1.2.3s) instead of
+// rendering a separate badge
 if (STANDALONE) {
-    const standaloneBadge = document.getElementById('standalone-badge');
-    if (standaloneBadge) standaloneBadge.hidden = false;
+    const appVersion = document.getElementById('app-version');
+    if (appVersion) appVersion.textContent += 'S';
 }
 
 // --- theme (apply persisted choice before the UI renders) ---
