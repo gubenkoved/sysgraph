@@ -1502,6 +1502,17 @@ hr {
   }
 }
 
+@keyframes action-toast-in-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ── Action Toast ────────────────────────────────────────── */
 /* Prominent, theme-aware notification with a primary action (e.g. the
    "graph defines display settings" prompt). Styling lives here so it tracks
@@ -1601,4 +1612,43 @@ hr {
 .action-toast__close:hover {
   background: var(--hover-overlay);
   color: var(--text-primary);
+}
+
+/* ── Action Toast (mobile) ───────────────────────────────── */
+/* Placed after the base rules above so these overrides win on narrow screens
+   (same specificity → later source order wins). Without this, the base
+   `left: 50%` / `transform` / `max-width` would keep the toast centered and
+   inset, leaving large side margins on phones. */
+@media (max-width: 600px) {
+  /* span almost the full width and stack vertically so the message uses the
+     available width instead of being squeezed by the inline icon/buttons */
+  .action-toast {
+    left: var(--spacing-lg);
+    right: var(--spacing-lg);
+    transform: none;
+    max-width: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    padding-right: 40px; /* room for the absolutely-positioned close button */
+    /* element is no longer centered, so skip the translateX-based entrance */
+    animation: action-toast-in-mobile 0.22s ease-out;
+  }
+
+  /* keep the status icon compact and top-aligned above the message */
+  .action-toast__icon {
+    align-self: flex-start;
+  }
+
+  /* full-width action button → comfortable tap target on touch screens */
+  .action-toast__action {
+    width: 100%;
+  }
+
+  /* pin the close button to the top-right corner so it never steals a row */
+  .action-toast__close {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+  }
 }

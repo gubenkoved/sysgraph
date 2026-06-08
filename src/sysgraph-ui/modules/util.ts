@@ -49,7 +49,7 @@ export function showError(
         zIndex: '9999',
         boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
         cursor: 'pointer',
-        maxWidth: '600px',
+        maxWidth: 'min(600px, calc(100vw - 32px))',
         wordBreak: 'break-word',
     });
     el.title = 'Click to dismiss';
