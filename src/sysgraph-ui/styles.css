@@ -326,27 +326,90 @@ body {
   display: none;
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0;
+  width: 320px;
+  max-width: calc(100vw - 2 * var(--spacing-lg));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
   margin-top: var(--spacing-xs);
   z-index: var(--z-search-help);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
-  padding: 10px 14px;
+  padding: var(--spacing-md) var(--spacing-lg);
   box-shadow: 0 4px 12px var(--shadow-md);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  background: #1e293b;
-  color: #fff;
+  background: var(--bg-panel);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--text-primary);
 }
 
 #searchHelp.open {
   display: block;
 }
 
-#searchHelp code {
-  background: rgba(255, 255, 255, 0.12);
+/* grouped section, mirrors .analytics-block separation */
+.search-help-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.search-help-block:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.search-help-block-title {
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* aligned row: fixed-width code column + description, like .analytics-field */
+.search-help-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+}
+
+.search-help-code {
+  flex: 0 0 132px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--hover-overlay);
   padding: 1px var(--spacing-xs);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
+  overflow-wrap: break-word;
+}
+
+.search-help-desc {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.search-help-footer {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.search-help-footer a {
+  color: var(--accent-info);
+  text-decoration: none;
+}
+
+.search-help-footer a:hover {
+  text-decoration: underline;
 }
 
 /* ── Content & Graph ─────────────────────────────────────── */

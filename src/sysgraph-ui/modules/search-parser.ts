@@ -8,7 +8,14 @@
  *   AndExpr     ::= Atom ('AND'? Atom)*         // implicit AND via adjacency
  *   Atom        ::= [FieldPath ':'] '(' Expression ')' | Term
  *   Term        ::= [FieldPath ':'] Value
- *   Value       ::= QuotedString | BareWord
+ *   Value       ::= Segment+                    // adjacent segments, concatenated
+ *   Segment     ::= QuotedString | BareWord
+ *
+ * Adjacent segments with no intervening whitespace are concatenated into a
+ * single value, so a leading operator stays bound to a quoted phrase
+ * (e.g. ="node 1" -> value '=node 1', name:="node 1" -> field 'name',
+ * value '=node 1'). Quotes preserve internal whitespace and suppress the
+ * special meaning of (, ), and the AND/OR keywords.
  *
  * A field specifier directly preceding a group (e.g. field:(A AND B)) scopes
  * the field onto every field-less term inside the group, equivalent to
@@ -106,76 +113,105 @@ function tokenize(input: string): Token[] {
             continue;
         }
 
-        if (input[i] === '"') {
-            const str = readQuotedString(input, i);
-            i = str.end;
-            assertNoFieldlessInverse(str.value);
-            tokens.push({ type: TokenType.TERM, field: null, pattern: str.value });
-            continue;
-        }
+        // read a term: a run of adjacent bare/quoted segments with no
+        // intervening whitespace, e.g. ="node 1" or name:="node 1". quoted
+        // segments are concatenated into the value so the leading operator
+        // (=, !, ^, ...) stays bound to the phrase, and spaces inside quotes
+        // are preserved
+        const seg = readSegments(input, i);
+        i = seg.end;
+        const parts = seg.parts;
+        const raw = parts.map(p => p.value).join('');
+        const hasQuoted = parts.some(p => p.quoted);
+        const leadingBare = parts[0] && !parts[0].quoted ? parts[0].value : '';
 
-        // bare word (or field:value)
-        const word = readBareWord(input, i);
-        i = word.end;
-        const raw = word.value;
-
-        if (raw === 'AND') {
+        // AND/OR are only keywords as a lone, unquoted word
+        if (parts.length === 1 && !hasQuoted && raw === 'AND') {
             tokens.push({ type: TokenType.AND });
             continue;
         }
-        if (raw === 'OR') {
+        if (parts.length === 1 && !hasQuoted && raw === 'OR') {
             tokens.push({ type: TokenType.OR });
             continue;
         }
 
-        const colonIdx = raw.indexOf(':');
-        if (colonIdx === -1) {
+        const colonIdx = leadingBare.indexOf(':');
+        const fieldCandidate = colonIdx === -1 ? '' : leadingBare.slice(0, colonIdx);
+
+        // field-less term (no colon in the leading bare run, or invalid field)
+        if (colonIdx === -1 || !FIELD_RE.test(fieldCandidate)) {
             assertNoFieldlessInverse(raw);
             tokens.push({ type: TokenType.TERM, field: null, pattern: raw });
             continue;
         }
 
-        const fieldCandidate = raw.slice(0, colonIdx);
-        const valueAfterColon = raw.slice(colonIdx + 1);
+        const bareAfterColon = leadingBare.slice(colonIdx + 1);
+        const restAfterLeading = parts.slice(1).map(p => p.value).join('');
 
-        if (!FIELD_RE.test(fieldCandidate)) {
-            assertNoFieldlessInverse(raw);
-            tokens.push({ type: TokenType.TERM, field: null, pattern: raw });
-            continue;
-        }
-
-        // case 1: field:"quoted value"
-        if (valueAfterColon === '' && i < input.length && input[i] === '"') {
-            const str = readQuotedString(input, i);
-            i = str.end;
-            tokens.push({ type: TokenType.TERM, field: fieldCandidate, pattern: str.value });
-            continue;
-        }
-
-        // case 1b: field:(grouped expression) - scope the field onto the group
-        if (valueAfterColon === '' && i < input.length && input[i] === '(') {
+        // field:(grouped expression) - scope the field onto the group
+        if (
+            bareAfterColon === '' &&
+            !hasQuoted &&
+            parts.length === 1 &&
+            i < input.length &&
+            input[i] === '('
+        ) {
             i++;
             tokens.push({ type: TokenType.LPAREN, field: fieldCandidate });
             continue;
         }
 
-        // case 2: field:bareValue
-        if (valueAfterColon.includes(':')) {
+        // a second colon in the bare value is ambiguous (quoted colons are ok)
+        if (bareAfterColon.includes(':')) {
             throw new SearchSyntaxError(
-                `Ambiguous colon in "${raw}". Use quotes for values containing colons, e.g. ${fieldCandidate}:"${valueAfterColon}"`
+                `Ambiguous colon in "${raw}". Use quotes for values containing colons, e.g. ${fieldCandidate}:"${bareAfterColon}"`
             );
         }
 
-        if (valueAfterColon === '') {
+        const value = bareAfterColon + restAfterLeading;
+        if (value === '') {
             throw new SearchSyntaxError(
                 `Missing value after "${fieldCandidate}:". Provide a search value, e.g. ${fieldCandidate}:some_value`
             );
         }
 
-        tokens.push({ type: TokenType.TERM, field: fieldCandidate, pattern: valueAfterColon });
+        tokens.push({ type: TokenType.TERM, field: fieldCandidate, pattern: value });
     }
 
     return tokens;
+}
+
+interface TermSegment {
+    quoted: boolean;
+    value: string;
+}
+
+/**
+ * Read a run of adjacent segments (bare words and quoted strings) with no
+ * intervening whitespace or parentheses. Stops at whitespace, '(', ')', or
+ * end of input.
+ */
+function readSegments(input: string, start: number): { parts: TermSegment[]; end: number } {
+    const parts: TermSegment[] = [];
+    let i = start;
+
+    while (i < input.length) {
+        const c = input[i];
+        if (c === ' ' || c === '\t' || c === '(' || c === ')') {
+            break;
+        }
+        if (c === '"') {
+            const str = readQuotedString(input, i);
+            parts.push({ quoted: true, value: str.value });
+            i = str.end;
+            continue;
+        }
+        const word = readBareWord(input, i);
+        parts.push({ quoted: false, value: word.value });
+        i = word.end;
+    }
+
+    return { parts, end: i };
 }
 
 function assertNoFieldlessInverse(pattern: string): void {

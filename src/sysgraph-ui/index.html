@@ -76,24 +76,75 @@
         <md-icon-button id="searchHelpTrigger">
           <md-icon>help</md-icon>
         </md-icon-button>
-        <div id="searchHelp" style="white-space: nowrap;">
-        <strong>Search Syntax</strong><br>
-        <code>term</code> — fuzzy match (all fields)<br>
-        <code>field:value</code> — match against specific field<br>
-        <code>properties.name:bash</code> — dot notation for nested fields<br>
-        <code>field:"val:ue"</code> — quotes for values with colons<br>
-        <code>"literal term"</code> — quotes suppress all special meaning<br>
-        <strong>AND</strong> / <strong>OR</strong> — logical operators (uppercase)<br>
-        <code>(A OR B) AND C</code> — parentheses for grouping<br>
-        Space between terms = implicit AND<br>
-        <hr style="border-color: #444; margin: 4px 0;">
-        <strong>Fuse.js Operators (in values)</strong><br>
-        <code>=exact</code> — exact match<br>
-        <code>'include</code> — include match<br>
-        <code>field:!exclude</code> — inverse (requires field)<br>
-        <code>^prefix</code> — starts with<br>
-        <code>.suffix$</code> — ends with<br>
-        <a href="https://www.fusejs.io/extended-search.html" target="_blank" rel="noopener" style="color: #58a6ff;">Fuse.js docs &rarr;</a>
+        <div id="searchHelp">
+          <div class="search-help-block">
+            <div class="search-help-block-title">Syntax</div>
+            <div class="search-help-row">
+              <code class="search-help-code">term</code>
+              <span class="search-help-desc">fuzzy match across all fields</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">field:value</code>
+              <span class="search-help-desc">match a specific field</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">properties.name:bash</code>
+              <span class="search-help-desc">nested field via dot notation</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">field:"val:ue"</code>
+              <span class="search-help-desc">quote values containing colons</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">"literal term"</code>
+              <span class="search-help-desc">quotes suppress special meaning</span>
+            </div>
+          </div>
+          <div class="search-help-block">
+            <div class="search-help-block-title">Logic</div>
+            <div class="search-help-row">
+              <code class="search-help-code">A AND B</code>
+              <span class="search-help-desc">both terms (uppercase)</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">A OR B</code>
+              <span class="search-help-desc">either term (uppercase)</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">A B</code>
+              <span class="search-help-desc">space = implicit AND</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">(A OR B) AND C</code>
+              <span class="search-help-desc">parentheses for grouping</span>
+            </div>
+          </div>
+          <div class="search-help-block">
+            <div class="search-help-block-title">Value operators</div>
+            <div class="search-help-row">
+              <code class="search-help-code">=exact</code>
+              <span class="search-help-desc">exact match</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">'include</code>
+              <span class="search-help-desc">include match</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">field:!exclude</code>
+              <span class="search-help-desc">inverse (requires field)</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">^prefix</code>
+              <span class="search-help-desc">starts with</span>
+            </div>
+            <div class="search-help-row">
+              <code class="search-help-code">.suffix$</code>
+              <span class="search-help-desc">ends with</span>
+            </div>
+          </div>
+          <div class="search-help-footer">
+            <a href="https://www.fusejs.io/extended-search.html" target="_blank" rel="noopener">Fuse.js docs &rarr;</a>
+          </div>
         </div>
       </span>
       <span id="searchMatchCount"></span>

@@ -2,13 +2,26 @@
 
 ## IMPORTANT: Build System
 
-Prefer the dockerized scripts in `scripts/` so no host Node.js installation is required:
+Prefer the dockerized scripts in `scripts/` for ALL frontend work. They run
+Node.js inside Docker, so no host Node.js installation is required and everyone
+(and CI) uses the same Node 22 image:
 - `./scripts/build-ui.sh` — production build (outputs to `src/sysgraph/dist/`)
 - `./scripts/dev-ui.sh` — dev server with HMR (Vite on port 5173)
 - `./scripts/typecheck-ui.sh` — TypeScript type checking
 - `./scripts/lint-ui.sh` — Biome linter (pass `--fix` to auto-fix)
+- `./scripts/test-ui.sh` — Vitest unit tests
 
-If the user has Node.js 22 installed locally, `npm run build`, `npm run typecheck`, and `npm run lint` also work directly.
+If Node.js 22 is installed locally you MAY run the underlying npm scripts
+directly for faster iteration — `npm ci`, `npm run build`, `npm run typecheck`,
+`npm run lint`, `npm run test`. This only creates a project-local `node_modules/`
+(gitignored) and the npm cache; it does not pollute the host globally. Use
+whichever Node you run with care to match version 22. For any one-off Node
+command not covered by a script, either add a `scripts/*-ui.sh` wrapper or run
+it through Docker with the same pattern the `*-ui.sh` scripts use
+(`docker run --rm -v "$PWD:/app" -w /app -u "$(id -u):$(id -g)" -e
+npm_config_cache=/tmp/.npm node:22-slim sh -c "..."`). Updating
+`package-lock.json` should be done with `npm install --package-lock-only`
+(locally with Node 22, or via the same Docker invocation).
 
 **After any frontend/UI changes** (HTML, CSS, JS in `src/sysgraph-ui/`), always rebuild with `./scripts/build-ui.sh` so the changes are reflected in the served app. The backend serves pre-built files from `src/sysgraph/dist/`.
 
@@ -374,6 +387,12 @@ The toolbar and form elements use **Material Web** (`@material/web`) components:
 Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 
 ## Coding Conventions
+
+### Simplicity & cleanliness (Python & TypeScript)
+- Keep the code clean and prefer the simplest solution that works; do not over-engineer
+- Avoid unnecessary code duplication — factor out shared logic into a helper instead of copy-pasting
+- Avoid excessive complexity (deep nesting, premature abstractions, needless indirection, speculative generality)
+- If a change starts to feel overcomplicated, pause and ask the user whether the approach might be over-engineered before continuing
 
 ### Comments (Python & TypeScript)
 - Start regular comments with a lower-case letter
