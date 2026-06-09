@@ -38,6 +38,11 @@ export const NODE_RADIUS_MULTIPLIER = 3;
 export const MAX_NODE_VAL = 10;
 export const NODE_LABEL_FONT_SIZE = 12;
 export const NODE_LABEL_OFFSET = 4;
+// dampen on-screen label growth above this zoom level (globalScale; 2 = 200%)
+// so dense labels stay distinguishable when zoomed in
+export const NODE_LABEL_ZOOM_THRESHOLD = 2;
+// 0 = no dampening (linear growth), 1 = fully pinned size; 0.5 -> sqrt growth
+export const NODE_LABEL_ZOOM_DAMP = 0.5;
 export const UI_FONT_FAMILY = "'Ubuntu', 'Roboto', 'Segoe UI', 'Arial', sans-serif";
 
 /**

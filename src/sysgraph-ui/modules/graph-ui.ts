@@ -11,7 +11,8 @@ import {
     GRID_LINE_COLOR, GRID_LINE_COLOR_DARK, GRID_LINE_COLOR_UNSTRESSED, GRID_LINE_COLOR_UNSTRESSED_DARK,
     GRID_SPACING,
     HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
-    MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,nodePointerRadius,
+    MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,
+    NODE_LABEL_ZOOM_DAMP, NODE_LABEL_ZOOM_THRESHOLD, nodePointerRadius,
     nodeRadius, SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     SEARCH_NOT_MATCHING_OPACITY,
@@ -85,6 +86,16 @@ type ForceGraphInstance = FGBaseType<FGNode, FGLink> & {
 // ---------------------------------------------------------------------------
 // Label & sizing helpers
 // ---------------------------------------------------------------------------
+
+// dampen label growth above a zoom threshold so dense text stays legible;
+// below the threshold the label keeps its nominal size
+function labelFontSize(globalScale: number): number {
+    if (globalScale <= NODE_LABEL_ZOOM_THRESHOLD) {
+        return NODE_LABEL_FONT_SIZE;
+    }
+    const damp = (NODE_LABEL_ZOOM_THRESHOLD / globalScale) ** NODE_LABEL_ZOOM_DAMP;
+    return NODE_LABEL_FONT_SIZE * damp;
+}
 
 function getNodeLabel(node: FGNode): string {
     switch (settings.nodeLabelMode) {
@@ -640,7 +651,7 @@ ForceGraphInstance
         }
 
         const label = getNodeLabel(node);
-        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, NODE_LABEL_FONT_SIZE, colorAdjustAlpha(getTheme() === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier));
+        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, labelFontSize(globalScale), colorAdjustAlpha(getTheme() === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier));
 
         // show hidden nodes counters in adjacency filtered mode
         if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
