@@ -16,7 +16,7 @@ import { DEFAULT_EDGE_WEIGHT_EXPRESSION, makeEdgeWeightFn } from './analytics-he
 import { EVT_ANALYTICS_UPDATED } from './constants.js';
 import { emit } from './event-bus.js';
 import type { FGNode } from './graph-ui.js';
-import { getVisibleGraph } from './graph-ui.js';
+import { getVisibleGraph, refreshGraphColors } from './graph-ui.js';
 import {
     type AnalyticsAlgorithmId,
     clearAnalyticsRun,
@@ -28,6 +28,10 @@ import {
     setAnalyticsResult,
     state,
 } from './state.js';
+
+// default width multiplier applied to the shortest-path edges; also the
+// starting value of the path-width slider in the results section
+export const DEFAULT_PATH_EDGE_WIDTH_MULTIPLIER = 1.5;
 
 // ---------------------------------------------------------------------------
 // algorithm descriptors
@@ -45,6 +49,9 @@ export interface ParamSpec {
     min?: number;
     max?: number;
     step?: number;
+    // optional live side effect invoked after the value is stored; used by
+    // result tweakers to update the canvas without re-running the algorithm
+    onInput?: (value: string) => void;
 }
 
 export interface PickSpec {
@@ -58,6 +65,8 @@ export interface AlgorithmDescriptor {
     icon: string;
     description: string;
     params: ParamSpec[];
+    // controls shown in the results section after a run; applied live
+    resultTweakers?: ParamSpec[];
     picks: PickSpec[];
     // true when results highlight a subset of nodes/edges on the canvas
     highlights: boolean;
@@ -88,6 +97,25 @@ const resolutionParam: ParamSpec = {
     defaultValue: String(DEFAULT_RESOLUTION),
 };
 
+// result tweaker: scales the on-screen width of the shortest-path edges,
+// applying live to the active subset decoration without re-running
+const pathWidthTweaker: ParamSpec = {
+    id: 'pathEdgeWidth',
+    label: 'path width',
+    type: 'slider',
+    min: 0.5,
+    max: 5,
+    step: 0.1,
+    defaultValue: String(DEFAULT_PATH_EDGE_WIDTH_MULTIPLIER),
+    onInput: value => {
+        const decoration = state.analytics.decoration;
+        if (decoration?.kind === 'subset') {
+            decoration.edgeWidthMultiplier = Number(value);
+        }
+        refreshGraphColors();
+    },
+};
+
 export const ALGORITHMS: AlgorithmDescriptor[] = [
     {
         id: 'stats',
@@ -104,6 +132,7 @@ export const ALGORITHMS: AlgorithmDescriptor[] = [
         icon: 'route',
         description: 'Lowest-weight path between two nodes (Dijkstra).',
         params: [edgeWeightParam, respectDirectionParam],
+        resultTweakers: [pathWidthTweaker],
         picks: [
             { role: 'source', label: 'source' },
             { role: 'target', label: 'target' },
@@ -190,7 +219,8 @@ export function selectAlgorithm(id: AnalyticsAlgorithmId): void {
     setAnalyticsAlgorithm(id);
     const algo = getAlgorithm(id);
     if (algo) {
-        for (const param of algo.params) {
+        const specs = [...algo.params, ...(algo.resultTweakers ?? [])];
+        for (const param of specs) {
             if (state.analytics.params[param.id] === undefined) {
                 setAnalyticsParam(param.id, param.defaultValue);
             }
@@ -224,11 +254,16 @@ export function handleAnalyticsNodeClick(node: FGNode): void {
  * and dims everything else. Unlike the transient hover highlight, it remains
  * until the algorithm result is cleared.
  */
-function decorateSubset(nodeIds: Iterable<string>, edgeIds: Iterable<string>): void {
+function decorateSubset(
+    nodeIds: Iterable<string>,
+    edgeIds: Iterable<string>,
+    edgeWidthMultiplier?: number,
+): void {
     setAnalyticsDecoration({
         kind: 'subset',
         nodeIds: new Set(nodeIds),
         edgeIds: new Set(edgeIds),
+        edgeWidthMultiplier,
     });
 }
 
@@ -289,7 +324,11 @@ export function runAlgorithm(): string | null {
         const respectDirection = state.analytics.params.respectDirection === 'true';
         const result = shortestPath(graph, sourceId, targetId, weightFn, respectDirection);
         if (result.found) {
-            decorateSubset(result.nodeIds, result.edgeIds);
+            decorateSubset(
+                result.nodeIds,
+                result.edgeIds,
+                readNumberParam('pathEdgeWidth', DEFAULT_PATH_EDGE_WIDTH_MULTIPLIER),
+            );
         } else {
             setAnalyticsDecoration(null);
         }

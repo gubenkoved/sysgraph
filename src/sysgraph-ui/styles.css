@@ -1096,6 +1096,15 @@ body {
   gap: var(--spacing-xs);
 }
 
+.analytics-tweakers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
 .analytics-subtitle {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-sm);

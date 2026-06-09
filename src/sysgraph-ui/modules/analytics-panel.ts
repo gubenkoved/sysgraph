@@ -94,7 +94,9 @@ function buildParamRow(param: ParamSpec): HTMLElement {
         const stored = state.analytics.params[param.id] ?? param.defaultValue;
         sw.selected = stored === 'true';
         sw.addEventListener('change', () => {
-            setAnalyticsParam(param.id, sw.selected ? 'true' : 'false');
+            const value = sw.selected ? 'true' : 'false';
+            setAnalyticsParam(param.id, value);
+            param.onInput?.(value);
         });
         row.appendChild(sw);
     } else if (param.type === 'slider') {
@@ -122,6 +124,7 @@ function buildParamRow(param: ParamSpec): HTMLElement {
             valueLabel.textContent = slider.value;
             syncFill();
             setAnalyticsParam(param.id, slider.value);
+            param.onInput?.(slider.value);
         });
 
         control.appendChild(slider);
@@ -144,6 +147,7 @@ function buildParamRow(param: ParamSpec): HTMLElement {
                 input.classList.toggle('invalid', error !== null);
             }
             setAnalyticsParam(param.id, input.value);
+            param.onInput?.(input.value);
         });
         row.appendChild(input);
     }
@@ -246,6 +250,19 @@ function buildPathNodeRow(nodeId: string, index: number, distance: number): HTML
     return row;
 }
 
+/**
+ * Renders the result tweakers declared by an algorithm (live controls shown in
+ * the results section after a run), reusing the shared param row builder.
+ */
+function buildResultTweakers(result: AnalyticsResultModel): HTMLElement | null {
+    const algo = getAlgorithm(result.kind as never);
+    const tweakers = algo?.resultTweakers ?? [];
+    if (tweakers.length === 0) return null;
+    const wrap = el('div', 'analytics-tweakers');
+    for (const tweaker of tweakers) wrap.appendChild(buildParamRow(tweaker));
+    return wrap;
+}
+
 function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
     const section = el('div', 'analytics-section analytics-results');
 
@@ -287,6 +304,8 @@ function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
                 list.appendChild(buildPathNodeRow(nodeId, i, distance));
             });
             section.appendChild(list);
+            const tweakers = buildResultTweakers(result);
+            if (tweakers) section.appendChild(tweakers);
         } else {
             section.appendChild(el('div', 'analytics-empty', 'No path found between the selected nodes.'));
         }

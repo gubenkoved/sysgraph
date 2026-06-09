@@ -48,6 +48,8 @@ export interface SubsetDecoration {
     kind: 'subset';
     nodeIds: Set<string>;
     edgeIds: Set<string>;
+    // multiplier applied to the on-screen width of the emphasized edges
+    edgeWidthMultiplier?: number;
 }
 
 /**

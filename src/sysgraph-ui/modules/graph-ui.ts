@@ -466,7 +466,16 @@ ForceGraphInstance
         return label + (n.type ? `\n(${n.type})` : '');
     })
     .linkCurvature(l => l.curvature ?? 0)
-    .linkWidth(l => edgeWidthFor(l))
+    .linkWidth(l => {
+        const base = edgeWidthFor(l);
+        // widen the emphasized edges of a subset decoration (e.g. shortest
+        // path) by its configurable multiplier while the analytics tool is on
+        const decoration = state.analytics.active ? state.analytics.decoration : null;
+        if (decoration?.kind === 'subset' && decoration.edgeIds.has(l.id)) {
+            return base * (decoration.edgeWidthMultiplier ?? 1);
+        }
+        return base;
+    })
     .linkColor(l => {
         let fillStyle = edgeColorFor(l);
         let alphaMultiplier = 1.0;
