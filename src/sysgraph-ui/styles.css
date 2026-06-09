@@ -1702,6 +1702,12 @@ body {
   color: var(--text-faint);
 }
 
+/* standalone-build indicator appended to the version (e.g. v1.2.3S); colored
+   so it stands out from the faint version text */
+.version-standalone {
+  color: var(--accent-primary);
+}
+
 /* ── Zoom Indicator ──────────────────────────────────────── */
 
 #zoom-indicator {

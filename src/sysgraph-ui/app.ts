@@ -41,11 +41,17 @@ const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButto
 const loadingOverlay = document.getElementById('loading-overlay') as HTMLElement;
 
 // --- standalone-mode indicator ---
-// in standalone builds, suffix the version with "s" (e.g. v1.2.3s) instead of
-// rendering a separate badge
+// in standalone builds, suffix the version with an accented "S" (e.g. v1.2.3S)
+// instead of rendering a separate badge; the S is colored so it stands out
+// from the faint version text
 if (STANDALONE) {
     const appVersion = document.getElementById('app-version');
-    if (appVersion) appVersion.textContent += 'S';
+    if (appVersion) {
+        const s = document.createElement('span');
+        s.className = 'version-standalone';
+        s.textContent = 'S';
+        appVersion.appendChild(s);
+    }
 }
 
 // --- theme (apply persisted choice before the UI renders) ---
