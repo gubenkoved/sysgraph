@@ -15,6 +15,7 @@ import { initToolbar, setTool, updateGraphInfo } from './modules/toolbar.js';
 import { dismissError, showError, showInfoToast } from './modules/util.js';
 import { initZoomIndicator } from './modules/zoom-indicator.js';
 import './modules/details-panel.js';
+import './modules/templates-panel.js';
 import {CMD_EXPORT, CMD_IMPORT,
     CMD_LOAD_EXAMPLE,
     CMD_RELOAD, EVT_CLEAR_CLICKED,

@@ -6,8 +6,6 @@ import type { FGNode } from './graph-ui.js';
 import { ForceGraphInstance, setPendingNodePosition } from './graph-ui.js';
 import { getGraph, setGraphDirty, setPendingEdgeSource, state } from './state.js';
 
-let newNodeCounter = 0;
-
 /** Re-emits a node click so its (editable) details form opens. */
 function selectNodeById(id: string): void {
     const fgNode = (ForceGraphInstance.graphData().nodes as FGNode[]).find(n => n.id === id);
@@ -16,13 +14,18 @@ function selectNodeById(id: string): void {
     }
 }
 
+/** Returns a fresh copy of an entity template's property bag. */
+function cloneTemplateProperties(properties: Record<string, unknown>): Record<string, unknown> {
+    return structuredClone(properties);
+}
+
 /** Creates a new node at the given graph coordinates and selects it. */
 export function createNodeAt(graphX: number, graphY: number): void {
-    newNodeCounter++;
+    const template = state.edit.nodeTemplate;
     const node: GraphNode = {
         id: generateId(),
-        type: 'node',
-        properties: { label: `node ${newNodeCounter}` },
+        type: template.type,
+        properties: cloneTemplateProperties(template.properties),
     };
     setPendingNodePosition(node.id, graphX, graphY);
     getGraph().addNode(node);
@@ -33,12 +36,13 @@ export function createNodeAt(graphX: number, graphY: number): void {
 
 /** Creates a directed edge between two existing nodes. */
 export function createEdge(sourceId: string, targetId: string): void {
+    const template = state.edit.edgeTemplate;
     const edge: GraphEdge = {
         id: generateId(),
         source_id: sourceId,
         target_id: targetId,
-        type: 'edge',
-        properties: {},
+        type: template.type,
+        properties: cloneTemplateProperties(template.properties),
     };
     getGraph().addEdge(edge);
     setGraphDirty(true);

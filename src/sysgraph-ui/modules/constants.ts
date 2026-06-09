@@ -21,8 +21,7 @@ export const EVT_LAYOUT_CHANGED = 'layout-changed';
 export const PANEL_GRAPH = 'graph';
 export const PANEL_DETAILS = 'details';
 export const PANEL_ANALYTICS = 'analytics';
-export const PANEL_SETTINGS = 'settings';
-
+export const PANEL_SETTINGS = 'settings';export const PANEL_TEMPLATES = 'templates';
 // ── Command names ───────────────────────────────────────────
 export const CMD_RELOAD = 'reload-graph';
 export const CMD_EXPORT = 'export-graph';

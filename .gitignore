@@ -3,7 +3,8 @@
 .idea
 *.egg-info
 __pycache__/
-*temp*
+temp/
+*.temp
 .python-version
 dist/
 build/

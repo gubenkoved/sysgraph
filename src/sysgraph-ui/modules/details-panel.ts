@@ -4,6 +4,7 @@ import { deleteEdge, deleteNode } from './edit-mode.js';
 import { emit, on } from './event-bus.js';
 import { closePanel, openPanel, registerPanel, unregisterPanel } from './layout.js';
 import { getGraph, setGraphDirty, state } from './state.js';
+import { inputToValue, valueToInput } from './util.js';
 
 // --- cached DOM elements (primary panel) ---
 const body = document.getElementById('detailsPanelBody') as HTMLElement;
@@ -40,23 +41,6 @@ function shortLabel(nodeOrLink: NodeOrLink): string {
 // ---------------------------------------------------------------------------
 // Editable form (edit mode)
 // ---------------------------------------------------------------------------
-
-/** Serializes a property value for display in an input field. */
-function valueToInput(value: unknown): string {
-    if (typeof value === 'string') return value;
-    return JSON.stringify(value);
-}
-
-/** Parses an input string back into a value (JSON with string fallback). */
-function inputToValue(text: string): unknown {
-    const trimmed = text.trim();
-    if (trimmed === '') return '';
-    try {
-        return JSON.parse(trimmed);
-    } catch {
-        return text;
-    }
-}
 
 function makeRow(labelText: string, input: HTMLElement): HTMLElement {
     const row = document.createElement('div');

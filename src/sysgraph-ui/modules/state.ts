@@ -32,10 +32,22 @@ export interface SearchState {
 
 export type EditSubTool = 'modify' | 'connect';
 
+/**
+ * Seed for the next created node/edge: a type name plus a default property set.
+ * Ephemeral (not persisted) — it is simply the template for the next entity.
+ */
+export interface EntityTemplate {
+    type: string;
+    properties: Record<string, unknown>;
+}
+
 export interface EditState {
     active: boolean;
     subTool: EditSubTool;
     pendingEdgeSourceId: string | null;
+    // template applied to each newly created node / edge
+    nodeTemplate: EntityTemplate;
+    edgeTemplate: EntityTemplate;
 }
 
 export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst' | 'degree' | 'community';
@@ -124,6 +136,8 @@ function initializeEditState(): EditState {
         active: false,
         subTool: 'modify',
         pendingEdgeSourceId: null,
+        nodeTemplate: { type: 'node', properties: { label: 'node' } },
+        edgeTemplate: { type: 'edge', properties: {} },
     };
 }
 
@@ -203,6 +217,14 @@ export function setEditSubTool(subTool: EditSubTool): void {
 
 export function setPendingEdgeSource(nodeId: string | null): void {
     state.edit.pendingEdgeSourceId = nodeId;
+}
+
+export function setNodeTemplate(template: EntityTemplate): void {
+    state.edit.nodeTemplate = template;
+}
+
+export function setEdgeTemplate(template: EntityTemplate): void {
+    state.edit.edgeTemplate = template;
 }
 
 export function setAnalyticsActive(active: boolean): void {

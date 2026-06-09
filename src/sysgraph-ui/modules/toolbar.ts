@@ -2,7 +2,7 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -12,6 +12,7 @@ import { isPanelOpen, resetLayout, togglePanel } from './layout.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
 import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
+import { closeTemplatesPanel } from './templates-panel.js';
 import { getTheme, toggleTheme } from './theme.js';
 import { showError } from './util.js';
 
@@ -24,6 +25,7 @@ const toolAnalyticsBtn = document.getElementById('toolAnalytics') as HTMLElement
 const editSubToolGroup = document.getElementById('editSubToolGroup') as HTMLElement;
 const editModifyBtn = document.getElementById('editModify') as HTMLElement;
 const editConnectBtn = document.getElementById('editConnect') as HTMLElement;
+const editTemplatesBtn = document.getElementById('editTemplates') as HTMLElement;
 const actionGroup = document.getElementById('actionGroup') as HTMLElement;
 const deleteBtn = document.getElementById('deleteSelected') as HTMLButtonElement;
 const unselectBtn = document.getElementById('unselectAll') as HTMLButtonElement;
@@ -103,6 +105,9 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
         setEditActive(false);
         cancelPendingEdge();
         editSubToolGroup.style.display = 'none';
+        // templates only apply while editing; close the panel on exit
+        closeTemplatesPanel();
+        editTemplatesBtn.classList.remove('active');
     }
 
     // analytics mode setup / teardown
@@ -397,6 +402,11 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         applyEditSubTool('connect');
     });
 
+    editTemplatesBtn.addEventListener('click', () => {
+        const open = togglePanel(PANEL_TEMPLATES);
+        editTemplatesBtn.classList.toggle('active', open);
+    });
+
     deleteBtn.addEventListener('click', async () => {
         await deleteSelectedNodes();
     });
@@ -465,6 +475,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     // keep the settings button in sync when the panel is closed via its tab
     on(EVT_LAYOUT_CHANGED, () => {
         toggleSettingsBtn.classList.toggle('active', isPanelOpen(PANEL_SETTINGS));
+        editTemplatesBtn.classList.toggle('active', isPanelOpen(PANEL_TEMPLATES));
     });
 
     // dark mode toggle

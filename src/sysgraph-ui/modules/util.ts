@@ -288,3 +288,24 @@ export function showActionToast(
     }
     return el;
 }
+
+// ---------------------------------------------------------------------------
+// Property value (de)serialization for key/value editors
+// ---------------------------------------------------------------------------
+
+/** Serializes a property value for display in an input field. */
+export function valueToInput(value: unknown): string {
+    if (typeof value === 'string') return value;
+    return JSON.stringify(value);
+}
+
+/** Parses an input string back into a value (JSON with string fallback). */
+export function inputToValue(text: string): unknown {
+    const trimmed = text.trim();
+    if (trimmed === '') return '';
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return text;
+    }
+}
