@@ -2,12 +2,13 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
 import { getVisibleGraph } from './graph-ui.js';
+import { isPanelOpen, resetLayout, togglePanel } from './layout.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
 import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
@@ -33,7 +34,6 @@ const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
 const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonElement;
 const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
 const toolbarEl = document.getElementById('toolbar') as HTMLElement;
-const settingsPane = document.getElementById('settingsPane') as HTMLElement;
 const importFileInput = document.getElementById('importFile') as HTMLInputElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
 const searchBar = document.getElementById('searchBar') as HTMLElement;
@@ -49,6 +49,18 @@ type Tool = 'pointer' | 'rect-select' | 'search' | 'edit' | 'analytics';
 // bundled example graphs, loaded once on init; the logo menu only offers the
 // "load example" entry when at least one example is available
 let examples: ExampleInfo[] = [];
+
+// canvas refs captured at init so tool changes can be requested from elsewhere
+// (e.g. when the analytics dock tab is closed by the user)
+let toolCanvases: { selection: HTMLCanvasElement; canvas: HTMLCanvasElement } | null = null;
+
+/** Reverts to the pointer tool when the analytics panel is closed via its tab. */
+export function exitAnalyticsTool(): void {
+    if (state.currentTool === 'analytics' && toolCanvases) {
+        setTool('pointer', toolCanvases.selection, toolCanvases.canvas);
+    }
+}
+
 
 /** Reflects the current theme on the toggle button's icon. */
 function updateThemeIcon(): void {
@@ -300,6 +312,12 @@ function buildLogoMenu(): ContextMenuItem[] {
     });
     items.push({ divider: true });
     items.push({
+        label: 'Reset layout',
+        icon: 'view_quilt',
+        action: resetLayout,
+    });
+    items.push({ divider: true });
+    items.push({
         label: 'Clear graph',
         icon: 'delete_sweep',
         danger: true,
@@ -314,6 +332,7 @@ function buildLogoMenu(): ContextMenuItem[] {
  * Wires up toolbar buttons, search input, and keyboard shortcuts.
  */
 export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement): void {
+    toolCanvases = { selection: selectionCanvas, canvas };
     // md-icon-button renders a 48px absolutely-positioned touch target that
     // overflows our compact 34px buttons by ~7px; on the edge buttons this
     // leaks past the toolbar and creates a real (but unwanted) horizontal
@@ -437,10 +456,15 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     // load the bundled example manifest so the logo menu can offer it
     void initExamples();
 
-    // settings (parameters) pane toggle
+    // settings (parameters) pane toggle — docks alongside the other panels
     toggleSettingsBtn.addEventListener('click', () => {
-        const open = settingsPane.classList.toggle('open');
+        const open = togglePanel(PANEL_SETTINGS);
         toggleSettingsBtn.classList.toggle('active', open);
+    });
+
+    // keep the settings button in sync when the panel is closed via its tab
+    on(EVT_LAYOUT_CHANGED, () => {
+        toggleSettingsBtn.classList.toggle('active', isPanelOpen(PANEL_SETTINGS));
     });
 
     // dark mode toggle

@@ -1,17 +1,16 @@
 import JSONFormatter from 'json-formatter-js';
-import { EVT_GRAPH_UPDATED, EVT_LINK_CLICKED, EVT_NODE_CLICKED } from './constants.js';
+import { EVT_GRAPH_UPDATED, EVT_LINK_CLICKED, EVT_NODE_CLICKED, PANEL_DETAILS } from './constants.js';
 import { deleteEdge, deleteNode } from './edit-mode.js';
 import { emit, on } from './event-bus.js';
+import { closePanel, openPanel, registerPanel, unregisterPanel } from './layout.js';
 import { getGraph, setGraphDirty, state } from './state.js';
 
 // --- cached DOM elements (primary panel) ---
-const panel = document.getElementById('detailsPanel') as HTMLElement;
 const body = document.getElementById('detailsPanelBody') as HTMLElement;
-const closeBtn = document.getElementById('detailsPanelClose') as HTMLElement;
-const content = document.getElementById('content') as HTMLElement;
 
-/** Counter used to cascade floating panel positions. */
-let floatingPanelCount = 0;
+/** Counter used to give each secondary details panel a unique id. */
+let secondaryCount = 0;
+
 
 interface NodeOrLink {
     id: string;
@@ -29,6 +28,13 @@ function buildDetailsData(nodeOrLink: NodeOrLink): Record<string, unknown> {
         kind: nodeOrLink.kind,
         properties: nodeOrLink.properties ?? {},
     };
+}
+
+/** Compact reference for a node/edge: its label/name, else type, else id. */
+function shortLabel(nodeOrLink: NodeOrLink): string {
+    const props = nodeOrLink.properties ?? {};
+    const label = (props.label ?? props.name) as string | undefined;
+    return label || nodeOrLink.type || nodeOrLink.id;
 }
 
 // ---------------------------------------------------------------------------
@@ -205,100 +211,60 @@ function showDetails(nodeOrLink: NodeOrLink): void {
         const formatter = new JSONFormatter(buildDetailsData(nodeOrLink), 2);
         body.appendChild(formatter.render());
     }
-    panel.classList.add('open');
+    openPanel(PANEL_DETAILS);
 }
 
 function hideDetails(): void {
-    panel.classList.remove('open');
+    closePanel(PANEL_DETAILS);
 }
 
-closeBtn.addEventListener('click', () => hideDetails());
+// register the primary details panel with the dock layout
+registerPanel({
+    id: PANEL_DETAILS,
+    component: PANEL_DETAILS,
+    title: 'Details',
+    element: body,
+    transient: true,
+    // the primary panel is the live view that retargets on each click; a compact
+    // pin icon on its tab hints how to spin off an independent secondary tab
+    tabIcon: {
+        name: 'push_pin',
+        title: 'Shift-click a node or edge to pin it in a new tab',
+    },
+});
 
-// --- drag support (reusable) ---
+// --- secondary (shift-click) details panels ---
+// open as additional tabs in the details group so they can be switched and
+// closed freely; dockview handles drag / resize / stacking
 
-function attachDrag(panelEl: HTMLElement): void {
-    const header = panelEl.querySelector('.panel-header') as HTMLElement;
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-    let startLeft = 0;
-    let startTop = 0;
-
-    header.addEventListener('pointerdown', (e) => {
-        if ((e.target as Element).closest('md-icon-button')) return;
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = panelEl.offsetLeft;
-        startTop = panelEl.offsetTop;
-        header.setPointerCapture(e.pointerId);
-    });
-
-    header.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        const parent = panelEl.parentElement!;
-        const x = Math.max(0, Math.min(startLeft + e.clientX - startX, parent.clientWidth - panelEl.offsetWidth));
-        const y = Math.max(0, Math.min(startTop + e.clientY - startY, parent.clientHeight - panelEl.offsetHeight));
-        panelEl.style.left = `${x}px`;
-        panelEl.style.top = `${y}px`;
-    });
-
-    header.addEventListener('pointerup', () => { dragging = false; });
-}
-
-// attach drag to the primary panel
-attachDrag(panel);
-
-// --- floating (shift-click) panels ---
-
-function createFloatingPanel(nodeOrLink: NodeOrLink): void {
-    floatingPanelCount++;
-    // On narrow (mobile) screens, start below the centered floating toolbar
-    // so the panel does not open overlapping it.
-    const baseTop = window.innerWidth <= 600 ? 64 : 8;
-    const offset = floatingPanelCount * 30;
-
-    const el = document.createElement('div');
-    el.className = 'details-panel open';
-    el.style.top = `${baseTop + offset}px`;
-    el.style.left = `${8 + offset}px`;
-
-    const header = document.createElement('div');
-    header.className = 'panel-header';
-
-    const title = document.createElement('span');
-    title.className = 'panel-title';
-    title.textContent = 'Details';
-
-    const closeButton = document.createElement('md-icon-button') as HTMLElement;
-    const closeIcon = document.createElement('md-icon') as HTMLElement;
-    closeIcon.textContent = 'close';
-    closeButton.appendChild(closeIcon);
-    closeButton.addEventListener('click', () => {
-        el.remove();
-        floatingPanelCount = Math.max(0, floatingPanelCount - 1);
-    });
-
-    header.appendChild(title);
-    header.appendChild(closeButton);
+function createSecondaryPanel(nodeOrLink: NodeOrLink): void {
+    secondaryCount++;
+    const id = `${PANEL_DETAILS}-${secondaryCount}`;
 
     const panelBody = document.createElement('div');
     panelBody.className = 'panel-body';
     const formatter = new JSONFormatter(buildDetailsData(nodeOrLink), 2);
     panelBody.appendChild(formatter.render());
 
-    el.appendChild(header);
-    el.appendChild(panelBody);
-    content.appendChild(el);
-
-    attachDrag(el);
+    registerPanel({
+        id,
+        component: PANEL_DETAILS,
+        // a pinned secondary tab carries the entity's own label, which reads as
+        // a sleek cue against the single live "Details" primary tab
+        title: shortLabel(nodeOrLink),
+        element: panelBody,
+        transient: true,
+        position: { referencePanel: PANEL_DETAILS, direction: 'within' },
+        onClose: () => unregisterPanel(id),
+    });
+    openPanel(id);
 }
 
 // --- event bus wiring ---
 
 function handleClick(payload: { data: NodeOrLink; shiftKey: boolean }): void {
     if (payload.shiftKey) {
-        createFloatingPanel(payload.data);
+        createSecondaryPanel(payload.data);
     } else {
         showDetails(payload.data);
     }

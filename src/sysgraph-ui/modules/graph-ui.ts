@@ -13,7 +13,8 @@ import {
     HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
     MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,
     NODE_LABEL_ZOOM_DAMP, NODE_LABEL_ZOOM_THRESHOLD, nodePointerRadius,
-    nodeRadius, SCORE_EPSILON,
+    nodeRadius,
+    PANEL_GRAPH,SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     SEARCH_NOT_MATCHING_OPACITY,
     SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
@@ -34,6 +35,7 @@ import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
 import { labelHelpers } from './graph-ui-helpers.js';
+import { registerPanel } from './layout.js';
 import { callFramePost, callFramePre } from './render-hooks.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
 import { getGraph, setAdjacencyFilter, setEditSubTool, setHighlight, state } from './state.js';
@@ -447,6 +449,16 @@ graphContainerEl.addEventListener('mousemove', (event) => {
 export const ForceGraphInstance = new ForceGraph<FGNode, FGLink>(
     document.getElementById('graph') as HTMLElement,
 ) as unknown as ForceGraphInstance;
+
+// the graph is the locked center dock panel; register the wrapper (which holds
+// the force-graph canvas plus the graph-area chrome) so the layout mounts it as
+// one unit and keeps it always present
+registerPanel({
+    id: PANEL_GRAPH,
+    component: PANEL_GRAPH,
+    title: 'Graph',
+    element: document.getElementById('graphPanel') as HTMLElement,
+});
 
 const RECENTER_VIEW_DURATION_MS = 400;
 

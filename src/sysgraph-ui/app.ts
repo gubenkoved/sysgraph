@@ -3,6 +3,7 @@ import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } fro
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
+import { initLayout } from './modules/layout.js';
 import { initLongPress } from './modules/long-press.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
@@ -32,6 +33,7 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/iconbutton/outlined-icon-button.js';
 import '@material/web/switch/switch.js';
 import '@material/web/textfield/outlined-text-field.js';
+import 'dockview-core/dist/styles/dockview.css';
 
 // --- cached DOM elements ---
 const searchMatchCountEl = document.getElementById('searchMatchCount') as HTMLElement;
@@ -200,10 +202,13 @@ registerHandler(CMD_RELOAD, async () => {
     }
 });
 
+// --- initialize the dock layout first so panels have a place to mount ---
+initLayout();
+
 // --- initialize selection overlay, toolbar & zoom indicator ---
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
-initAnalyticsPanel(() => setTool('pointer', selectionCanvas, canvas));
+initAnalyticsPanel();
 initQuickStart(() => setTool('edit', selectionCanvas, canvas));
 initZoomIndicator();
 initLongPress();

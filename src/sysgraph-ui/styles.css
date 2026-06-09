@@ -166,7 +166,7 @@ body {
 /* ── Toolbar (floating pill) ─────────────────────────────── */
 
 #toolbar {
-  position: fixed;
+  position: absolute;
   top: var(--spacing-md);
   left: 50%;
   transform: translateX(-50%);
@@ -283,7 +283,7 @@ body {
 /* ── Search (floating bar below the toolbar) ─────────────── */
 
 #searchBar {
-  position: fixed;
+  position: absolute;
   top: calc(var(--spacing-md) + 34px + 2 * var(--spacing-xs) + var(--spacing-md));
   left: 50%;
   transform: translateX(-50%);
@@ -452,10 +452,19 @@ body {
   bottom: 0;
 }
 
-#graph {
+/* the graph panel wraps the force-graph canvas plus the graph-area chrome
+   (toolbar, search bar, quick-start, zoom, status, version); it fills its dock
+   region and is the positioning context for those absolutely-placed overlays */
+#graphPanel {
+  position: relative;
   width: 100%;
   height: 100%;
-  position: relative;
+  overflow: hidden;
+}
+
+#graph {
+  position: absolute;
+  inset: 0;
   background: var(--bg-canvas);
 }
 
@@ -546,70 +555,70 @@ body {
   color: var(--accent-primary);
 }
 
-/* ── Details Panel ───────────────────────────────────────── */
+/* ── Dock layout ─────────────────────────────────────────── */
 
-.details-panel {
-  position: absolute;
-  top: var(--spacing-md);
-  left: var(--spacing-md);
-  width: fit-content;
-  max-width: calc(100% - var(--spacing-lg));
-  height: auto;
-  min-width: 200px;
-  min-height: 120px;
-  max-height: calc(100% - var(--spacing-lg));
-  z-index: var(--z-details-panel);
-  background: var(--bg-panel);
-  box-shadow: 0 2px 12px var(--shadow-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  display: none;
-  flex-direction: column;
+#dock {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Dockview chrome (tabs + resize divider) ─────────────── */
+
+/* map dockview's tab/divider sizing + colors onto our design tokens so the
+   dock chrome matches the app: compact tab strips and a minimal hairline
+   divider that only reveals a subtle accent while being dragged.
+   the doubled class raises specificity above dockview's own single-class theme
+   rules, which Vite injects after this linked stylesheet */
+.dockview-theme-light.dockview-theme-light,
+.dockview-theme-dark.dockview-theme-dark {
+  --dv-tabs-and-actions-container-height: 30px;
+  --dv-tabs-and-actions-container-font-size: var(--font-size-sm);
+  --dv-tab-font-size: var(--font-size-sm);
+  --dv-tabs-and-actions-container-background-color: var(--bg-panel);
+  --dv-group-view-background-color: var(--bg-canvas);
+  /* the static between-panel hairline */
+  --dv-separator-border: var(--border-subtle);
+  /* keep tabs visually unified — no hard slivers between them */
+  --dv-tab-divider-color: transparent;
+  /* the 4px draggable sash: invisible at rest, faint accent on hover/drag */
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: var(--accent-primary);
+  --dv-active-sash-transition-delay: 0s;
+}
+
+/* wrapper dockview mounts our persistent panel elements into; it must fill the
+   panel so the graph and scrollable panes get the full dock-region size */
+.dock-panel-content {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  resize: both;
-}
-
-.details-panel.open {
   display: flex;
+  flex-direction: column;
 }
 
-.details-panel .panel-header {
-  display: flex;
-  align-items: center;
-  height: var(--button-height);
-  padding: 0 2px 0 10px;
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-}
+/* ── Detail / analytics panel bodies ─────────────────────── */
 
-.details-panel .panel-header:active {
-  cursor: grabbing;
-}
-
-.details-panel .panel-title {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-primary);
+/* scrollable content area shared by the details and analytics dock panels */
+.panel-body {
   flex: 1;
-}
-
-.details-panel md-icon-button {
-  --md-icon-button-icon-size: 16px;
-  --md-icon-button-state-layer-height: var(--icon-button-size);
-  --md-icon-button-state-layer-width: var(--icon-button-size);
-  height: var(--icon-button-size);
-  width: var(--icon-button-size);
-}
-
-.details-panel .panel-body {
-  flex: 1;
-  overflow-y: auto;
   min-height: 0;
+  overflow-y: auto;
   padding: var(--spacing-md);
   font-family: var(--font-family);
+}
+
+/* compact affordance icon inside a dock tab, left of the title (e.g. the
+   details pin hint); muted so it reads as a quiet cue, with a native tooltip */
+.dv-default-tab .tab-icon {
+  --md-icon-size: 15px;
+  margin-right: var(--spacing-xs);
+  color: var(--text-faint);
+  cursor: help;
+  transition: color 0.1s;
+}
+
+.dv-default-tab .tab-icon:hover {
+  color: var(--text-secondary);
 }
 
 /* json-formatter-js ships a hardcoded light palette (dark keys/text) that is
@@ -661,14 +670,6 @@ body {
 
 :root[data-theme="dark"] .json-formatter-row .json-formatter-date {
   background-color: rgba(255, 255, 255, 0.05);
-}
-
-#detailsPanel {
-  border-left: 3px solid var(--accent-info);
-}
-
-#detailsPanel .panel-header {
-  background: rgba(26, 115, 232, 0.06);
 }
 
 /* ── Edit Form (edit mode details panel) ─────────────────── */
@@ -778,12 +779,7 @@ body {
 
 /* ── Analytics Panel ─────────────────────────────────────── */
 
-.analytics-panel {
-  width: 300px;
-  min-width: 260px;
-}
-
-.analytics-panel .panel-body {
+#analyticsPanelBody {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -1565,28 +1561,12 @@ body {
   font-size: var(--font-size-sm);
 }
 
-/* Frosted-glass card to match the details panel and bottom-row chips. */
+/* settings live in a dock panel now; fill the panel and scroll internally */
 #settingsPane {
-  position: absolute;
-  /* sit below the top toolbar so the two never overlap on narrow screens */
-  top: calc(var(--spacing-md) + 34px + 2 * var(--spacing-xs) + var(--spacing-md));
-  right: var(--spacing-md);
-  /* leave room for the bottom row (chip height + its offset + a gap) so the
-     pane never slides under the version badge / status chip */
-  max-height: calc(
-    100%
-    - (var(--spacing-md) + 34px + 2 * var(--spacing-xs) + var(--spacing-md))
-    - (var(--spacing-md) + var(--button-height) + var(--spacing-md))
-  );
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
-  display: none;
   padding: var(--spacing-xs);
-  background: var(--bg-panel);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 12px var(--shadow-sm);
 }
 
 /* Folder titles ("d3 forces settings", "display options", …). */
@@ -1640,10 +1620,6 @@ body {
   box-shadow: 0 2px 12px var(--shadow-sm);
 }
 
-#settingsPane.open {
-  display: block;
-}
-
 .has-count-badge {
   position: relative;
 }
@@ -1688,7 +1664,7 @@ body {
 }
 
 #statusLine {
-  position: fixed;
+  position: absolute;
   bottom: var(--spacing-md);
   left: 50%;
   transform: translateX(-50%);
@@ -1713,7 +1689,7 @@ body {
 }
 
 #version-badge {
-  position: fixed;
+  position: absolute;
   bottom: var(--spacing-sm);
   right: var(--spacing-md);
   z-index: var(--z-version-badge);
@@ -1729,7 +1705,7 @@ body {
 /* ── Zoom Indicator ──────────────────────────────────────── */
 
 #zoom-indicator {
-  position: fixed;
+  position: absolute;
   bottom: var(--spacing-md);
   left: var(--spacing-md);
   z-index: var(--z-zoom-indicator);
@@ -1781,21 +1757,16 @@ hr {
    mobile breakpoint — keep mobile-only rules here (mirrors the 600px check in
    details-panel.ts). */
 @media (max-width: 600px) {
-  /* Push details panels below the centered floating toolbar so they don't
-     open overlapping it (panel grows near full-width on narrow screens). */
-  .details-panel {
-    top: 64px;
-    max-height: calc(100% - 64px - var(--spacing-md));
-  }
-
   /* json-formatter inherits the 16px document default, which is oversized on
      small screens — shrink the panel body and its rows to the compact scale. */
-  .details-panel .panel-body,
-  .details-panel .panel-body .json-formatter-row {
+  .dock-panel-content .panel-body,
+  .dock-panel-content .panel-body .json-formatter-row {
     font-size: var(--font-size-xs);
   }
 
-  /* Move the status pill from center-bottom to the bottom-right corner. */
+  /* Move the status pill from center-bottom to the bottom-right corner. The
+     version label is just a faint canvas watermark, so the pill overlays it
+     freely instead of being lifted to clear it. */
   #statusLine {
     left: auto;
     right: var(--spacing-md);

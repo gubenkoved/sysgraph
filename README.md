@@ -14,6 +14,7 @@ An interactive force-directed **network graph visualizer** for the browser — w
 - **Import any graph** — load a JSON file with nodes and edges to visualize any network, social graph, dependency tree, or dataset
 - **Export/Import** — save and reload graph snapshots as JSON; use the sample at [`data/simple-graph.json`](data/simple-graph.json) as a format reference
 - **Interactive graph** — force-directed graph rendered in the browser with zoom, pan, drag, and search
+- **Dockable workspace** — settings, analytics, and selection-details open as dockable panels around the graph; drag tabs to rearrange, and your layout (sizes and placement) persists across reloads
 - **Fuzzy search** — find nodes by any property
 - **Adjacency filtering** — right-click a node to show only its neighbors
 - **Configurable** — tune d3 force parameters, colors, and type filters via the settings panel

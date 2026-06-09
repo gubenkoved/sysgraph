@@ -70,10 +70,36 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
 
     function resizeGraphViewport(): void {
         const rect = graphContainer.getBoundingClientRect();
-        ForceGraphInstance.width(rect.width);
-        ForceGraphInstance.height(rect.height);
-        selectionCanvas.width = rect.width;
-        selectionCanvas.height = rect.height;
+        const newW = rect.width;
+        const newH = rect.height;
+        const prevW = selectionCanvas.width;
+        const prevH = selectionCanvas.height;
+
+        // keep whatever graph content sat at the old viewport center anchored at
+        // the new center, so resizing the dock region (opening/closing/resizing
+        // panels) pans the view instead of letting the graph drift off-screen
+        let anchor: { x: number; y: number } | null = null;
+        if (prevW > 0 && prevH > 0 && (newW !== prevW || newH !== prevH)) {
+            anchor = ForceGraphInstance.screen2GraphCoords(prevW / 2, prevH / 2);
+        }
+
+        ForceGraphInstance.width(newW);
+        ForceGraphInstance.height(newH);
+        selectionCanvas.width = newW;
+        selectionCanvas.height = newH;
+
+        if (anchor) {
+            ForceGraphInstance.centerAt(anchor.x, anchor.y);
+        }
+
+        // resizing the canvas backing store clears it; force-graph would only
+        // repaint on its next animation frame, but ResizeObserver runs after
+        // force-graph's frame yet before the browser paints, so the cleared
+        // (white) canvas gets composited every frame while dragging the dock
+        // splitter -> repaint synchronously now to avoid the white flash
+        if (newW > 0 && newH > 0) {
+            ForceGraphInstance.pauseAnimation().resumeAnimation();
+        }
     }
 
     resizeGraphViewport();
@@ -81,6 +107,15 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
     window.addEventListener('resize', () => {
         resizeGraphViewport();
     });
+
+    // the graph lives inside a dock region whose size changes when panels open,
+    // close, resize or re-dock — observe the container directly so the canvas
+    // and force-graph viewport always match the real available area (keeps the
+    // graph centered instead of underlapping panels)
+    const resizeObserver = new ResizeObserver(() => {
+        resizeGraphViewport();
+    });
+    resizeObserver.observe(graphContainer);
 
     function drawSelectionRectangle(): void {
         const ctx = selectionCanvas.getContext('2d')!;

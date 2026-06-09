@@ -15,6 +15,13 @@ export const EVT_BACKGROUND_CLICK = 'background-click';
 export const EVT_THEME_CHANGED = 'theme-changed';
 export const EVT_TOOL_CHANGED = 'tool-changed';
 export const EVT_ANALYTICS_UPDATED = 'analytics-updated';
+export const EVT_LAYOUT_CHANGED = 'layout-changed';
+
+// ── Dock panel ids ──────────────────────────────────────────
+export const PANEL_GRAPH = 'graph';
+export const PANEL_DETAILS = 'details';
+export const PANEL_ANALYTICS = 'analytics';
+export const PANEL_SETTINGS = 'settings';
 
 // ── Command names ───────────────────────────────────────────
 export const CMD_RELOAD = 'reload-graph';

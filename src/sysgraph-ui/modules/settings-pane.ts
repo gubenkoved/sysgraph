@@ -5,6 +5,7 @@ import { Pane } from 'tweakpane';
 import {
     EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
     EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
+    PANEL_SETTINGS,
 } from './constants.js';
 import { emit } from './event-bus.js';
 import type { GraphDisplay } from './graph.js';
@@ -15,6 +16,7 @@ import {
     setGraphDisplayMode,
 } from './graph-display.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
+import { registerPanel } from './layout.js';
 import { setFrameHooks } from './render-hooks.js';
 import type { SettingsShape } from './settings.js';
 import {
@@ -55,6 +57,16 @@ const pane = new Pane({
 });
 
 pane.registerPlugin(EssentialsPlugin);
+
+// register the settings pane with the dock layout so it docks alongside the
+// other panels instead of floating over the canvas
+registerPanel({
+    id: PANEL_SETTINGS,
+    component: PANEL_SETTINGS,
+    title: 'Settings',
+    element: settingsPaneElement,
+});
+
 
 // tags a folder's root element with a category class so it can be visually
 // color-coded via CSS (left accent stripe + tinted title bar)

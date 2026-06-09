@@ -122,11 +122,13 @@ sysgraph/
 │       └── modules/
 │           ├── state.ts          # Centralized app state (incl. unsaved-changes flag)
 │           ├── event-bus.ts      # Pub-sub event system + 1:1 command handlers
-│           ├── constants.ts      # Event/command names, render constants, STANDALONE flag
+│           ├── constants.ts      # Event/command/panel names, render constants, STANDALONE flag
 │           ├── graph.ts          # Frontend Graph class (adjacency index)
 │           ├── graph-ui.ts       # force-graph rendering (largest module)
 │           ├── graph-ui-helpers.ts # Label-expression helpers (e.g. bytes_to_human)
 │           ├── graph-algs.ts     # BFS algorithm for highlights
+│           ├── graph-display.ts  # Persistence policy for graph-embedded `display` settings
+│           ├── layout.ts         # dockview dock-layout: panel registry, persistence, placement memory, stable-size enforcement
 │           ├── render-hooks.ts   # Pre/post per-frame render hooks
 │           ├── data-io.ts        # API fetch, JSON serialization/parsing, examples manifest
 │           ├── search.ts         # Search via Fuse.js (uses search-parser)
@@ -138,7 +140,14 @@ sysgraph/
 │           ├── settings-pane.ts  # Tweakpane settings UI (filters, colors, forces)
 │           ├── settings.ts       # Default settings, color palettes
 │           ├── settings-presets.ts # Predefined + user settings presets (localStorage)
+│           ├── analytics.ts      # Analytics tool orchestration + result state
+│           ├── analytics-panel.ts # Analytics panel UI (algorithm picker, run/reset)
+│           ├── analytics-algs.ts # Graph algorithms (stats, shortest path, MST, degree centrality)
+│           ├── analytics-communities.ts # Louvain community detection (weighted, undirected)
+│           ├── analytics-helpers.ts # Edge-weight expression helpers for algorithms
 │           ├── context-menu.ts   # Right-click context menu
+│           ├── long-press.ts     # Long-press gesture → context menu on touch devices
+│           ├── quick-start.ts    # First-run quick-start overlay (load file/example/edit)
 │           ├── color-scale.ts    # Color interpolation for search heatmap
 │           ├── theme.ts          # Light/dark theme toggle (persisted)
 │           ├── zoom-indicator.ts # Floating zoom widget (-/+ and live %)
@@ -301,6 +310,7 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 **npm dependencies** (`package.json`):
 - `force-graph` — Canvas-based force-directed graph
 - `d3@7` — Physics simulation, color utilities
+- `dockview-core` — Dockable panel layout (settings/analytics/details panels around the graph)
 - `@material/web` — Material Design 3 web components (buttons, icons, text fields)
 - `tweakpane@4` (+ `@tweakpane/core`, `@tweakpane/plugin-essentials`) — Settings panel UI
 - `fuse.js@7` — Fuzzy search engine
@@ -341,6 +351,17 @@ Key commands (1:1 handlers): `"reload-graph"`, `"export-graph"`, `"import-graph"
 - Adjacency filtering (right-click → show only neighbors)
 - Auto-curvature for parallel edges
 - Configurable d3 forces (charge, link distance/strength, collision, center, velocity decay)
+
+**Layout / docking (`layout.ts`):** Wraps **dockview-core** to arrange the workspace as dockable panels — the graph occupies a fixed center group, and side panels (Settings, Analytics, per-selection Details) dock around it. This is the single owner of all panel open/close/move/persist logic. Key concepts:
+
+- **Panel registry** — panels register a `PanelSpec` (`id`, `component`, `title`, `element`, and optional `transient`, `restoreGuard`, `position`, `onOpen`, `onClose`, `tabIcon`). `openPanel` / `closePanel` / `togglePanel` drive panels by id; the graph lives in a locked, header-hidden group that can never be closed.
+- **Custom tabs** — a custom tab renderer (`TAB_WITH_ICON`) adds a per-tab icon (e.g. the pin affordance) and a close button; middle-click on a tab closes it (never the graph).
+- **Layout persistence** (`sysgraph:layout`) — the full dockview serialization is saved on every settled layout change and restored on load. A `layoutStable()` gate compares the serialized grid size to the measured container (±2px) so the **degenerate pre-paint placeholder size never gets persisted** (this was the "half-screen on reload" bug).
+- **Restore guards** — `reconcileRestoredPanels()` drops restored panels that can't be rebuilt: `transient` panels, unknown ids, or panels whose `restoreGuard()` returns false. The Analytics panel is bound to the (non-persisted) analytics tool via a guard, so it is dropped on reload unless that tool is active.
+- **Placement memory** (`sysgraph:panel-placements`) — `capturePlacements()` records where each identity panel lives (group siblings, direction relative to the graph, and pixel size). `resolvePosition()` uses this so a panel reopens in the same spot (rejoining its old tab group, or reopening its own region with the remembered size) across close/reopen and reloads.
+- **Stable-size enforcement** (`enforceStableSizes()` + `scheduleEnforce()`) — dockview equalizes all columns when a group is added/removed (e.g. dragging a tab out, or a guarded panel being dropped on restore). To keep this from being "jerky", enforcement pins the **graph to the leftover space** (container minus the remembered side sizes) so the center graph absorbs the change while side panels keep their size. It only runs on a **group-count change** (so manual splitter-drags resize freely and the new size is captured). Enforcement is **frame-driven, never event-driven**: `enforceStableSizes()` calls `panel.api.setSize()`, which itself emits a layout-change event, so running it directly from `onDidLayoutChange` would recurse forever and freeze the page. Instead `onDidLayoutChange` only *schedules* a single bounded animation-frame loop via `scheduleEnforce()`, gated by three flags — `enforceScheduled` (one loop in flight at a time), `enforcing` (suppresses the events `setSize` emits), and a hard 30-frame cap (so a layout that can't perfectly converge — e.g. a transient Details panel with no remembered size pinned at min width — still settles instead of looping). The rAF loop waits for `layoutStable()`, applies one enforcement pass per frame until it converges, then persists. This also covers the reload case where a dropped panel re-equalizes the grid with no further layout event.
+
+Layout-related event/command constants live in `constants.ts` (e.g. `PANEL_GRAPH`, `PANEL_SETTINGS`, `PANEL_ANALYTICS`, `EVT_LAYOUT_CHANGED`). Panels themselves stay decoupled — they expose content + lifecycle hooks and let `layout.ts` own placement, sizing, and persistence.
 
 **Details Panel:** Uses JSONFormatter for collapsible JSON display of node/link properties.
 
@@ -456,6 +477,13 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 3. Wire into the app via `event-bus.ts` events or direct imports in `app.ts`
 4. Install new npm packages by adding them to `package.json` and rebuilding via `./scripts/build-ui.sh`
 
+### Adding a new dockable panel
+1. Build the panel's DOM/content element and render logic in its own module
+2. Register a `PanelSpec` with `layout.ts` (`id`, `component`, `title`, `element`, plus optional `tabIcon`, `onOpen`/`onClose`, `position`, `transient`, `restoreGuard`)
+3. Add a stable `PANEL_*` id constant in `constants.ts`
+4. Drive it with `openPanel` / `closePanel` / `togglePanel`; do NOT call dockview directly — `layout.ts` owns placement, sizing, and persistence
+5. If the panel is tied to non-persisted state (like a tool/mode), add a `restoreGuard` so a saved layout never resurrects it in the wrong state
+
 ### Adding a new npm dependency
 1. Add the package to `package.json` dependencies, then rebuild via `./scripts/build-ui.sh` (do NOT run `npm install` on the host)
 2. Import in your JS module with a bare specifier: `import X from 'package'`
@@ -475,7 +503,7 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 - Backend tests are in `src/sysgraph/tests/` using `unittest`
 - Run with `pytest src/sysgraph/tests/`
 - Tests run on all platforms; pipe-related tests need Linux `/proc` filesystem
-- Frontend has no automated tests; test manually in browser
+- Frontend has Vitest unit tests (e.g. `search.test.ts`, `search-parser.test.ts`); run with `./scripts/test-ui.sh` (or `npm run test`). UI/layout behavior is otherwise verified manually in the browser
 
 ## Important Caveats
 

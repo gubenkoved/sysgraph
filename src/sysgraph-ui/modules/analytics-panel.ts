@@ -10,25 +10,39 @@ import {
 } from './analytics.js';
 import type { Community } from './analytics-communities.js';
 import { validateEdgeWeightExpression } from './analytics-helpers.js';
-import { EVT_ANALYTICS_UPDATED, EVT_NODE_CLICKED, EVT_SELECTION_CHANGED } from './constants.js';
+import { EVT_ANALYTICS_UPDATED, EVT_NODE_CLICKED, EVT_SELECTION_CHANGED, PANEL_ANALYTICS } from './constants.js';
 import { emit, on } from './event-bus.js';
 import { analyticsHeatmapColorScale, centerOnNode, communityColor, refreshGraphColors } from './graph-ui.js';
+import { closePanel, openPanel, registerPanel } from './layout.js';
 import { getGraph, setAnalyticsParam, state } from './state.js';
+import { exitAnalyticsTool } from './toolbar.js';
 import { showError } from './util.js';
 
 // --- cached DOM elements ---
-const panel = document.getElementById('analyticsPanel') as HTMLElement;
 const body = document.getElementById('analyticsPanelBody') as HTMLElement;
-const closeBtn = document.getElementById('analyticsPanelClose') as HTMLElement;
+
+// register the analytics panel with the dock layout; onOpen (re)renders so a
+// restored-open panel shows content, and onClose reverts the analytics tool
+registerPanel({
+    id: PANEL_ANALYTICS,
+    component: PANEL_ANALYTICS,
+    title: 'Analytics',
+    element: body,
+    // bound to the analytics tool, which does not persist across reload; only
+    // restore the panel if that tool is active, otherwise drop it
+    restoreGuard: () => state.currentTool === 'analytics',
+    onOpen: () => render(),
+    onClose: () => exitAnalyticsTool(),
+});
 
 export function openAnalyticsPanel(): void {
-    panel.classList.add('open');
-    render();
+    openPanel(PANEL_ANALYTICS);
 }
 
 export function closeAnalyticsPanel(): void {
-    panel.classList.remove('open');
+    closePanel(PANEL_ANALYTICS);
 }
+
 
 // ---------------------------------------------------------------------------
 // small DOM helpers
@@ -546,45 +560,11 @@ function render(): void {
 }
 
 // ---------------------------------------------------------------------------
-// drag support (mirrors the details panel)
+// initialization
 // ---------------------------------------------------------------------------
 
-function attachDrag(panelEl: HTMLElement): void {
-    const header = panelEl.querySelector('.panel-header') as HTMLElement;
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-    let startLeft = 0;
-    let startTop = 0;
-
-    header.addEventListener('pointerdown', (e) => {
-        if ((e.target as Element).closest('md-icon-button')) return;
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = panelEl.offsetLeft;
-        startTop = panelEl.offsetTop;
-        header.setPointerCapture(e.pointerId);
-    });
-
-    header.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        const parent = panelEl.parentElement!;
-        const x = Math.max(0, Math.min(startLeft + e.clientX - startX, parent.clientWidth - panelEl.offsetWidth));
-        const y = Math.max(0, Math.min(startTop + e.clientY - startY, parent.clientHeight - panelEl.offsetHeight));
-        panelEl.style.left = `${x}px`;
-        panelEl.style.top = `${y}px`;
-    });
-
-    header.addEventListener('pointerup', () => { dragging = false; });
-}
-
-/** Wires the analytics panel close button, drag and event subscriptions. */
-export function initAnalyticsPanel(onClose: () => void): void {
-    closeBtn.addEventListener('click', () => {
-        onClose();
-    });
-    attachDrag(panel);
+/** Wires the analytics panel event subscriptions. */
+export function initAnalyticsPanel(): void {
     on(EVT_ANALYTICS_UPDATED, render);
     // clicking a node toggles its community focus when a community result is shown
     on<{ data: { id: string } }>(EVT_NODE_CLICKED, ({ data }) => {
