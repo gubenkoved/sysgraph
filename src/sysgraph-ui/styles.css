@@ -1537,17 +1537,42 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: var(--z-loading-overlay);
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: var(--bg-pill);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px var(--shadow-sm);
+  color: var(--text-secondary);
   font-family: var(--font-family);
-  font-size: 14px;
-  padding: 8px 18px;
-  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   pointer-events: none;
 }
 
 #loading-overlay.visible {
-  display: block;
+  display: flex;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: loading-spin 0.7s linear infinite;
+}
+
+.loading-label {
+  line-height: 1;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Settings Pane (Tweakpane) ───────────────────────────── */
