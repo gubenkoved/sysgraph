@@ -181,6 +181,28 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: 0 2px 12px var(--shadow-sm);
+  /* never exceed the viewport; scroll horizontally on narrow screens instead
+     of overflowing or clipping the tool buttons */
+  max-width: calc(100vw - 2 * var(--spacing-md));
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* subtle thin scrollbar (Firefox) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-light) transparent;
+}
+
+/* subtle thin scrollbar (WebKit/Chromium) */
+#toolbar::-webkit-scrollbar {
+  height: 4px;
+}
+
+#toolbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#toolbar::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: var(--radius-sm);
 }
 
 #toolbar-logo-button {
@@ -188,6 +210,7 @@ body {
   align-items: center;
   gap: 1px;
   height: 34px;
+  flex-shrink: 0;
   padding: 0 var(--spacing-xs);
   margin: 0;
   border: none;
@@ -217,6 +240,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .tool-divider {
@@ -224,6 +248,7 @@ body {
   height: 20px;
   margin: 0 var(--spacing-xs);
   background: var(--border-light);
+  flex-shrink: 0;
 }
 
 /* low specificity (:where) so later area-scoped md-icon-button rules win */
