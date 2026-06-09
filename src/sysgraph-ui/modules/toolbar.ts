@@ -32,6 +32,7 @@ const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLEleme
 const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
 const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonElement;
 const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
+const toolbarEl = document.getElementById('toolbar') as HTMLElement;
 const settingsPane = document.getElementById('settingsPane') as HTMLElement;
 const importFileInput = document.getElementById('importFile') as HTMLInputElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
@@ -141,6 +142,7 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
 
     emit(EVT_TOOL_CHANGED, null);
     updateGraphInfo();
+    updateToolbarOverflow();
 }
 
 /** Updates the selection info label and button visibility based on current state. */
@@ -179,6 +181,18 @@ export function updateGraphInfo(): void {
         const edgesText = visibleEdges !== totalEdges ? `${visibleEdges} / ${totalEdges}` : `${totalEdges}`;
         graphInfoEl.textContent = `${nodesText} nodes · ${edgesText} relationships`;
     }
+}
+
+/**
+ * Enables a subtle horizontal scrollbar on the toolbar only when its content
+ * genuinely overflows the available width. Leaving overflow-x:auto on
+ * permanently would surface a phantom 1px scrollbar from sub-pixel centering
+ * (translateX(-50%)) even on wide screens with plenty of room.
+ */
+function updateToolbarOverflow(): void {
+    // tolerate 1px of sub-pixel rounding so the phantom bar never appears
+    const overflowing = toolbarEl.scrollWidth - toolbarEl.clientWidth > 1;
+    toolbarEl.classList.toggle('is-scrollable', overflowing);
 }
 
 /**
@@ -300,6 +314,15 @@ function buildLogoMenu(): ContextMenuItem[] {
  * Wires up toolbar buttons, search input, and keyboard shortcuts.
  */
 export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement): void {
+    // md-icon-button renders a 48px absolutely-positioned touch target that
+    // overflows our compact 34px buttons by ~7px; on the edge buttons this
+    // leaks past the toolbar and creates a real (but unwanted) horizontal
+    // scroll. these are dense desktop chrome sized via the 34px state layer,
+    // so drop the oversized touch target
+    for (const btn of toolbarEl.querySelectorAll('md-icon-button')) {
+        btn.setAttribute('touch-target', 'none');
+    }
+
     // search input
     searchInput.addEventListener('input', (event) => {
         event.stopPropagation();
@@ -454,4 +477,11 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             await deleteSelectedNodes();
         }
     });
+
+    // keep the horizontal scroll affordance in sync as contextual tool groups
+    // appear/disappear or the viewport resizes
+    const overflowObserver = new ResizeObserver(() => updateToolbarOverflow());
+    overflowObserver.observe(toolbarEl);
+    window.addEventListener('resize', updateToolbarOverflow);
+    updateToolbarOverflow();
 }

@@ -420,6 +420,13 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 - npm packages imported by bare specifier (e.g., `import ForceGraph from 'force-graph'`)
 - Lint: `npm run lint` / `./scripts/lint-ui.sh`; type-check: `npm run typecheck` / `./scripts/typecheck-ui.sh`
 
+### Design language (styling changes)
+All styling flows through the design tokens (CSS custom properties) defined at the top of `styles.css` (`:root` for light, `:root[data-theme="dark"]` for dark). When adjusting visuals, **update the shared design language, don't hot-fix one element**:
+- Prefer changing the relevant token (e.g., `--border-subtle`, `--shadow-sm`, `--bg-pill`) so every component that shares it updates uniformly, rather than overriding a color/border/shadow on a single selector.
+- Keep token scales monotonic and meaningful — e.g., the border ramp `--border-subtle` < `--border-light` < `--border-medium`, and the shadow ramp `--shadow-xs` < `--shadow-sm` < `--shadow-md`. If you bump one step, keep the ordering consistent (adjust the whole ramp if needed).
+- Mirror light/dark: any token added or changed for one theme should have a counterpart in the other so both stay balanced.
+- Only add a selector-specific override when a value is genuinely unique to that one element; if a "fix" feels like patching a single spot, step back and adjust the token instead.
+
 ### Material Design 3 (MD3) UI Paradigm
 The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-component implementation of Material Design 3. All interactive UI chrome (buttons, icon buttons, text fields) must use MD3 components:
 - `<md-outlined-button>` — toolbar/action buttons (with optional `<md-icon slot="icon">`)

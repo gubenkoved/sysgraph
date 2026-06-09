@@ -94,9 +94,9 @@
   /* colors */
   --bg-toolbar: rgba(30, 34, 42, 0.95);
   --bg-panel: rgba(30, 34, 42, 0.97);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.12);
-  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-light: rgba(255, 255, 255, 0.14);
+  --border-medium: rgba(255, 255, 255, 0.28);
   --shadow-xs: rgba(0, 0, 0, 0.40);
   --shadow-sm: rgba(0, 0, 0, 0.50);
   --shadow-md: rgba(0, 0, 0, 0.60);
@@ -181,9 +181,14 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: 0 2px 12px var(--shadow-sm);
-  /* never exceed the viewport; scroll horizontally on narrow screens instead
-     of overflowing or clipping the tool buttons */
+  /* never exceed the viewport on narrow screens */
   max-width: calc(100vw - 2 * var(--spacing-md));
+}
+
+/* scrolling is enabled only when the content genuinely overflows (toggled
+   from toolbar.ts); leaving overflow-x:auto on permanently would surface a
+   phantom 1px scrollbar from sub-pixel centering on wide screens */
+#toolbar.is-scrollable {
   overflow-x: auto;
   overflow-y: hidden;
   /* subtle thin scrollbar (Firefox) */
@@ -192,15 +197,15 @@ body {
 }
 
 /* subtle thin scrollbar (WebKit/Chromium) */
-#toolbar::-webkit-scrollbar {
+#toolbar.is-scrollable::-webkit-scrollbar {
   height: 4px;
 }
 
-#toolbar::-webkit-scrollbar-track {
+#toolbar.is-scrollable::-webkit-scrollbar-track {
   background: transparent;
 }
 
-#toolbar::-webkit-scrollbar-thumb {
+#toolbar.is-scrollable::-webkit-scrollbar-thumb {
   background: var(--border-light);
   border-radius: var(--radius-sm);
 }
