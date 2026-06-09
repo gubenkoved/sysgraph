@@ -66,6 +66,12 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
     // prevent the browser from claiming touch gestures (scroll/pinch) on the
     // overlay so a one-finger drag can draw the selection rectangle instead
     selectionCanvas.style.touchAction = 'none';
+    // a fresh canvas defaults to 300x150; zero the backing store so the first
+    // resizeGraphViewport() call sees prevW/prevH == 0 and skips anchor
+    // preservation (otherwise it would center on a bogus 150,75 anchor and push
+    // the origin off to the bottom-right)
+    selectionCanvas.width = 0;
+    selectionCanvas.height = 0;
     graphContainer.appendChild(selectionCanvas);
 
     function resizeGraphViewport(): void {
