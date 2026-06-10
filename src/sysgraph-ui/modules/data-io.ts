@@ -104,24 +104,40 @@ function toEntries(raw: unknown): Record<string, unknown>[] {
     return [];
 }
 
+/** Type-guard for a plain object (a dict), excluding null and arrays. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
 /**
  * Merges properties that sit outside the `properties` dict into it. Also folds
  * in a foreign `attributes` block (polinode/graphology style) so external
- * metadata is preserved under the native `properties` key.
+ * metadata is preserved under the native `properties` key. Only genuine dicts
+ * are folded in; a non-dict `properties`/`attributes` (e.g. a JSON-encoded
+ * string) is preserved verbatim under its own key instead of being spread.
  */
 function collectProperties(
     obj: Record<string, unknown>,
     knownKeys: Set<string>,
 ): Record<string, unknown> {
-    const inner = (obj.properties as Record<string, unknown> | undefined) ?? {};
-    const attributes = (obj.attributes as Record<string, unknown> | undefined) ?? {};
+    const inner = isPlainObject(obj.properties) ? obj.properties : {};
+    const attributes = isPlainObject(obj.attributes) ? obj.attributes : {};
     const outer: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
         if (!knownKeys.has(key)) {
             outer[key] = obj[key];
         }
     }
-    return { ...attributes, ...inner, ...outer };
+    const merged = { ...attributes, ...inner, ...outer };
+    // preserve a non-dict attributes/properties value (e.g. a JSON string)
+    // verbatim rather than spreading its characters into the props
+    if (obj.attributes != null && !isPlainObject(obj.attributes)) {
+        merged.attributes = obj.attributes;
+    }
+    if (obj.properties != null && !isPlainObject(obj.properties)) {
+        merged.properties = obj.properties;
+    }
+    return merged;
 }
 
 /**
