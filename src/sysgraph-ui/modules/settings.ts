@@ -29,6 +29,7 @@ export interface SettingsShape {
     globalEdgeWidthMultiplier: number;
     nodeLabelMode: string;
     nodeLabelExpression: string;
+    nodeLabelOutline: boolean;
     nodeSizingMode: string;
     nodeSizingConstant: number;
     nodeSizingExpression: string;
@@ -61,6 +62,7 @@ export function createDefaultSettings(): SettingsShape {
 
         nodeLabelMode: 'expression',
         nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
+        nodeLabelOutline: false,
 
         nodeSizingMode: 'degree',
         nodeSizingConstant: 3,

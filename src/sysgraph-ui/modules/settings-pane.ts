@@ -190,6 +190,10 @@ nodeLabelExpressionBinding.on('change', () => {
     // expression changes are applied live on next render
 });
 
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelOutline', { label: 'label outline' }).on('change', () => {
+    emit(EVT_SETTINGS_UPDATED, null);
+});
+
 // --- node sizing settings ---
 displayOptionsFolder.addBlade({ view: 'separator' });
 

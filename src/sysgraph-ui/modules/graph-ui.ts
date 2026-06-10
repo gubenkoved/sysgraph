@@ -350,51 +350,43 @@ function drawText(
     textBaseline: CanvasTextBaseline = 'middle',
     textAlign: CanvasTextAlign = 'left',
     dropEmptyLines = true,
+    outline?: { strokeStyle: string; strokeWidth: number },
 ): void {
     ctx.save();
     ctx.font = `${fontSize}px ${UI_FONT_FAMILY}`;
     ctx.textAlign = textAlign;
     ctx.textBaseline = textBaseline;
-    ctx.fillStyle = fillStyle;
 
     let lines = text.split('\n');
     if (dropEmptyLines) {
         lines = lines.filter(l => l.length > 0);
     }
 
-    const multiline = lines.length > 1;
     const lineHeight = fontSize * 1.2;
     const blockHeight = (lines.length - 1) * lineHeight;
     const startY = y - blockHeight / 2;
 
-    for (let i = 0; i < lines.length; i++) {
-        ctx.font = (multiline && i === 0)
-            ? `bold ${fontSize}px ${UI_FONT_FAMILY}`
-            : `${fontSize}px ${UI_FONT_FAMILY}`;
-        ctx.fillText(lines[i]!, x, startY + i * lineHeight);
+    if (outline) {
+        ctx.lineWidth = outline.strokeWidth;
+        ctx.strokeStyle = outline.strokeStyle;
+        // round joins keep the halo smooth around glyph corners
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
     }
 
-    ctx.restore();
-}
+    for (let i = 0; i < lines.length; i++) {
+        // always bold the first line, even when it is the only line
+        ctx.font = (i === 0)
+            ? `bold ${fontSize}px ${UI_FONT_FAMILY}`
+            : `${fontSize}px ${UI_FONT_FAMILY}`;
+        const lineY = startY + i * lineHeight;
+        if (outline) {
+            ctx.strokeText(lines[i]!, x, lineY);
+        }
+        ctx.fillStyle = fillStyle;
+        ctx.fillText(lines[i]!, x, lineY);
+    }
 
-function drawTextWithStroke(
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number, y: number,
-    fontSize: number, fillStyle: string, strokeStyle: string, strokeWidth: number,
-    textBaseline: CanvasTextBaseline = 'middle',
-    textAlign: CanvasTextAlign = 'center',
-    bold = false,
-): void {
-    ctx.save();
-    ctx.font = `${bold ? 'bold ' : ''}${fontSize}px ${UI_FONT_FAMILY}`;
-    ctx.textAlign = textAlign;
-    ctx.textBaseline = textBaseline;
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = strokeStyle;
-    ctx.strokeText(text, x, y);
-    ctx.fillStyle = fillStyle;
-    ctx.fillText(text, x, y);
     ctx.restore();
 }
 
@@ -663,19 +655,30 @@ ForceGraphInstance
         }
 
         const label = getNodeLabel(node);
-        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, labelFontSize(globalScale), colorAdjustAlpha(getTheme() === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier));
+        const labelDark = getTheme() === 'dark';
+        // contrasting halo: dark theme has light text -> dark outline, and vice versa
+        const labelOutline = settings.nodeLabelOutline
+            ? {
+                strokeStyle: colorAdjustAlpha(labelDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
+                strokeWidth: 2.5,
+            }
+            : undefined;
+        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, labelFontSize(globalScale), colorAdjustAlpha(labelDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier), 'middle', 'left', true, labelOutline);
 
         // analytics heatmap raw value drawn under the node (e.g. distance)
         if (decoration?.kind === 'heatmap' && decoration.showValues) {
             const valueText = decoration.nodeLabels?.get(node.id);
             if (valueText !== undefined) {
                 const dark = getTheme() === 'dark';
-                drawTextWithStroke(
+                drawText(
                     ctx, valueText, node.x!, node.y! + r + NODE_LABEL_OFFSET,
                     labelFontSize(globalScale),
                     colorAdjustAlpha(dark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)', alphaMultiplier),
-                    colorAdjustAlpha(dark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
-                    2.5, 'top', 'center', true,
+                    'top', 'center', true,
+                    {
+                        strokeStyle: colorAdjustAlpha(dark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
+                        strokeWidth: 2.5,
+                    },
                 );
             }
         }
@@ -683,11 +686,14 @@ ForceGraphInstance
         // show hidden nodes counters in adjacency filtered mode
         if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
             const hiddenCount = state.adjacencyFilter.hiddenCounts.get(node.id) ?? 0;
-            drawTextWithStroke(
+            drawText(
                 ctx, `+${hiddenCount}`, node.x! - r, node.y! - r, 9,
                 colorAdjustAlpha('rgba(8, 168, 8, 0.95)', alphaMultiplier),
-                colorAdjustAlpha('rgba(255, 255, 255, 0.9)', alphaMultiplier),
-                1.0, 'alphabetic', 'right', true,
+                'alphabetic', 'right', true,
+                {
+                    strokeStyle: colorAdjustAlpha('rgba(255, 255, 255, 0.9)', alphaMultiplier),
+                    strokeWidth: 1.0,
+                },
             );
         }
     })
