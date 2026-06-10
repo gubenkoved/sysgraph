@@ -16,11 +16,13 @@
     "@material/web": "^2.4.1",
     "@tweakpane/core": "^2.0.5",
     "@tweakpane/plugin-essentials": "^0.2.1",
+    "3d-force-graph": "^1.80.0",
     "d3": "^7.9.0",
     "dockview-core": "^6.6.1",
     "force-graph": "^1.51.4",
     "fuse.js": "^7.3.0",
     "json-formatter-js": "^2.5.23",
+    "three-spritetext": "^1.10.0",
     "tweakpane": "^4.0.5"
   },
   "devDependencies": {

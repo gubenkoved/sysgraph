@@ -279,6 +279,7 @@ export function selectAlgorithm(id: AnalyticsAlgorithmId): void {
         }
     }
     clearAnalyticsRun();
+    refreshGraphColors();
     emit(EVT_ANALYTICS_UPDATED, null);
 }
 
@@ -317,6 +318,9 @@ function decorateSubset(
         edgeIds: new Set(edgeIds),
         edgeWidthMultiplier,
     });
+    // 2D redraws every frame, but the 3D renderer only recolors on an explicit
+    // refresh, so push the new decoration to the active renderer
+    refreshGraphColors();
 }
 
 /**
@@ -335,6 +339,7 @@ function decorateHeatmap(
         nodeLabels,
         showValues: state.analytics.params.showValues === 'true',
     });
+    refreshGraphColors();
 }
 
 /**
@@ -344,6 +349,7 @@ function decorateHeatmap(
  */
 function decorateCommunity(nodeCommunity: Map<string, number>, communityCount: number): void {
     setAnalyticsDecoration({ kind: 'community', nodeCommunity, communityCount });
+    refreshGraphColors();
 }
 
 /** Reads a numeric parameter from analytics state, falling back when unparseable. */
@@ -369,6 +375,7 @@ export function runAlgorithm(): string | null {
     if (id === 'stats') {
         const stats = computeStats(graph);
         setAnalyticsDecoration(null);
+        refreshGraphColors();
         setAnalyticsResult({ kind: 'stats', stats } satisfies StatsResultModel);
         emit(EVT_ANALYTICS_UPDATED, null);
         return null;
@@ -473,6 +480,7 @@ export function runAlgorithm(): string | null {
 /** Clears any active analytics highlight and result (e.g. when leaving the tool). */
 export function clearAnalytics(): void {
     clearAnalyticsRun();
+    refreshGraphColors();
     emit(EVT_ANALYTICS_UPDATED, null);
 }
 

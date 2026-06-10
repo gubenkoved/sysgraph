@@ -2,7 +2,7 @@ import { initAnalyticsPanel } from './modules/analytics-panel.js';
 import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
-import { applyD3Params, autoAdjustCurvature, computeMatchColors, ForceGraphInstance, refreshGraphColors, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
+import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, rebuildGraphObjects, refreshGraphColors, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
 import { initLayout } from './modules/layout.js';
 import { initLongPress } from './modules/long-press.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
@@ -109,6 +109,10 @@ on(EVT_SEARCH_CHANGED, (expression: string) => {
         searchMatchCountEl.style.visibility = 'hidden';
         addToSelectionBtn.disabled = true;
     }
+    // re-evaluate node colors so the active renderer reflects the new matches.
+    // the 2D canvas redraws every frame so it would pick this up anyway, but the
+    // 3D renderer only re-runs its nodeColor accessor on an explicit refresh
+    refreshGraphColors();
 });
 
 on(EVT_SELECTION_CHANGED, () => updateGraphInfo());
@@ -122,11 +126,8 @@ on(EVT_SEARCH_CYCLE, ({ direction }: { direction: 1 | -1 }) => {
         : ((search.currentMatchIndex + direction) % total + total) % total;
     search.currentMatchIndex = next;
     const nodeId = search.matches[next].nodeId;
-    const nodes = ForceGraphInstance.graphData().nodes as Array<{ id: string; x?: number; y?: number }>;
-    const node = nodes.find(n => n.id === nodeId);
-    if (node?.x != null && node?.y != null) {
-        ForceGraphInstance.centerAt(node.x, node.y, 500);
-    }
+    // centerOnNode dispatches to the 2D pan/zoom or the 3D camera orbit
+    centerOnNode(nodeId, 500);
     searchMatchCountEl.textContent = `${next + 1} / ${total} match${total !== 1 ? 'es' : ''}`;
     searchMatchCountEl.style.visibility = 'visible';
 });
@@ -140,7 +141,9 @@ on(EVT_COLORS_UPDATED, () => {
 });
 
 on(EVT_THEME_CHANGED, () => {
-    refreshGraphColors();
+    // theme switch rebakes the 3D label sprite colors, so rebuild objects (in
+    // 2D this is just a repaint)
+    rebuildGraphObjects();
 });
 
 on(EVT_CURVATURE_UPDATED, autoAdjustCurvature);

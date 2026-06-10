@@ -16,6 +16,7 @@ export const EVT_THEME_CHANGED = 'theme-changed';
 export const EVT_TOOL_CHANGED = 'tool-changed';
 export const EVT_ANALYTICS_UPDATED = 'analytics-updated';
 export const EVT_LAYOUT_CHANGED = 'layout-changed';
+export const EVT_RENDER_MODE_CHANGED = 'render-mode-changed';
 
 // ── Dock panel ids ──────────────────────────────────────────
 export const PANEL_GRAPH = 'graph';

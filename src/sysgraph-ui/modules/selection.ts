@@ -2,6 +2,7 @@ import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constant
 import { emit } from './event-bus.js';
 import { filterGraph } from './graph.js';
 import { ForceGraphInstance } from './graph-ui.js';
+import { is3D } from './render-mode.js';
 import { getGraph, state, updateGraph } from './state.js';
 
 /**
@@ -85,7 +86,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         // the new center, so resizing the dock region (opening/closing/resizing
         // panels) pans the view instead of letting the graph drift off-screen
         let anchor: { x: number; y: number } | null = null;
-        if (prevW > 0 && prevH > 0 && (newW !== prevW || newH !== prevH)) {
+        if (!is3D() && prevW > 0 && prevH > 0 && (newW !== prevW || newH !== prevH)) {
             anchor = ForceGraphInstance.screen2GraphCoords(prevW / 2, prevH / 2);
         }
 
@@ -102,8 +103,12 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         // repaint on its next animation frame, but ResizeObserver runs after
         // force-graph's frame yet before the browser paints, so the cleared
         // (white) canvas gets composited every frame while dragging the dock
-        // splitter -> repaint synchronously now to avoid the white flash
-        if (newW > 0 && newH > 0) {
+        // splitter -> repaint synchronously now to avoid the white flash. 2D
+        // only: this is a canvas-backing-store concern; the 3D WebGL renderer
+        // redraws continuously and pausing/resuming its loop here crashes its
+        // not-yet-ready layout tick and leaves the loop dead (freezing orbit
+        // controls), so never do it in 3D
+        if (!is3D() && newW > 0 && newH > 0) {
             ForceGraphInstance.pauseAnimation().resumeAnimation();
         }
     }
@@ -147,12 +152,18 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         }
     }
 
-    const canvas = document.querySelector('#graph canvas') as HTMLCanvasElement;
+    // resolves the active renderer canvas at call time; it is rebuilt when the
+    // 2D/3D render mode is toggled, so it must not be cached
+    function graphCanvas(): HTMLCanvasElement {
+        return document.querySelector('#graph canvas') as HTMLCanvasElement;
+    }
 
-    // forward wheel events to the force-graph canvas for zoom
+    // forward wheel events to the force-graph canvas for zoom (2D only; in 3D
+    // the overlay is inert so wheel events reach the renderer directly)
     selectionCanvas.addEventListener('wheel', (event) => {
+        if (is3D()) return;
         event.preventDefault();
-        canvas.dispatchEvent(new WheelEvent(event.type, event));
+        graphCanvas().dispatchEvent(new WheelEvent(event.type, event));
     }, { passive: false });
 
     // --- middle-click panning (works in ALL tool modes) ---
@@ -160,10 +171,12 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
     let savedCursor: string | null = null;
 
     graphContainer.addEventListener('mousedown', (event) => {
+        // let the 3D renderer's orbit controls handle middle-drag natively
+        if (is3D()) return;
         if (event.button === 1) {
             event.preventDefault();
             event.stopPropagation();
-            const target = state.currentTool === 'rect-select' ? selectionCanvas : canvas;
+            const target = state.currentTool === 'rect-select' ? selectionCanvas : graphCanvas();
             savedCursor = target.style.cursor;
             target.style.cursor = 'grabbing';
             middleDrag = { lastX: event.clientX, lastY: event.clientY };
@@ -184,7 +197,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
 
     window.addEventListener('mouseup', (event) => {
         if (middleDrag && event.button === 1) {
-            const target = state.currentTool === 'rect-select' ? selectionCanvas : canvas;
+            const target = state.currentTool === 'rect-select' ? selectionCanvas : graphCanvas();
             target.style.cursor = savedCursor ?? '';
             middleDrag = null;
             savedCursor = null;
@@ -300,5 +313,5 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         finishSelection(touch.clientX - graphRect.left, touch.clientY - graphRect.top, state.selection.additive);
     }, { passive: false });
 
-    return { selectionCanvas, canvas };
+    return { selectionCanvas, canvas: graphCanvas() };
 }

@@ -184,10 +184,13 @@ updateExpressionVisibility();
 
 nodeLabelModeBinding.on('change', () => {
     updateExpressionVisibility();
+    // rebuild labels: 2D redraws live, but the 3D label sprites are cached and
+    // only regenerated on a graph refresh
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 nodeLabelExpressionBinding.on('change', () => {
-    // expression changes are applied live on next render
+    emit(EVT_SETTINGS_UPDATED, null);
 });
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelOutline', { label: 'label outline' }).on('change', () => {

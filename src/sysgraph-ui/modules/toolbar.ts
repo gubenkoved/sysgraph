@@ -2,19 +2,20 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
-import { getVisibleGraph } from './graph-ui.js';
+import { getVisibleGraph, setRenderMode } from './graph-ui.js';
 import { isPanelOpen, resetLayout, togglePanel } from './layout.js';
+import { is3D } from './render-mode.js';
 import { deleteSelectedNodes } from './selection.js';
 import type { EditSubTool } from './state.js';
 import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
 import { closeTemplatesPanel } from './templates-panel.js';
 import { getTheme, toggleTheme } from './theme.js';
-import { showError } from './util.js';
+import { showError, showInfoToast } from './util.js';
 
 // cached DOM elements
 const toolPointerBtn = document.getElementById('toolPointer') as HTMLElement;
@@ -88,6 +89,17 @@ function applyEditSubTool(subTool: EditSubTool): void {
  * Activates the given tool and updates toolbar button states.
  */
 export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: HTMLCanvasElement): void {
+    // edit mode relies on the 2D canvas (node placement, rubber-band edges,
+    // pointer hit-testing) and isn't supported by the 3D renderer; if the user
+    // enters it while in 3D (e.g. via the quick-start panel), fall back to 2D
+    if (tool === 'edit' && is3D()) {
+        setRenderMode('2d');
+        showInfoToast('Switched to 2D view — edit mode is only available in 2D.', {
+            id: 'edit-needs-2d',
+            icon: 'edit',
+        });
+    }
+
     setCurrentTool(tool);
 
     toolPointerBtn.classList.toggle('active', tool === 'pointer');
@@ -321,6 +333,11 @@ function buildLogoMenu(): ContextMenuItem[] {
         icon: 'view_quilt',
         action: resetLayout,
     });
+    items.push({
+        label: is3D() ? 'Switch to 2D view' : 'Switch to 3D view',
+        icon: 'deployed_code',
+        action: () => setRenderMode(is3D() ? '2d' : '3d'),
+    });
     items.push({ divider: true });
     items.push({
         label: 'Clear graph',
@@ -484,6 +501,19 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     });
     on(EVT_THEME_CHANGED, updateThemeIcon);
     updateThemeIcon();
+
+    // 2D-only tools have no meaning in 3D; fall back to the pointer and let CSS
+    // (body.mode-3d) hide the 2D-only chrome
+    document.body.classList.toggle('mode-3d', is3D());
+    on(EVT_RENDER_MODE_CHANGED, (mode: string) => {
+        document.body.classList.toggle('mode-3d', mode === '3d');
+        // preserve the active tool across the switch when it is supported in the
+        // new mode; rect-select and edit rely on the 2D canvas, so fall back to
+        // the pointer when entering 3D with one of those active
+        if (mode === '3d' && (state.currentTool === 'rect-select' || state.currentTool === 'edit')) {
+            setTool('pointer', selectionCanvas, canvas);
+        }
+    });
 
     // keyboard shortcuts
     document.addEventListener('keydown', async (event) => {

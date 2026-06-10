@@ -1,24 +1,11 @@
 import * as d3 from 'd3';
-import type { ForceGraphGeneric, LinkObject, NodeObject } from 'force-graph';
-import ForceGraph from 'force-graph';
 import { handleAnalyticsNodeClick } from './analytics.js';
-import { ColorScale } from './color-scale.js';
 import {
-    D3_CHARGE_STRENGTH,
-    D3_COLLISION_BASE_RADIUS, D3_COLLISION_ITERATIONS,D3_COLLISION_RADIUS_PER_VAL, D3_COLLISION_STRENGTH, D3_LINK_DISTANCE, D3_LINK_STRENGTH,
-    EDGE_DARK_MIN_LIGHTNESS,EVT_BACKGROUND_CLICK,EVT_LINK_CLICKED,
-    EVT_NODE_CLICKED, GRID_CENTER_COLOR, GRID_CENTER_COLOR_DARK, GRID_CENTER_COLOR_UNSTRESSED, GRID_CENTER_COLOR_UNSTRESSED_DARK,GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
-    GRID_LINE_COLOR, GRID_LINE_COLOR_DARK, GRID_LINE_COLOR_UNSTRESSED, GRID_LINE_COLOR_UNSTRESSED_DARK,
-    GRID_SPACING,
-    HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,MAX_CROSSES_PER_AXIS,MAX_NODE_VAL,
-    MAX_ZOOM_BOOST, NODE_LABEL_FONT_SIZE, NODE_LABEL_OFFSET,
-    NODE_LABEL_ZOOM_DAMP, NODE_LABEL_ZOOM_THRESHOLD, nodePointerRadius,
+    D3_COLLISION_BASE_RADIUS, D3_COLLISION_RADIUS_PER_VAL,
+    EVT_BACKGROUND_CLICK, EVT_LINK_CLICKED,
+    EVT_NODE_CLICKED, EVT_RENDER_MODE_CHANGED,
     nodeRadius,
-    PANEL_GRAPH,SCORE_EPSILON,
-    SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
-    SEARCH_NOT_MATCHING_OPACITY,
-    SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
-    UI_FONT_FAMILY,
+    PANEL_GRAPH,
 } from './constants.js';
 import type { ContextMenuItem } from './context-menu.js';
 import { showContextMenu } from './context-menu.js';
@@ -34,13 +21,41 @@ import { emit } from './event-bus.js';
 import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
-import { labelHelpers } from './graph-ui-helpers.js';
+import { build2DRenderer, focusNode2D, recenter2D } from './graph-ui-2d.js';
+import { build3DRenderer, focusNode3D, pulseSearchMatches3D, recenter3D, refreshColors3D, updateAdjacencyCounts3D, updateAxisCross3D, updatePinIndicators3D } from './graph-ui-3d.js';
+import {
+    clearColorCaches,
+    getNodeVal,
+    isNodePinned,
+    linkSourceId,
+    linkTargetId,
+    pinNode,
+    unpinNode,
+} from './graph-ui-appearance.js';
+import type { FGLink, FGNode, ForceGraphInstance as ForceGraphInstanceType, RendererHandlers } from './graph-ui-types.js';
 import { registerPanel } from './layout.js';
 import { callFramePost, callFramePre } from './render-hooks.js';
-import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
+import { getRenderMode, is3D, persistRenderMode, type RenderMode } from './render-mode.js';
+import { settings } from './settings.js';
 import { getGraph, setAdjacencyFilter, setEditSubTool, setHighlight, state } from './state.js';
-import { getTheme } from './theme.js';
 import { updateGraphInfo } from './toolbar.js';
+
+// graph-ui is the thin orchestrator/facade over the renderer modules: it owns
+// the active renderer instance, the interaction handlers, camera control, the
+// adjacency filter, context menus and the graph-data refresh pipeline. The
+// renderer-agnostic appearance logic lives in graph-ui-appearance and the
+// renderer-specific builders in graph-ui-2d / graph-ui-3d.
+
+// re-export the public appearance API so existing importers of graph-ui keep
+// working unchanged
+export {
+    analyticsHeatmapColorScale,
+    communityColor,
+    computeMatchColors,
+    pinNode,
+    unpinNode,
+} from './graph-ui-appearance.js';
+export type { FGLink, FGNode } from './graph-ui-types.js';
 
 // ---------------------------------------------------------------------------
 // Double-click detection (force-graph has no native onNodeDblClick)
@@ -54,359 +69,11 @@ let lastClickTime = 0;
 // small/zoomed-out nodes are still reachable with a finger
 const TOUCH_SLOP_PX = 18;
 
-// ---------------------------------------------------------------------------
-// Custom node / link types for force-graph
-// ---------------------------------------------------------------------------
-
-export interface FGNode extends NodeObject {
-    id: string;
-    type: string;
-    properties?: Record<string, unknown>;
-    kind?: string;
-    val?: number;
-    source_id?: string;
-    target_id?: string;
-}
-
-export interface FGLink extends LinkObject<FGNode> {
-    id: string;
-    type: string;
-    properties?: Record<string, unknown>;
-    kind?: string;
-    curvature?: number;
-    source_id?: string;
-    target_id?: string;
-}
-
-// Force-graph exposes d3ReheatSimulation / d3VelocityDecay / refresh at runtime
-// but some are absent from its shipped .d.ts. We extend the type here.
-type FGBaseType<N extends NodeObject, L extends LinkObject<N>> = ForceGraphGeneric<FGBaseType<N, L>, N, L>;
-type ForceGraphInstance = FGBaseType<FGNode, FGLink> & {
-    refresh(): ForceGraphInstance;
-};
-
-// ---------------------------------------------------------------------------
-// Label & sizing helpers
-// ---------------------------------------------------------------------------
-
-// dampen label growth above a zoom threshold so dense text stays legible;
-// below the threshold the label keeps its nominal size
-function labelFontSize(globalScale: number): number {
-    if (globalScale <= NODE_LABEL_ZOOM_THRESHOLD) {
-        return NODE_LABEL_FONT_SIZE;
-    }
-    const damp = (NODE_LABEL_ZOOM_THRESHOLD / globalScale) ** NODE_LABEL_ZOOM_DAMP;
-    return NODE_LABEL_FONT_SIZE * damp;
-}
-
-function getNodeLabel(node: FGNode): string {
-    switch (settings.nodeLabelMode) {
-        case 'none':
-            return '';
-        case 'type':
-            return node.type || node.id;
-        case 'id':
-            return String(node.id);
-        case 'expression':
-            try {
-                const fn = new Function('node', '__helpers', `with(__helpers){with(node){return String(${settings.nodeLabelExpression})}}`);
-                return fn(node, labelHelpers) as string;
-            } catch {
-                return '<expr error>';
-            }
-        default:
-            return String(node.id);
-    }
-}
-
-function getNodeVal(node: FGNode, degree: number): number {
-    switch (settings.nodeSizingMode) {
-        case 'constant':
-            return settings.nodeSizingConstant;
-        case 'expression':
-            try {
-                const fn = new Function('node', 'degree', `with(node){return (${settings.nodeSizingExpression})}`);
-                const val = (fn(node, degree) as number) || 1;
-                return Math.min(val, MAX_NODE_VAL);
-            } catch {
-                return 1;
-            }
-        default:
-            return Math.sqrt(Math.max(1, degree));
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Color caches
-// ---------------------------------------------------------------------------
-
-const nodeCssColorCache = new Map<string, string>();
-const edgeCssColorCache = new Map<string, string>();
-
-function clearColorCaches(): void {
-    nodeCssColorCache.clear();
-    edgeCssColorCache.clear();
-}
-
-function getCachedNodeCssColor(nodeType: string): string {
-    if (!nodeCssColorCache.has(nodeType)) {
-        nodeCssColorCache.set(nodeType, getNodeCssColor(nodeType));
-    }
-    return nodeCssColorCache.get(nodeType)!;
-}
-
-function getCachedEdgeCssColor(edgeType: string): string {
-    if (!edgeCssColorCache.has(edgeType)) {
-        edgeCssColorCache.set(edgeType, adjustEdgeColorForTheme(getEdgeCssColor(edgeType)));
-    }
-    return edgeCssColorCache.get(edgeType)!;
-}
-
-// ---------------------------------------------------------------------------
-// Search match color scale
-// ---------------------------------------------------------------------------
-
-const searchMatchColorScale = new ColorScale([
-    [SEARCH_COLOR_BEST, 0],
-    [SEARCH_COLOR_MID, 0.5],
-    [SEARCH_COLOR_WORST, 1],
-]);
-
-/** Cold-to-hot scale used by analytics heatmap decorations (value in [0, 1]). */
-export const analyticsHeatmapColorScale = new ColorScale([
-    [HEATMAP_COLOR_LOW, 0],
-    [HEATMAP_COLOR_MID, 0.5],
-    [HEATMAP_COLOR_HIGH, 1],
-]);
-
-/**
- * Categorical palette used by analytics community decorations. Colors repeat
- * for graphs with more communities than entries.
- */
-export const COMMUNITY_PALETTE: string[] = [
-    '#4e79a7', '#f28e2b', '#59a14f', '#e15759', '#b07aa1',
-    '#76b7b2', '#edc948', '#ff9da7', '#9c755f', '#bab0ac',
-    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-];
-
-/** Returns a stable CSS color for the given community index. */
-export function communityColor(index: number): string {
-    return COMMUNITY_PALETTE[index % COMMUNITY_PALETTE.length]!;
-}
-
-/**
- * Computes a normalized color map for a set of search matches.
- */
-export function computeMatchColors(matchesMap: Map<string, { score: number }>): Map<string, string> {
-    const colors = new Map<string, string>();
-    if (!matchesMap || matchesMap.size === 0) return colors;
-
-    const logScores: { nodeId: string; logScore: number }[] = [];
-
-    for (const [nodeId, match] of matchesMap) {
-        logScores.push({ nodeId, logScore: -Math.log10(match.score + SCORE_EPSILON) });
-    }
-
-    let minLog = Number.POSITIVE_INFINITY;
-    let maxLog = Number.NEGATIVE_INFINITY;
-    for (const { logScore } of logScores) {
-        if (logScore < minLog) minLog = logScore;
-        if (logScore > maxLog) maxLog = logScore;
-    }
-
-    for (const { nodeId, logScore } of logScores) {
-        const t = maxLog === minLog ? 0 : (maxLog - logScore) / (maxLog - minLog);
-        colors.set(nodeId, searchMatchColorScale.getColor(t));
-    }
-
-    return colors;
-}
-
-// ---------------------------------------------------------------------------
-// Per-element color / width helpers
-// ---------------------------------------------------------------------------
-
-function nodeColorFor(node: FGNode): string {
-    return getCachedNodeCssColor(node.type);
-}
-
-function edgeColorFor(edge: FGLink): string {
-    return getCachedEdgeCssColor(edge.type);
-}
-
-function edgeWidthFor(edge: FGLink): number {
-    return getEdgeWidth(edge.type);
-}
-
 // Curvature applied to a single self-referencing edge so force-graph draws a
 // visible loop (a zero-curvature self-link is degenerate/invisible). Additional
 // self-loops on the same node are fanned out by SELF_LOOP_CURVATURE_STEP.
 const SELF_LOOP_BASE_CURVATURE = 0.4;
 const SELF_LOOP_CURVATURE_STEP = 0.2;
-
-function linkSourceId(link: FGLink): string {
-    return (typeof link.source === 'object' && link.source !== null)
-        ? (link.source as FGNode).id
-        : (link.source as string);
-}
-
-function linkTargetId(link: FGLink): string {
-    return (typeof link.target === 'object' && link.target !== null)
-        ? (link.target as FGNode).id
-        : (link.target as string);
-}
-
-function _colorWithAlpha(color: string, alpha: number): string {
-    const col = d3.color(color);
-    if (!col) return color;
-    col.opacity = alpha;
-    return col.toString();
-}
-
-function colorAdjustAlpha(color: string, factor: number): string {
-    const col = d3.color(color);
-    if (!col) return color;
-    col.opacity *= factor;
-    return col.toString();
-}
-
-function darkerColor(color: string): string {
-    const col = d3.color(color);
-    if (!col) return color;
-    return col.darker().toString();
-}
-
-function brighterColor(color: string): string {
-    const col = d3.color(color);
-    if (!col) return color;
-    return col.brighter().toString();
-}
-
-/**
- * Node outline color: darker than the fill in light mode, lighter in dark mode
- * so the outline stays visible against the dark canvas.
- */
-function nodeOutlineColor(color: string): string {
-    return getTheme() === 'dark' ? brighterColor(color) : darkerColor(color);
-}
-
-/**
- * In dark mode, raises the lightness of edge colours that are too dark to be
- * legible against the dark canvas up to EDGE_DARK_MIN_LIGHTNESS, preserving hue,
- * saturation and opacity. Already-bright colours are returned unchanged. In
- * light mode the colour is returned as-is.
- */
-function adjustEdgeColorForTheme(color: string): string {
-    if (getTheme() !== 'dark') return color;
-    const hsl = d3.hsl(color);
-    if (hsl.l >= EDGE_DARK_MIN_LIGHTNESS) return color;
-    hsl.l = EDGE_DARK_MIN_LIGHTNESS;
-    return hsl.toString();
-}
-
-// ---------------------------------------------------------------------------
-// Canvas drawing helpers
-// ---------------------------------------------------------------------------
-
-function drawCircle(
-    ctx: CanvasRenderingContext2D,
-    x: number, y: number, r: number,
-    strokeWidth: number, strokeStyle: string,
-): void {
-    ctx.save();
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = strokeStyle;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-    ctx.stroke();
-    ctx.restore();
-}
-
-function drawDashedCircle(
-    ctx: CanvasRenderingContext2D,
-    x: number, y: number, r: number,
-    strokeWidth: number, strokeStyle: string,
-    dashSegments: number[],
-    angle = 0,
-): void {
-    ctx.save();
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = strokeStyle;
-    ctx.setLineDash(dashSegments);
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, 2 * Math.PI, false);
-    ctx.stroke();
-    ctx.restore();
-}
-
-function drawText(
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number, y: number,
-    fontSize: number, fillStyle: string,
-    textBaseline: CanvasTextBaseline = 'middle',
-    textAlign: CanvasTextAlign = 'left',
-    dropEmptyLines = true,
-    outline?: { strokeStyle: string; strokeWidth: number },
-): void {
-    ctx.save();
-    ctx.font = `${fontSize}px ${UI_FONT_FAMILY}`;
-    ctx.textAlign = textAlign;
-    ctx.textBaseline = textBaseline;
-
-    let lines = text.split('\n');
-    if (dropEmptyLines) {
-        lines = lines.filter(l => l.length > 0);
-    }
-
-    const lineHeight = fontSize * 1.2;
-    const blockHeight = (lines.length - 1) * lineHeight;
-    const startY = y - blockHeight / 2;
-
-    if (outline) {
-        ctx.lineWidth = outline.strokeWidth;
-        ctx.strokeStyle = outline.strokeStyle;
-        // round joins keep the halo smooth around glyph corners
-        ctx.lineJoin = 'round';
-        ctx.miterLimit = 2;
-    }
-
-    for (let i = 0; i < lines.length; i++) {
-        // always bold the first line, even when it is the only line
-        ctx.font = (i === 0)
-            ? `bold ${fontSize}px ${UI_FONT_FAMILY}`
-            : `${fontSize}px ${UI_FONT_FAMILY}`;
-        const lineY = startY + i * lineHeight;
-        if (outline) {
-            ctx.strokeText(lines[i]!, x, lineY);
-        }
-        ctx.fillStyle = fillStyle;
-        ctx.fillText(lines[i]!, x, lineY);
-    }
-
-    ctx.restore();
-}
-
-// ---------------------------------------------------------------------------
-// Node pin helpers
-// ---------------------------------------------------------------------------
-
-export function pinNode(node: FGNode): void {
-    node.fx = node.x;
-    node.fy = node.y;
-}
-
-export function unpinNode(node: FGNode): void {
-    node.fx = undefined;
-    node.fy = undefined;
-}
-
-export function isNodePinned(node: FGNode): boolean {
-    return node.fx !== undefined || node.fy !== undefined;
-}
 
 // ---------------------------------------------------------------------------
 // Edit-mode helpers (new-node placement & pointer tracking)
@@ -425,6 +92,9 @@ const pointerGraphPos = { x: 0, y: 0 };
 
 const graphContainerEl = document.getElementById('graph') as HTMLElement;
 graphContainerEl.addEventListener('mousemove', (event) => {
+    // pointer tracking feeds the 2D edit rubber band only; the 3D renderer has
+    // no equivalent and its screen2GraphCoords has a different signature
+    if (is3D()) return;
     const rect = graphContainerEl.getBoundingClientRect();
     const coords = ForceGraphInstance.screen2GraphCoords(
         event.clientX - rect.left,
@@ -435,16 +105,139 @@ graphContainerEl.addEventListener('mousemove', (event) => {
 });
 
 // ---------------------------------------------------------------------------
-// ForceGraph instance
+// Renderer host
 // ---------------------------------------------------------------------------
 
-export const ForceGraphInstance = new ForceGraph<FGNode, FGLink>(
-    document.getElementById('graph') as HTMLElement,
-) as unknown as ForceGraphInstance;
+// the active renderer mounts into a dedicated host inside #graph so switching
+// between the 2D and 3D renderers never disturbs the selection overlay canvas,
+// which is a sibling child of #graph
+const rendererHost = document.createElement('div');
+rendererHost.style.position = 'absolute';
+rendererHost.style.inset = '0';
+graphContainerEl.appendChild(rendererHost);
+
+// ---------------------------------------------------------------------------
+// Interaction handlers (wired into both renderers via RendererHandlers)
+// ---------------------------------------------------------------------------
+
+function handleNodeClick(node: FGNode, event?: MouseEvent): void {
+    const now = Date.now();
+    if (node.id === lastClickedNodeId && now - lastClickTime < DOUBLE_CLICK_MS) {
+        lastClickedNodeId = null;
+        lastClickTime = 0;
+        handleNodeDoubleClick(node);
+    } else {
+        lastClickedNodeId = node.id;
+        lastClickTime = now;
+    }
+
+    if (state.edit.active) {
+        handleEditNodeClick(node);
+        return;
+    }
+
+    if (state.analytics.active && state.analytics.awaitingPickRole) {
+        handleAnalyticsNodeClick(node);
+        return;
+    }
+
+    if (state.currentTool === 'pointer') {
+        if (event?.altKey) {
+            unpinNode(node);
+        }
+    }
+    emit(EVT_NODE_CLICKED, { data: node, shiftKey: event?.shiftKey ?? false });
+}
+
+function handleLinkClick(link: FGLink, event?: MouseEvent): void {
+    emit(EVT_LINK_CLICKED, { data: link, shiftKey: event?.shiftKey ?? false });
+}
+
+function handleLinkRightClick(link: FGLink, event: MouseEvent): void {
+    event.preventDefault();
+    showLinkContextMenu(link, event.clientX, event.clientY);
+}
+
+function handleNodeDrag(node: FGNode): void {
+    pinNode(node);
+}
+
+function handleNodeHover(node: FGNode | null): void {
+    // the BFS dimming highlight is a per-frame canvas effect; the 3D renderer
+    // only re-evaluates colors on refresh, so skip it there to avoid stale state
+    if (is3D()) return;
+    // keep a persistent analytics decoration in place; don't let hover override
+    // the algorithm result highlight (only while it is shown)
+    if (state.analytics.active && state.analytics.decoration) {
+        return;
+    }
+    if (node != null) {
+        const graph = getGraph();
+        const { nodeDistancesMap, edgeDistancesMap } = bfs(graph, node.id, 2);
+        setHighlight({ nodeDistancesMap, edgeDistancesMap });
+    } else {
+        setHighlight(null);
+    }
+}
+
+function handleNodeRightClick(node: FGNode, event: MouseEvent): void {
+    event.preventDefault();
+    showNodeContextMenu(node, event.clientX, event.clientY);
+}
+
+function handleBackgroundRightClick(event: MouseEvent): void {
+    event.preventDefault();
+    showBackgroundContextMenu(event.clientX, event.clientY);
+}
+
+function handleBackgroundClick(event: MouseEvent): void {
+    if (state.edit.active) {
+        if (state.edit.subTool === 'connect' && state.edit.pendingEdgeSourceId) {
+            cancelPendingEdge();
+            return;
+        }
+        const rect = graphContainerEl.getBoundingClientRect();
+        const coords = ForceGraphInstance.screen2GraphCoords(
+            event.clientX - rect.left,
+            event.clientY - rect.top,
+        );
+        createNodeAt(coords.x, coords.y);
+        return;
+    }
+    if (state.currentTool === 'pointer') {
+        emit(EVT_BACKGROUND_CLICK, null);
+    } else if (state.currentTool === 'rect-select') {
+        state.selection.selectedNodeIds.clear();
+    }
+}
+
+// the handler bundle passed into each renderer builder; function declarations
+// above are hoisted, so this can be defined before the instance is built
+const rendererHandlers: RendererHandlers = {
+    onNodeClick: handleNodeClick,
+    onLinkClick: handleLinkClick,
+    onLinkRightClick: handleLinkRightClick,
+    onNodeDrag: handleNodeDrag,
+    onNodeHover: handleNodeHover,
+    onNodeRightClick: handleNodeRightClick,
+    onBackgroundRightClick: handleBackgroundRightClick,
+    onBackgroundClick: handleBackgroundClick,
+};
+
+// ---------------------------------------------------------------------------
+// Active renderer instance
+// ---------------------------------------------------------------------------
+
+// the active renderer; reassigned (an ES-module live binding) when the user
+// toggles render mode, which automatically propagates to every module that
+// imports it by name
+export let ForceGraphInstance: ForceGraphInstanceType = is3D()
+    ? build3DRenderer(rendererHost, rendererHandlers)
+    : build2DRenderer(rendererHost, rendererHandlers, pointerGraphPos);
 
 // the graph is the locked center dock panel; register the wrapper (which holds
-// the force-graph canvas plus the graph-area chrome) so the layout mounts it as
-// one unit and keeps it always present
+// the renderer host plus the graph-area chrome) so the layout mounts it as one
+// unit and keeps it always present
 registerPanel({
     id: PANEL_GRAPH,
     component: PANEL_GRAPH,
@@ -452,12 +245,50 @@ registerPanel({
     element: document.getElementById('graphPanel') as HTMLElement,
 });
 
+// ---------------------------------------------------------------------------
+// Frame loop (drives the FPS indicator for both renderers)
+// ---------------------------------------------------------------------------
+
+// a single always-on rAF loop drives the per-frame hooks (the FPS graph). rAF
+// is synced to the display's repaint, so this reflects the real frame rate —
+// including dropped frames — regardless of which renderer is active. the 2D
+// force-graph and the 3D three.js renderer each run their own internal render
+// loop, so we measure cadence here rather than hooking either one (3d-force-
+// graph has no per-frame render hook anyway)
+function frameLoop(): void {
+    callFramePre();
+    // the 3D renderer has no per-frame draw callback, so the search-match pulse
+    // (2D draws its pulsing ring every frame), the pinned-node spike marker and
+    // the adjacency hidden-count badge are driven from here
+    if (is3D()) {
+        pulseSearchMatches3D(ForceGraphInstance);
+        updatePinIndicators3D(ForceGraphInstance);
+        updateAdjacencyCounts3D(ForceGraphInstance);
+        updateAxisCross3D();
+    }
+    callFramePost();
+    requestAnimationFrame(frameLoop);
+}
+requestAnimationFrame(frameLoop);
+
+
+// ---------------------------------------------------------------------------
+// Camera control
+// ---------------------------------------------------------------------------
+
 const RECENTER_VIEW_DURATION_MS = 400;
 
-// recenter the camera on the origin at 100% zoom
+// 3D camera glide duration when focusing a node (e.g. cycling search matches);
+// longer than the 2D pan so the spatial travel stays legible
+const FOCUS_3D_DURATION_MS = 1200;
+
+// recenter the camera on the origin (2D) or fit the whole graph (3D)
 function recenterView(durationMs: number): void {
-    ForceGraphInstance.centerAt(0, 0, durationMs);
-    ForceGraphInstance.zoom(1.0, durationMs);
+    if (is3D()) {
+        recenter3D(ForceGraphInstance, durationMs);
+        return;
+    }
+    recenter2D(ForceGraphInstance, durationMs);
 }
 
 // request a recenter on the next animation frame
@@ -465,412 +296,44 @@ export function requestRecenterView(): void {
     requestAnimationFrame(() => recenterView(RECENTER_VIEW_DURATION_MS));
 }
 
-/** Pans the camera to center on the given node, if present and positioned. */
+/** Pans/orbits the camera to focus on the given node, if present and positioned. */
 export function centerOnNode(nodeId: string, durationMs = 500): void {
     const node = (ForceGraphInstance.graphData().nodes as FGNode[]).find(n => n.id === nodeId);
-    if (node?.x != null && node.y != null) {
-        ForceGraphInstance.centerAt(node.x, node.y, durationMs);
+    if (!node) return;
+    if (is3D()) {
+        // a slower glide in 3D so the camera travel reads as continuous motion
+        // (preserving the user's spatial orientation) rather than a hard snap
+        focusNode3D(ForceGraphInstance, node, Math.max(durationMs, FOCUS_3D_DURATION_MS));
+        return;
     }
+    focusNode2D(ForceGraphInstance, node, durationMs);
 }
 
-ForceGraphInstance
-    .nodeId('id')
-    .graphData({ nodes: [], links: [] })
-    .nodeLabel(n => {
-        const label = getNodeLabel(n);
-        return label + (n.type ? `\n(${n.type})` : '');
-    })
-    .linkCurvature(l => l.curvature ?? 0)
-    .linkWidth(l => {
-        const base = edgeWidthFor(l);
-        // widen the emphasized edges of a subset decoration (e.g. shortest
-        // path) by its configurable multiplier while the analytics tool is on
-        const decoration = state.analytics.active ? state.analytics.decoration : null;
-        if (decoration?.kind === 'subset' && decoration.edgeIds.has(l.id)) {
-            return base * (decoration.edgeWidthMultiplier ?? 1);
-        }
-        return base;
-    })
-    .linkColor(l => {
-        let fillStyle = edgeColorFor(l);
-        let alphaMultiplier = 1.0;
+/**
+ * Switches the active renderer between 2D and 3D. The current graph data is
+ * preserved across the swap (positions re-simulate). Reassigning the exported
+ * ForceGraphInstance live-binding propagates the new instance to all importers.
+ */
+export function setRenderMode(mode: RenderMode): void {
+    if (mode === getRenderMode()) return;
 
-        // persistent analytics decoration takes precedence over hover/search,
-        // but only while the analytics tool is active; it is preserved (yet
-        // hidden) when the user switches to another tool such as search
-        const decoration = state.analytics.active ? state.analytics.decoration : null;
-        if (decoration) {
-            // heatmap recolors nodes only; leave edges at their normal color
-            if (decoration.kind === 'heatmap') {
-                return fillStyle;
-            }
-            if (decoration.kind === 'community') {
-                // color edges within a community by its color, dim the rest
-                const sourceCommunity = decoration.nodeCommunity.get(linkSourceId(l));
-                const targetCommunity = decoration.nodeCommunity.get(linkTargetId(l));
-                const focused = decoration.focusedCommunities;
-                const hasFocus = focused !== undefined && focused.size > 0;
-                if (
-                    sourceCommunity !== undefined &&
-                    sourceCommunity === targetCommunity &&
-                    (!hasFocus || focused.has(sourceCommunity))
-                ) {
-                    return communityColor(sourceCommunity);
-                }
-                return colorAdjustAlpha(
-                    fillStyle,
-                    highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!,
-                );
-            }
-            alphaMultiplier = decoration.edgeIds.has(l.id)
-                ? 1.0
-                : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-            return colorAdjustAlpha(fillStyle, alphaMultiplier);
-        }
+    const data = ForceGraphInstance.graphData();
+    const prev = ForceGraphInstance as unknown as { _destructor?: () => void };
 
-        if (!state.highlight && state.search) {
-            alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
-        }
+    persistRenderMode(mode);
+    prev._destructor?.();
+    rendererHost.replaceChildren();
 
-        if (state.highlight) {
-            alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-            const edgeDistance = state.highlight.edgeDistancesMap.get(l.id);
+    ForceGraphInstance = is3D()
+        ? build3DRenderer(rendererHost, rendererHandlers)
+        : build2DRenderer(rendererHost, rendererHandlers, pointerGraphPos);
+    ForceGraphInstance.graphData(data);
+    applyD3Params();
+    void refreshGraphUI();
+    requestRecenterView();
 
-            if (edgeDistance !== undefined && edgeDistance < highlightAlphaMultipliers.length - 1) {
-                alphaMultiplier = highlightAlphaMultipliers[edgeDistance]!;
-            }
-
-            fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
-        }
-
-        return fillStyle;
-    })
-    .linkLabel(l => l.properties?.label as string || l.type)
-    .linkDirectionalParticleColor(l => edgeColorFor(l))
-    .linkDirectionalParticles(0)
-    .linkDirectionalArrowLength(link => {
-        if (link.properties?.directional === false) {
-            return 0;
-        }
-        // Grow the arrow sub-linearly with line width so thick edges don't get
-        // overwhelmingly large arrowheads. Tuned so width 1 keeps the original
-        // size (~6) and width 10 caps around ~19 instead of a linear ~60.
-        return 6 * Math.sqrt(edgeWidthFor(link));
-    })
-    .linkDirectionalArrowRelPos(0.55)
-    .linkLineDash(link => {
-        if (link.properties?.dashed === true) {
-            return [4, 4];
-        }
-        return null;
-    })
-    .nodeRelSize(6)
-    .nodeCanvasObject((node, ctx, globalScale) => {
-        const r = nodeRadius(node);
-        const zoomBoost = Math.min(MAX_ZOOM_BOOST, Math.max(1, 1 / globalScale));
-
-        let alphaMultiplier = 1.0;
-        let baseColor = nodeColorFor(node);
-
-        // persistent analytics decoration takes precedence over hover/search,
-        // but only while the analytics tool is active; it is preserved (yet
-        // hidden) when the user switches to another tool such as search
-        const decoration = state.analytics.active ? state.analytics.decoration : null;
-        if (decoration) {
-            if (decoration.kind === 'heatmap') {
-                const value = decoration.nodeValues.get(node.id);
-                if (value !== undefined) {
-                    baseColor = analyticsHeatmapColorScale.getColor(value);
-                } else {
-                    // nodes without a score are dimmed
-                    alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-                }
-            } else if (decoration.kind === 'community') {
-                const community = decoration.nodeCommunity.get(node.id);
-                const focused = decoration.focusedCommunities;
-                const hasFocus = focused !== undefined && focused.size > 0;
-                if (community !== undefined && (!hasFocus || focused.has(community))) {
-                    baseColor = communityColor(community);
-                } else {
-                    // nodes outside any community (or outside the focused set) are dimmed
-                    alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-                }
-            } else {
-                alphaMultiplier = decoration.nodeIds.has(node.id)
-                    ? 1.0
-                    : highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-            }
-        } else {
-            if (!state.highlight && state.search && !state.search.matchesMap.has(node.id)) {
-                alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
-            }
-
-            if (state.highlight) {
-                alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-                const nodeDistance = state.highlight.nodeDistancesMap.get(node.id);
-
-                if (nodeDistance !== undefined && nodeDistance < highlightAlphaMultipliers.length - 1) {
-                    alphaMultiplier = highlightAlphaMultipliers[nodeDistance]!;
-                }
-            }
-        }
-
-        const fillStyle = colorAdjustAlpha(baseColor, alphaMultiplier);
-
-        ctx.beginPath();
-        ctx.fillStyle = fillStyle;
-        ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
-        ctx.fill();
-
-        ctx.beginPath();
-        (ctx as unknown as Record<string, unknown>).strokeWidth = 1;
-        ctx.strokeStyle = nodeOutlineColor(fillStyle);
-        ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
-        ctx.stroke();
-
-        const locked = isNodePinned(node);
-        if (locked) {
-            // invert the ring colors in dark mode so the thicker outer ring
-            // stays visible against the dark canvas background
-            const outerRingColor = getTheme() === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.95)';
-            const innerRingColor = getTheme() === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
-            drawCircle(ctx, node.x!, node.y!, r + 1, 2, colorAdjustAlpha(outerRingColor, alphaMultiplier));
-            drawCircle(ctx, node.x!, node.y!, r, 1, colorAdjustAlpha(innerRingColor, alphaMultiplier));
-        }
-
-        if (state.selection.selectedNodeIds.has(node.id)) {
-            const rotation = (Date.now() / 1000) % (2 * Math.PI);
-            drawDashedCircle(ctx, node.x!, node.y!, r + 2 * zoomBoost, 2 * zoomBoost, colorAdjustAlpha('rgba(255,0,0,1.0)', alphaMultiplier), [3 * zoomBoost, 2 * zoomBoost], rotation);
-        }
-
-        if (state.search?.matchesMap.has(node.id)) {
-            const matchColor = state.search.matchColorsMap.get(node.id) ?? SEARCH_COLOR_BEST;
-            const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * SEARCH_PULSE_FREQ);
-            drawCircle(ctx, node.x!, node.y!, r + (SEARCH_PULSE_BASE + pulse) * zoomBoost, 3 * zoomBoost, matchColor);
-        }
-
-        if (state.edit.active && state.edit.pendingEdgeSourceId === node.id) {
-            const pulse = 2 * Math.sin((Date.now() / 1000) * 2 * Math.PI * SEARCH_PULSE_FREQ);
-            drawCircle(ctx, node.x!, node.y!, r + (SEARCH_PULSE_BASE + pulse) * zoomBoost, 2.5 * zoomBoost, 'rgb(33, 150, 243)');
-        }
-
-        const label = getNodeLabel(node);
-        const labelDark = getTheme() === 'dark';
-        // contrasting halo: dark theme has light text -> dark outline, and vice versa
-        const labelOutline = settings.nodeLabelOutline
-            ? {
-                strokeStyle: colorAdjustAlpha(labelDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
-                strokeWidth: 2.5,
-            }
-            : undefined;
-        drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, labelFontSize(globalScale), colorAdjustAlpha(labelDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier), 'middle', 'left', true, labelOutline);
-
-        // analytics heatmap raw value drawn under the node (e.g. distance)
-        if (decoration?.kind === 'heatmap' && decoration.showValues) {
-            const valueText = decoration.nodeLabels?.get(node.id);
-            if (valueText !== undefined) {
-                const dark = getTheme() === 'dark';
-                drawText(
-                    ctx, valueText, node.x!, node.y! + r + NODE_LABEL_OFFSET,
-                    labelFontSize(globalScale),
-                    colorAdjustAlpha(dark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)', alphaMultiplier),
-                    'top', 'center', true,
-                    {
-                        strokeStyle: colorAdjustAlpha(dark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
-                        strokeWidth: 2.5,
-                    },
-                );
-            }
-        }
-
-        // show hidden nodes counters in adjacency filtered mode
-        if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
-            const hiddenCount = state.adjacencyFilter.hiddenCounts.get(node.id) ?? 0;
-            drawText(
-                ctx, `+${hiddenCount}`, node.x! - r, node.y! - r, 9,
-                colorAdjustAlpha('rgba(8, 168, 8, 0.95)', alphaMultiplier),
-                'alphabetic', 'right', true,
-                {
-                    strokeStyle: colorAdjustAlpha('rgba(255, 255, 255, 0.9)', alphaMultiplier),
-                    strokeWidth: 1.0,
-                },
-            );
-        }
-    })
-    .nodePointerAreaPaint((node, color, ctx) => {
-        const r = nodePointerRadius(node);
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
-        ctx.fill();
-    })
-    .onNodeClick((node, event) => {
-        const now = Date.now();
-        if (node.id === lastClickedNodeId && now - lastClickTime < DOUBLE_CLICK_MS) {
-            lastClickedNodeId = null;
-            lastClickTime = 0;
-            handleNodeDoubleClick(node);
-        } else {
-            lastClickedNodeId = node.id;
-            lastClickTime = now;
-        }
-
-        if (state.edit.active) {
-            handleEditNodeClick(node);
-            return;
-        }
-
-        if (state.analytics.active && state.analytics.awaitingPickRole) {
-            handleAnalyticsNodeClick(node);
-            return;
-        }
-
-        if (state.currentTool === 'pointer') {
-            if (event?.altKey) {
-                unpinNode(node);
-            }
-        }
-        emit(EVT_NODE_CLICKED, { data: node, shiftKey: event?.shiftKey ?? false });
-    })
-    .onLinkClick((link, event) => {
-        emit(EVT_LINK_CLICKED, { data: link, shiftKey: event?.shiftKey ?? false });
-    })
-    .onLinkRightClick((link, event) => {
-        event.preventDefault();
-        showLinkContextMenu(link, event.clientX, event.clientY);
-    })
-    .onNodeDrag(node => {
-        pinNode(node);
-    })
-    .onNodeDragEnd(node => {
-        pinNode(node);
-    })
-    .onNodeHover((node, _prevNode) => {
-        // keep a persistent analytics decoration in place; don't let hover
-        // override the algorithm result highlight (only while it is shown)
-        if (state.analytics.active && state.analytics.decoration) {
-            return;
-        }
-        if (node != null) {
-            const graph = getGraph();
-            const { nodeDistancesMap, edgeDistancesMap } = bfs(graph, node.id, 2);
-            setHighlight({ nodeDistancesMap, edgeDistancesMap });
-        } else {
-            setHighlight(null);
-        }
-    })
-    .onNodeRightClick((node, event) => {
-        event.preventDefault();
-        showNodeContextMenu(node, event.clientX, event.clientY);
-    })
-    .onBackgroundRightClick((event) => {
-        event.preventDefault();
-        showBackgroundContextMenu(event.clientX, event.clientY);
-    })
-    .onBackgroundClick((event) => {
-        if (state.edit.active) {
-            if (state.edit.subTool === 'connect' && state.edit.pendingEdgeSourceId) {
-                cancelPendingEdge();
-                return;
-            }
-            const rect = graphContainerEl.getBoundingClientRect();
-            const coords = ForceGraphInstance.screen2GraphCoords(
-                event.clientX - rect.left,
-                event.clientY - rect.top,
-            );
-            createNodeAt(coords.x, coords.y);
-            return;
-        }
-        if (state.currentTool === 'pointer') {
-            emit(EVT_BACKGROUND_CLICK, null);
-        } else if (state.currentTool === 'rect-select') {
-            state.selection.selectedNodeIds.clear();
-        }
-    })
-    .autoPauseRedraw(false)
-    .onRenderFramePre((ctx, globalScale) => {
-        callFramePre();
-
-        // edit-mode rubber band: line from pending edge source to the pointer
-        if (state.edit.active && state.edit.subTool === 'connect' && state.edit.pendingEdgeSourceId) {
-            const source = (ForceGraphInstance.graphData().nodes as FGNode[])
-                .find(n => n.id === state.edit.pendingEdgeSourceId);
-            if (source?.x != null && source.y != null) {
-                ctx.save();
-                ctx.strokeStyle = 'rgba(33, 150, 243, 0.8)';
-                ctx.lineWidth = 1.5 / globalScale;
-                ctx.setLineDash([6 / globalScale, 4 / globalScale]);
-                ctx.beginPath();
-                ctx.moveTo(source.x, source.y);
-                ctx.lineTo(pointerGraphPos.x, pointerGraphPos.y);
-                ctx.stroke();
-                ctx.restore();
-            }
-        }
-
-        if (!settings.showGrid) return;
-
-        const topLeft = ForceGraphInstance.screen2GraphCoords(0, 0);
-        const bottomRight = ForceGraphInstance.screen2GraphCoords(ctx.canvas.width, ctx.canvas.height);
-
-        const spacing = GRID_SPACING;
-        const halfSmall = GRID_CROSS_HALF;
-        const halfBig = GRID_CENTER_CROSS_HALF;
-        const lw = 1 / globalScale;
-
-        const xMin = Math.floor(topLeft.x / spacing) * spacing;
-        const xMax = Math.ceil(bottomRight.x / spacing) * spacing;
-        const yMin = Math.floor(topLeft.y / spacing) * spacing;
-        const yMax = Math.ceil(bottomRight.y / spacing) * spacing;
-
-        const xCount = (xMax - xMin) / spacing;
-        const yCount = (yMax - yMin) / spacing;
-        const drawGrid = xCount <= MAX_CROSSES_PER_AXIS && yCount <= MAX_CROSSES_PER_AXIS;
-
-        ctx.save();
-        ctx.lineWidth = lw;
-
-        const dark = getTheme() === 'dark';
-        const gridLineColor = dark ? GRID_LINE_COLOR_DARK : GRID_LINE_COLOR;
-        const gridLineColorUnstressed = dark ? GRID_LINE_COLOR_UNSTRESSED_DARK : GRID_LINE_COLOR_UNSTRESSED;
-        const gridCenterColor = dark ? GRID_CENTER_COLOR_DARK : GRID_CENTER_COLOR;
-        const gridCenterColorUnstressed = dark ? GRID_CENTER_COLOR_UNSTRESSED_DARK : GRID_CENTER_COLOR_UNSTRESSED;
-
-        if (drawGrid) {
-            ctx.strokeStyle = state.highlight ? gridLineColorUnstressed : gridLineColor;
-
-            ctx.beginPath();
-            for (let gx = xMin; gx <= xMax; gx += spacing) {
-                for (let gy = yMin; gy <= yMax; gy += spacing) {
-                    if (gx === 0 && gy === 0) continue;
-                    ctx.moveTo(gx - halfSmall, gy);
-                    ctx.lineTo(gx + halfSmall, gy);
-                    ctx.moveTo(gx, gy - halfSmall);
-                    ctx.lineTo(gx, gy + halfSmall);
-                }
-            }
-            ctx.stroke();
-        }
-
-        ctx.strokeStyle = state.highlight ? gridCenterColorUnstressed : gridCenterColor;
-        ctx.lineWidth = lw * 1.5;
-        ctx.beginPath();
-        ctx.moveTo(-halfBig, 0);
-        ctx.lineTo(halfBig, 0);
-        ctx.moveTo(0, -halfBig);
-        ctx.lineTo(0, halfBig);
-        ctx.stroke();
-
-        ctx.restore();
-    })
-    .onRenderFramePost(() => {
-        callFramePost();
-    })
-    .d3Force('charge', d3.forceManyBody().strength(D3_CHARGE_STRENGTH))
-    .d3Force('link', d3.forceLink<FGNode, d3.SimulationLinkDatum<FGNode>>().distance(D3_LINK_DISTANCE).strength(D3_LINK_STRENGTH))
-    .d3Force('collision', d3.forceCollide<FGNode>().radius(d => D3_COLLISION_BASE_RADIUS + (d.val ?? 1) * D3_COLLISION_RADIUS_PER_VAL).strength(D3_COLLISION_STRENGTH).iterations(D3_COLLISION_ITERATIONS))
-    .d3Force('forceX', d3.forceX<FGNode>())
-    .d3Force('forceY', d3.forceY<FGNode>());
+    emit(EVT_RENDER_MODE_CHANGED, mode);
+}
 
 // ---------------------------------------------------------------------------
 // Node double-click handler
@@ -1039,6 +502,9 @@ export function showBackgroundContextMenu(clientX: number, clientY: number): voi
  * the graph is zoomed out and nodes are visually tiny.
  */
 export function getNodeAtScreen(clientX: number, clientY: number): FGNode | null {
+    // 2D-only hit test (uses the 2D zoom/projection); the 3D renderer resolves
+    // node picks through its own pointer handling
+    if (is3D()) return null;
     const rect = graphContainerEl.getBoundingClientRect();
     const px = clientX - rect.left;
     const py = clientY - rect.top;
@@ -1120,6 +586,23 @@ export async function refreshGraphUI(): Promise<void> {
 
 export function refreshGraphColors(): void {
     clearColorCaches();
+    if (is3D()) {
+        // cheap color-only update: re-applies the color accessors without
+        // flushing/rebuilding the node label sprites (see refreshColors3D). this
+        // keeps search-as-you-type responsive on large 3D graphs
+        refreshColors3D(ForceGraphInstance);
+        return;
+    }
+    if (typeof (ForceGraphInstance as unknown as Record<string, unknown>).refresh === 'function') {
+        ForceGraphInstance.refresh();
+    }
+}
+
+// full rebuild of the renderer's objects. in 3D this regenerates the node label
+// sprites (whose text color is baked per theme), so it is needed when the theme
+// changes; in 2D the canvas repaints every frame so a color refresh suffices
+export function rebuildGraphObjects(): void {
+    clearColorCaches();
     if (typeof (ForceGraphInstance as unknown as Record<string, unknown>).refresh === 'function') {
         ForceGraphInstance.refresh();
     }
@@ -1176,6 +659,13 @@ function mergeGraphDataIntoForceGraph(nodes: FGNode[], edges: FGLink[]): void {
     ForceGraphInstance.graphData({ nodes: mergedNodes, links: mergedLinks });
 
     autoAdjustCurvature();
+
+    // the 3D renderer builds geometry when graphData is set and evaluates
+    // accessors lazily; autoAdjustCurvature mutated link curvature afterwards,
+    // so refresh to rebuild link geometry with the new curvatures
+    if (is3D()) {
+        ForceGraphInstance.refresh();
+    }
 }
 
 export function autoAdjustCurvature(): void {
@@ -1264,10 +754,14 @@ export function applyD3Params(): void {
     if (forceX && typeof forceX.strength === 'function') forceX.strength(settings.d3ForceXYStrength);
     if (forceY && typeof forceY.strength === 'function') forceY.strength(settings.d3ForceXYStrength);
 
-    if (settings.d3CenterForce) {
-        ForceGraphInstance.d3Force('center', d3.forceCenter());
-    } else {
-        ForceGraphInstance.d3Force('center', null);
+    // the 2D d3.forceCenter only acts on x/y; the 3D renderer relies on its
+    // own dimension-aware centering, so only manage this force in 2D
+    if (!is3D()) {
+        if (settings.d3CenterForce) {
+            ForceGraphInstance.d3Force('center', d3.forceCenter());
+        } else {
+            ForceGraphInstance.d3Force('center', null);
+        }
     }
 
     const collisionForce = ForceGraphInstance.d3Force('collision');
