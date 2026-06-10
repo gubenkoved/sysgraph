@@ -50,7 +50,13 @@ export interface EditState {
     edgeTemplate: EntityTemplate;
 }
 
-export type AnalyticsAlgorithmId = 'stats' | 'shortest-path' | 'mst' | 'degree' | 'community';
+export type AnalyticsAlgorithmId =
+    | 'stats'
+    | 'shortest-path'
+    | 'distance'
+    | 'mst'
+    | 'degree'
+    | 'community';
 
 /**
  * Subset decoration: the listed nodes/edges stay emphasized while everything
@@ -72,6 +78,11 @@ export interface SubsetDecoration {
 export interface HeatmapDecoration {
     kind: 'heatmap';
     nodeValues: Map<string, number>;
+    // optional raw value text per node, drawn next to the node when showValues
+    // is on (e.g. the actual distance/degree behind the color)
+    nodeLabels?: Map<string, string>;
+    // when true, nodeLabels are rendered on the canvas
+    showValues?: boolean;
 }
 
 /**

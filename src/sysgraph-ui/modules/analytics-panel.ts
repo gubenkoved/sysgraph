@@ -334,6 +334,9 @@ function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
 
         section.appendChild(buildHeatmapLegend(r.minDegree, r.maxDegree));
 
+        const degreeTweakers = buildResultTweakers(result);
+        if (degreeTweakers) section.appendChild(degreeTweakers);
+
         const directed = r.respectDirection;
         section.appendChild(
             buildRankList(
@@ -341,6 +344,26 @@ function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
                     nodeId: e.nodeId,
                     primary: String(e.degree),
                     secondary: directed ? `in ${e.inDegree} · out ${e.outDegree}` : undefined,
+                })),
+            ),
+        );
+    } else if (result.kind === 'distance') {
+        const r = result.result;
+        section.appendChild(statRow('source', nodeLabel(r.sourceId)));
+        section.appendChild(statRow('reachable nodes', String(r.reachableCount)));
+        section.appendChild(statRow('max distance', formatDistance(r.maxDistance)));
+
+        // near is hot (distance 0), far is cold (max distance)
+        section.appendChild(buildHeatmapLegend(0, r.maxDistance, { reversed: true }));
+
+        const distanceTweakers = buildResultTweakers(result);
+        if (distanceTweakers) section.appendChild(distanceTweakers);
+
+        section.appendChild(
+            buildRankList(
+                r.entries.map(e => ({
+                    nodeId: e.nodeId,
+                    primary: formatDistance(e.distance),
                 })),
             ),
         );
@@ -357,15 +380,26 @@ function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
 // maximum number of ranked rows rendered to keep the panel responsive
 const RANK_LIST_LIMIT = 100;
 
-/** Builds a cold-to-hot gradient legend with min/max value labels. */
-function buildHeatmapLegend(min: number, max: number): HTMLElement {
+/** Formats a distance value, dropping the decimals when it is a whole number. */
+function formatDistance(value: number): string {
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+/**
+ * Builds a cold-to-hot gradient legend with min/max value labels. When
+ * reversed, the hot end is drawn on the left (used by distance, where the near
+ * end is hot).
+ */
+function buildHeatmapLegend(min: number, max: number, options?: { reversed?: boolean }): HTMLElement {
+    const reversed = options?.reversed ?? false;
     const wrap = el('div', 'analytics-legend');
 
     // sample the shared scale so the bar matches the canvas colors exactly
     const samples = 12;
     const stops: string[] = [];
     for (let i = 0; i < samples; i++) {
-        const t = samples > 1 ? i / (samples - 1) : 0;
+        const f = samples > 1 ? i / (samples - 1) : 0;
+        const t = reversed ? 1 - f : f;
         stops.push(analyticsHeatmapColorScale.getColor(t));
     }
     const bar = el('div', 'analytics-legend-bar');
@@ -373,8 +407,8 @@ function buildHeatmapLegend(min: number, max: number): HTMLElement {
     wrap.appendChild(bar);
 
     const labels = el('div', 'analytics-legend-labels');
-    labels.appendChild(el('span', 'analytics-legend-min', String(min)));
-    labels.appendChild(el('span', 'analytics-legend-max', String(max)));
+    labels.appendChild(el('span', 'analytics-legend-min', formatDistance(min)));
+    labels.appendChild(el('span', 'analytics-legend-max', formatDistance(max)));
     wrap.appendChild(labels);
 
     return wrap;

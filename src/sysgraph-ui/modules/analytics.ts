@@ -1,5 +1,6 @@
 import type {
     DegreeCentralityResult,
+    DistanceResult,
     MstResult,
     ShortestPathResult,
     StatsResult,
@@ -7,6 +8,7 @@ import type {
 import {
     computeStats,
     degreeCentrality,
+    distanceFromSource,
     minimumSpanningTree,
     shortestPath,
 } from './analytics-algs.js';
@@ -87,6 +89,17 @@ const respectDirectionParam: ParamSpec = {
     defaultValue: 'false',
 };
 
+// dedicated edge-weight param for the distance heatmap; defaults to the shared
+// expression (length, then weight, then 1) so weighted graphs work out of the
+// box, while still being independently editable from the other algorithms
+const distanceEdgeWeightParam: ParamSpec = {
+    id: 'distanceEdgeWeight',
+    label: 'edge weight',
+    type: 'expression',
+    placeholder: DEFAULT_EDGE_WEIGHT_EXPRESSION,
+    defaultValue: DEFAULT_EDGE_WEIGHT_EXPRESSION,
+};
+
 const resolutionParam: ParamSpec = {
     id: 'resolution',
     label: 'resolution',
@@ -116,6 +129,27 @@ const pathWidthTweaker: ParamSpec = {
     },
 };
 
+// result tweaker: toggles drawing the raw per-node value next to each node on
+// a heatmap decoration, applying live without re-running
+const showValuesTweaker: ParamSpec = {
+    id: 'showValues',
+    label: 'show values',
+    type: 'boolean',
+    defaultValue: 'false',
+    onInput: value => {
+        const decoration = state.analytics.decoration;
+        if (decoration?.kind === 'heatmap') {
+            decoration.showValues = value === 'true';
+        }
+        refreshGraphColors();
+    },
+};
+
+/** Formats a numeric metric for display, dropping decimals when integral. */
+function formatMetric(value: number): string {
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
 export const ALGORITHMS: AlgorithmDescriptor[] = [
     {
         id: 'stats',
@@ -140,6 +174,16 @@ export const ALGORITHMS: AlgorithmDescriptor[] = [
         highlights: true,
     },
     {
+        id: 'distance',
+        label: 'Distance from node',
+        icon: 'social_distance',
+        description: 'Colors nodes by graph distance from a chosen node (heatmap).',
+        params: [distanceEdgeWeightParam, respectDirectionParam],
+        resultTweakers: [showValuesTweaker],
+        picks: [{ role: 'source', label: 'source' }],
+        highlights: true,
+    },
+    {
         id: 'mst',
         label: 'Spanning tree',
         icon: 'account_tree',
@@ -154,6 +198,7 @@ export const ALGORITHMS: AlgorithmDescriptor[] = [
         icon: 'hub',
         description: 'Ranks nodes by their number of connections (heatmap).',
         params: [respectDirectionParam],
+        resultTweakers: [showValuesTweaker],
         picks: [],
         highlights: true,
     },
@@ -188,6 +233,12 @@ export interface ShortestPathResultModel {
     targetId: string;
 }
 
+export interface DistanceResultModel {
+    kind: 'distance';
+    result: DistanceResult;
+    sourceId: string;
+}
+
 export interface MstResultModel {
     kind: 'mst';
     result: MstResult;
@@ -206,6 +257,7 @@ export interface CommunityResultModel {
 export type AnalyticsResultModel =
     | StatsResultModel
     | ShortestPathResultModel
+    | DistanceResultModel
     | MstResultModel
     | DegreeResultModel
     | CommunityResultModel;
@@ -270,10 +322,19 @@ function decorateSubset(
 /**
  * Applies a persistent heatmap decoration that recolors nodes on a cold-to-hot
  * scale by their normalized value in [0, 1]. Nodes absent from the map are
- * dimmed. Remains until the algorithm result is cleared.
+ * dimmed. Optional nodeLabels carry the raw value text shown next to each node
+ * when the show-values tweaker is on. Remains until the result is cleared.
  */
-function decorateHeatmap(nodeValues: Map<string, number>): void {
-    setAnalyticsDecoration({ kind: 'heatmap', nodeValues });
+function decorateHeatmap(
+    nodeValues: Map<string, number>,
+    nodeLabels?: Map<string, string>,
+): void {
+    setAnalyticsDecoration({
+        kind: 'heatmap',
+        nodeValues,
+        nodeLabels,
+        showValues: state.analytics.params.showValues === 'true',
+    });
 }
 
 /**
@@ -342,6 +403,35 @@ export function runAlgorithm(): string | null {
         return null;
     }
 
+    if (id === 'distance') {
+        const sourceId = state.analytics.pickedNodeIds.source;
+        if (!sourceId) return 'Pick a source node';
+        // dedicated weight expression (length, then weight, then 1)
+        const distanceWeightFn = makeEdgeWeightFn(
+            state.analytics.params.distanceEdgeWeight ?? DEFAULT_EDGE_WEIGHT_EXPRESSION,
+        );
+        const respectDirection = state.analytics.params.respectDirection === 'true';
+        const result = distanceFromSource(graph, sourceId, distanceWeightFn, respectDirection);
+        // map distance to a heatmap value where the source is hottest (1) and
+        // the farthest reachable node is coldest (0); unreachable nodes are
+        // omitted so they dim
+        const nodeValues = new Map<string, number>();
+        const nodeLabels = new Map<string, string>();
+        for (const entry of result.entries) {
+            const t = result.maxDistance > 0 ? 1 - entry.distance / result.maxDistance : 1;
+            nodeValues.set(entry.nodeId, t);
+            nodeLabels.set(entry.nodeId, formatMetric(entry.distance));
+        }
+        decorateHeatmap(nodeValues, nodeLabels);
+        setAnalyticsResult({
+            kind: 'distance',
+            result,
+            sourceId,
+        } satisfies DistanceResultModel);
+        emit(EVT_ANALYTICS_UPDATED, null);
+        return null;
+    }
+
     if (id === 'mst') {
         const result = minimumSpanningTree(graph, weightFn);
         decorateSubset(result.nodeIds, result.edgeIds);
@@ -356,11 +446,13 @@ export function runAlgorithm(): string | null {
         // normalize degree into [0, 1] for the heatmap (min-max across the graph)
         const span = result.maxDegree - result.minDegree;
         const nodeValues = new Map<string, number>();
+        const nodeLabels = new Map<string, string>();
         for (const entry of result.entries) {
             const t = span > 0 ? (entry.degree - result.minDegree) / span : 0;
             nodeValues.set(entry.nodeId, t);
+            nodeLabels.set(entry.nodeId, String(entry.degree));
         }
-        decorateHeatmap(nodeValues);
+        decorateHeatmap(nodeValues, nodeLabels);
         setAnalyticsResult({ kind: 'degree', result } satisfies DegreeResultModel);
         emit(EVT_ANALYTICS_UPDATED, null);
         return null;

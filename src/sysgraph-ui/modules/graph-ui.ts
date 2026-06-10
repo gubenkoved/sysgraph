@@ -665,6 +665,21 @@ ForceGraphInstance
         const label = getNodeLabel(node);
         drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, labelFontSize(globalScale), colorAdjustAlpha(getTheme() === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier));
 
+        // analytics heatmap raw value drawn under the node (e.g. distance)
+        if (decoration?.kind === 'heatmap' && decoration.showValues) {
+            const valueText = decoration.nodeLabels?.get(node.id);
+            if (valueText !== undefined) {
+                const dark = getTheme() === 'dark';
+                drawTextWithStroke(
+                    ctx, valueText, node.x!, node.y! + r + NODE_LABEL_OFFSET,
+                    labelFontSize(globalScale),
+                    colorAdjustAlpha(dark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)', alphaMultiplier),
+                    colorAdjustAlpha(dark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
+                    2.5, 'top', 'center', true,
+                );
+            }
+        }
+
         // show hidden nodes counters in adjacency filtered mode
         if (state.adjacencyFilter?.hiddenCounts.get(node.id)) {
             const hiddenCount = state.adjacencyFilter.hiddenCounts.get(node.id) ?? 0;

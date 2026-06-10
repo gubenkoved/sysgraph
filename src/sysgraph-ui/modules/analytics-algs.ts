@@ -98,6 +98,77 @@ function computeComponents(graph: Graph): {
 }
 
 // ---------------------------------------------------------------------------
+// Dijkstra core (shared by shortest path and distance-from-source)
+// ---------------------------------------------------------------------------
+
+interface DijkstraResult {
+    // lowest cumulative weight from the source to each settled node
+    distances: Map<string, number>;
+    // edge used to reach each node on its lowest-weight path (for reconstruction)
+    prevEdge: Map<string, GraphEdge>;
+}
+
+/**
+ * Runs Dijkstra's algorithm from sourceId. Edge weights are produced by
+ * weightFn; non-positive weights are clamped to a small positive epsilon. When
+ * respectDirection is true, edges may only be traversed from source_id to
+ * target_id; otherwise the graph is treated as undirected. When stopAtId is
+ * provided the search stops early once that node is settled. The caller is
+ * responsible for validating that sourceId exists.
+ */
+function dijkstra(
+    graph: Graph,
+    sourceId: string,
+    weightFn: EdgeWeightFn,
+    respectDirection: boolean,
+    stopAtId?: string,
+): DijkstraResult {
+    const distances = new Map<string, number>();
+    const prevEdge = new Map<string, GraphEdge>();
+    const visited = new Set<string>();
+    distances.set(sourceId, 0);
+
+    // simple O(V^2) selection; adequate for interactive graph sizes
+    const pending = new Set<string>([sourceId]);
+    for (const edge of graph.getEdges()) {
+        pending.add(edge.source_id);
+        pending.add(edge.target_id);
+    }
+
+    while (pending.size > 0) {
+        let current: string | null = null;
+        let best = Number.POSITIVE_INFINITY;
+        for (const id of pending) {
+            const d = distances.get(id) ?? Number.POSITIVE_INFINITY;
+            if (d < best) {
+                best = d;
+                current = id;
+            }
+        }
+        if (current === null || best === Number.POSITIVE_INFINITY) break;
+
+        pending.delete(current);
+        visited.add(current);
+        if (current === stopAtId) break;
+
+        for (const edge of graph.getAdjacentEdges(current)) {
+            // in directed mode only follow edges leaving the current node
+            if (respectDirection && edge.source_id !== current) continue;
+            const neighbor = edge.source_id === current ? edge.target_id : edge.source_id;
+            if (visited.has(neighbor)) continue;
+            const weight = Math.max(weightFn(edge), 1e-9);
+            const candidate = best + weight;
+            if (candidate < (distances.get(neighbor) ?? Number.POSITIVE_INFINITY)) {
+                distances.set(neighbor, candidate);
+                prevEdge.set(neighbor, edge);
+            }
+        }
+    }
+
+    return { distances, prevEdge };
+}
+
+// ---------------------------------------------------------------------------
 // shortest path (Dijkstra, undirected)
 // ---------------------------------------------------------------------------
 
@@ -133,47 +204,7 @@ export function shortestPath(
     };
     if (!graph.getNode(sourceId) || !graph.getNode(targetId)) return empty;
 
-    const distances = new Map<string, number>();
-    const prevEdge = new Map<string, GraphEdge>();
-    const visited = new Set<string>();
-    distances.set(sourceId, 0);
-
-    // simple O(V^2) selection; adequate for interactive graph sizes
-    const pending = new Set<string>([sourceId]);
-    for (const edge of graph.getEdges()) {
-        pending.add(edge.source_id);
-        pending.add(edge.target_id);
-    }
-
-    while (pending.size > 0) {
-        let current: string | null = null;
-        let best = Number.POSITIVE_INFINITY;
-        for (const id of pending) {
-            const d = distances.get(id) ?? Number.POSITIVE_INFINITY;
-            if (d < best) {
-                best = d;
-                current = id;
-            }
-        }
-        if (current === null || best === Number.POSITIVE_INFINITY) break;
-
-        pending.delete(current);
-        visited.add(current);
-        if (current === targetId) break;
-
-        for (const edge of graph.getAdjacentEdges(current)) {
-            // in directed mode only follow edges leaving the current node
-            if (respectDirection && edge.source_id !== current) continue;
-            const neighbor = edge.source_id === current ? edge.target_id : edge.source_id;
-            if (visited.has(neighbor)) continue;
-            const weight = Math.max(weightFn(edge), 1e-9);
-            const candidate = best + weight;
-            if (candidate < (distances.get(neighbor) ?? Number.POSITIVE_INFINITY)) {
-                distances.set(neighbor, candidate);
-                prevEdge.set(neighbor, edge);
-            }
-        }
-    }
+    const { distances, prevEdge } = dijkstra(graph, sourceId, weightFn, respectDirection, targetId);
 
     if (!distances.has(targetId)) return empty;
 
@@ -200,6 +231,69 @@ export function shortestPath(
         edgeIds,
         nodeDistances,
         totalWeight: distances.get(targetId) ?? 0,
+    };
+}
+
+// ---------------------------------------------------------------------------
+// distance from a single source (single-source Dijkstra)
+// ---------------------------------------------------------------------------
+
+export interface DistanceEntry {
+    nodeId: string;
+    // cumulative weight of the lowest-weight path from the source
+    distance: number;
+}
+
+export interface DistanceResult {
+    found: boolean;
+    sourceId: string;
+    // entries for every reachable node (including the source), sorted by
+    // ascending distance
+    entries: DistanceEntry[];
+    // number of reachable nodes (equals entries.length)
+    reachableCount: number;
+    // largest distance among reachable nodes
+    maxDistance: number;
+}
+
+/**
+ * Computes the lowest-weight distance from sourceId to every reachable node
+ * using single-source Dijkstra. Edge weights are produced by weightFn (a
+ * constant 1 yields hop-count distance); non-positive weights are clamped to a
+ * small positive epsilon. When respectDirection is true, edges may only be
+ * traversed from source_id to target_id; otherwise the graph is undirected.
+ */
+export function distanceFromSource(
+    graph: Graph,
+    sourceId: string,
+    weightFn: EdgeWeightFn,
+    respectDirection = false,
+): DistanceResult {
+    const empty: DistanceResult = {
+        found: false,
+        sourceId,
+        entries: [],
+        reachableCount: 0,
+        maxDistance: 0,
+    };
+    if (!graph.getNode(sourceId)) return empty;
+
+    const { distances } = dijkstra(graph, sourceId, weightFn, respectDirection);
+
+    const entries: DistanceEntry[] = [];
+    let maxDistance = 0;
+    for (const [nodeId, distance] of distances) {
+        entries.push({ nodeId, distance });
+        maxDistance = Math.max(maxDistance, distance);
+    }
+    entries.sort((a, b) => a.distance - b.distance);
+
+    return {
+        found: true,
+        sourceId,
+        entries,
+        reachableCount: entries.length,
+        maxDistance,
     };
 }
 

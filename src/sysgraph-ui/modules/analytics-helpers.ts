@@ -2,10 +2,12 @@ import type { EdgeWeightFn } from './analytics-algs.js';
 import type { GraphEdge } from './graph.js';
 
 /**
- * Default edge-weight expression. Falls back to 1 when no numeric `weight`
- * property is present, so unweighted graphs still produce sensible results.
+ * Default edge-weight expression. Prefers a numeric `length`, then a numeric
+ * `weight`, and falls back to 1 when neither is present, so unweighted graphs
+ * still produce sensible results.
  */
-export const DEFAULT_EDGE_WEIGHT_EXPRESSION = 'Number(properties.weight) || 1';
+export const DEFAULT_EDGE_WEIGHT_EXPRESSION =
+    'Number(properties.length) || Number(properties.weight) || 1';
 
 /**
  * Compiles an edge-weight expression into a weight function. The expression is
