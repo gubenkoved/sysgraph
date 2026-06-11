@@ -67,6 +67,9 @@
   /* tweakpane theme — aligned with the app's light, blue-accented panels.
      The pane's own card chrome (frosted bg, border, radius, shadow) is
      provided by #settingsPane, so the tweakpane base stays transparent. */
+  /* widen the value column so color rows can show the full swatch + RGB
+     inputs without clipping (tweakpane defaults this to 160px) */
+  --tp-blade-value-width: 180px;
   --tp-base-background-color: hsla(221, 40%, 98%, 0.00);
   --tp-base-shadow-color: hsla(221, 40%, 20%, 0.10);
   --tp-button-background-color: hsla(221, 45%, 92%, 1.00);
