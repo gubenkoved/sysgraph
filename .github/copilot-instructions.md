@@ -89,7 +89,8 @@ sysgraph/
 ├── .pre-commit-config.yaml # pre-commit hooks
 ├── data/                   # Built-in example graphs (bundled into dist/examples/)
 │   ├── simple-graph.json
-│   └── greek-mythology.json
+│   ├── greek-mythology.json
+│   └── ...                  # each may carry an examples-only `metadata` block
 ├── scripts/
 │   ├── build-image.sh      # Build Docker image
 │   ├── build-ui.sh         # Build frontend via Docker (no host Node.js needed)
@@ -394,6 +395,13 @@ Layout-related event/command constants live in `constants.ts` (e.g. `PANEL_GRAPH
 - Alternate edge keys: `"relationships"`, `"links"`
 - Auto-generates missing edge IDs
 - Loads the bundled examples manifest and example graphs from `dist/examples/`
+
+**Example metadata (examples only):** A built-in example graph in `data/*.json` may carry an optional top-level `metadata` block that controls how it appears in the "Load example" menu. It is read **only** when building/serving the examples manifest (`vite.config.ts` → `parseExampleMetadata()`); the regular import path (`normalizeGraphData`) never reads it, so `metadata` has **no effect on user-imported graphs**. Fields:
+- `title` — display title in the menu (precedence: `metadata.title` → legacy top-level `title` → filename-derived). Existing examples now nest their title here.
+- `rank` — menu-ordering hint. Ranked examples sort first (ascending, title tiebreak); unranked examples follow, sorted alphabetically by title.
+- `badges` — array of trailing pills, each `{ text, icon?, title?, tone? }` with `tone` ∈ `info` | `success` | `warning`. Badges are fully static/example-driven (e.g. a `warning` "large" pill on big graphs, an `info` "3D friendly" pill); the UI does not compute any badges itself.
+
+The manifest entry shape (`ExampleInfo`) and the menu-item builder (`buildExampleMenuItems`) live in `data-io.ts`; the multi-badge context-menu item type (`ContextMenuBadge` / `ContextMenuItem.badges`) lives in `context-menu.ts`, with tone styles in `styles.css`.
 
 **Edit Mode (`edit-mode.ts` + `details-panel.ts`):** The Edit tool (E) enables graph authoring:
 - `modify` sub-tool — click empty canvas to add a node; click a node to edit it

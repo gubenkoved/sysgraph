@@ -29,10 +29,6 @@ export const CMD_EXPORT = 'export-graph';
 export const CMD_IMPORT = 'import-graph';
 export const CMD_LOAD_EXAMPLE = 'load-example';
 
-// ── Example picker ──────────────────────────────────────────
-/** total nodes + edges above which an example is flagged as large/slow */
-export const LARGE_EXAMPLE_THRESHOLD = 10000;
-
 // ── Build-time configuration ────────────────────────────────
 /**
  * Standalone mode (build-time flag). When true the UI never contacts the

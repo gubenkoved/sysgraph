@@ -1,7 +1,15 @@
 {
   "metadata": {
     "title": "Europe Road Network",
-    "rank": 6
+    "rank": 6,
+    "badges": [
+      {
+        "text": "large",
+        "icon": "warning",
+        "tone": "warning",
+        "title": "Large graph — may render slowly"
+      }
+    ]
   },
   "display": {
     "d3EnablePhysics": true,
