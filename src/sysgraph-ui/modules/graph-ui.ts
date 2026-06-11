@@ -324,6 +324,10 @@ export function setRenderMode(mode: RenderMode): void {
     const data = ForceGraphInstance.graphData();
     const prev = ForceGraphInstance as unknown as { _destructor?: () => void };
 
+    // neighbor highlight is a 2D-only hover effect; the 3D renderer has no
+    // hover-out path to clear it, so reset it on every mode switch
+    setHighlight(null);
+
     persistRenderMode(mode);
     prev._destructor?.();
     rendererHost.replaceChildren();
