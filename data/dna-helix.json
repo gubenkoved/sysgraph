@@ -1,0 +1,1440 @@
+{
+  "metadata": {
+    "title": "DNA Double Helix",
+    "rank": 3.7,
+    "badges": [
+      {
+        "text": "3D friendly",
+        "icon": "deployed_code",
+        "tone": "info",
+        "title": "Looks great in 3D mode"
+      },
+      {
+        "text": "weighted",
+        "icon": "route",
+        "tone": "success",
+        "title": "Real bond lengths (\u00c5) drive the layout into a helix"
+      }
+    ]
+  },
+  "display": {
+    "d3EnablePhysics": true,
+    "d3Charge": -40,
+    "d3LinkDistanceMode": "expression",
+    "d3LinkDistanceExpression": "Number(properties.length) * 2.5",
+    "d3LinkStrength": 0.9,
+    "d3VelocityDecay": 0.5,
+    "d3CollisionMultiplier": 0.0,
+    "d3CenterForce": false,
+    "showGrid": false,
+    "nodeLabelMode": "expression",
+    "nodeLabelExpression": "properties.label",
+    "nodeSizingMode": "constant",
+    "nodeSizingConstant": 3,
+    "nodeColors": {
+      "a": {
+        "r": 234,
+        "g": 67,
+        "b": 53,
+        "a": 1
+      },
+      "t": {
+        "r": 66,
+        "g": 133,
+        "b": 244,
+        "a": 1
+      },
+      "g": {
+        "r": 251,
+        "g": 188,
+        "b": 5,
+        "a": 1
+      },
+      "c": {
+        "r": 52,
+        "g": 168,
+        "b": 83,
+        "a": 1
+      }
+    },
+    "edgeColors": {
+      "base_pair": {
+        "r": 120,
+        "g": 120,
+        "b": 120,
+        "a": 0.9
+      },
+      "backbone": {
+        "r": 60,
+        "g": 60,
+        "b": 60,
+        "a": 0.9
+      },
+      "stack": {
+        "r": 150,
+        "g": 150,
+        "b": 150,
+        "a": 0.15
+      }
+    },
+    "edgeWidths": {
+      "base_pair": 2.0,
+      "backbone": 2.5,
+      "stack": 0.5
+    }
+  },
+  "nodes": [
+    {
+      "id": "S0_0",
+      "type": "c",
+      "properties": {
+        "label": "C",
+        "strand": 0,
+        "base_pair": 0
+      }
+    },
+    {
+      "id": "S1_0",
+      "type": "g",
+      "properties": {
+        "label": "G",
+        "strand": 1,
+        "base_pair": 0
+      }
+    },
+    {
+      "id": "S0_1",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 1
+      }
+    },
+    {
+      "id": "S1_1",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 1
+      }
+    },
+    {
+      "id": "S0_2",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 2
+      }
+    },
+    {
+      "id": "S1_2",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 2
+      }
+    },
+    {
+      "id": "S0_3",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 3
+      }
+    },
+    {
+      "id": "S1_3",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 3
+      }
+    },
+    {
+      "id": "S0_4",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 4
+      }
+    },
+    {
+      "id": "S1_4",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 4
+      }
+    },
+    {
+      "id": "S0_5",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 5
+      }
+    },
+    {
+      "id": "S1_5",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 5
+      }
+    },
+    {
+      "id": "S0_6",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 6
+      }
+    },
+    {
+      "id": "S1_6",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 6
+      }
+    },
+    {
+      "id": "S0_7",
+      "type": "g",
+      "properties": {
+        "label": "G",
+        "strand": 0,
+        "base_pair": 7
+      }
+    },
+    {
+      "id": "S1_7",
+      "type": "c",
+      "properties": {
+        "label": "C",
+        "strand": 1,
+        "base_pair": 7
+      }
+    },
+    {
+      "id": "S0_8",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 0,
+        "base_pair": 8
+      }
+    },
+    {
+      "id": "S1_8",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 1,
+        "base_pair": 8
+      }
+    },
+    {
+      "id": "S0_9",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 9
+      }
+    },
+    {
+      "id": "S1_9",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 9
+      }
+    },
+    {
+      "id": "S0_10",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 10
+      }
+    },
+    {
+      "id": "S1_10",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 10
+      }
+    },
+    {
+      "id": "S0_11",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 11
+      }
+    },
+    {
+      "id": "S1_11",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 11
+      }
+    },
+    {
+      "id": "S0_12",
+      "type": "g",
+      "properties": {
+        "label": "G",
+        "strand": 0,
+        "base_pair": 12
+      }
+    },
+    {
+      "id": "S1_12",
+      "type": "c",
+      "properties": {
+        "label": "C",
+        "strand": 1,
+        "base_pair": 12
+      }
+    },
+    {
+      "id": "S0_13",
+      "type": "c",
+      "properties": {
+        "label": "C",
+        "strand": 0,
+        "base_pair": 13
+      }
+    },
+    {
+      "id": "S1_13",
+      "type": "g",
+      "properties": {
+        "label": "G",
+        "strand": 1,
+        "base_pair": 13
+      }
+    },
+    {
+      "id": "S0_14",
+      "type": "c",
+      "properties": {
+        "label": "C",
+        "strand": 0,
+        "base_pair": 14
+      }
+    },
+    {
+      "id": "S1_14",
+      "type": "g",
+      "properties": {
+        "label": "G",
+        "strand": 1,
+        "base_pair": 14
+      }
+    },
+    {
+      "id": "S0_15",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 0,
+        "base_pair": 15
+      }
+    },
+    {
+      "id": "S1_15",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 1,
+        "base_pair": 15
+      }
+    },
+    {
+      "id": "S0_16",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 16
+      }
+    },
+    {
+      "id": "S1_16",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 16
+      }
+    },
+    {
+      "id": "S0_17",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 0,
+        "base_pair": 17
+      }
+    },
+    {
+      "id": "S1_17",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 1,
+        "base_pair": 17
+      }
+    },
+    {
+      "id": "S0_18",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 18
+      }
+    },
+    {
+      "id": "S1_18",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 18
+      }
+    },
+    {
+      "id": "S0_19",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 0,
+        "base_pair": 19
+      }
+    },
+    {
+      "id": "S1_19",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 1,
+        "base_pair": 19
+      }
+    },
+    {
+      "id": "S0_20",
+      "type": "c",
+      "properties": {
+        "label": "C",
+        "strand": 0,
+        "base_pair": 20
+      }
+    },
+    {
+      "id": "S1_20",
+      "type": "g",
+      "properties": {
+        "label": "G",
+        "strand": 1,
+        "base_pair": 20
+      }
+    },
+    {
+      "id": "S0_21",
+      "type": "t",
+      "properties": {
+        "label": "T",
+        "strand": 0,
+        "base_pair": 21
+      }
+    },
+    {
+      "id": "S1_21",
+      "type": "a",
+      "properties": {
+        "label": "A",
+        "strand": 1,
+        "base_pair": 21
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "base_pair-00-10",
+      "type": "base_pair",
+      "source_id": "S0_0",
+      "target_id": "S1_0",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-00-01",
+      "type": "backbone",
+      "source_id": "S0_0",
+      "target_id": "S0_1",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-10-11",
+      "type": "backbone",
+      "source_id": "S1_0",
+      "target_id": "S1_1",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-00-11",
+      "type": "stack",
+      "source_id": "S0_0",
+      "target_id": "S1_1",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-10-01",
+      "type": "stack",
+      "source_id": "S1_0",
+      "target_id": "S0_1",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-01-11",
+      "type": "base_pair",
+      "source_id": "S0_1",
+      "target_id": "S1_1",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-01-02",
+      "type": "backbone",
+      "source_id": "S0_1",
+      "target_id": "S0_2",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-11-12",
+      "type": "backbone",
+      "source_id": "S1_1",
+      "target_id": "S1_2",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-01-12",
+      "type": "stack",
+      "source_id": "S0_1",
+      "target_id": "S1_2",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-11-02",
+      "type": "stack",
+      "source_id": "S1_1",
+      "target_id": "S0_2",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-02-12",
+      "type": "base_pair",
+      "source_id": "S0_2",
+      "target_id": "S1_2",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-02-03",
+      "type": "backbone",
+      "source_id": "S0_2",
+      "target_id": "S0_3",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-12-13",
+      "type": "backbone",
+      "source_id": "S1_2",
+      "target_id": "S1_3",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-02-13",
+      "type": "stack",
+      "source_id": "S0_2",
+      "target_id": "S1_3",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-12-03",
+      "type": "stack",
+      "source_id": "S1_2",
+      "target_id": "S0_3",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-03-13",
+      "type": "base_pair",
+      "source_id": "S0_3",
+      "target_id": "S1_3",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-03-04",
+      "type": "backbone",
+      "source_id": "S0_3",
+      "target_id": "S0_4",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-13-14",
+      "type": "backbone",
+      "source_id": "S1_3",
+      "target_id": "S1_4",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-03-14",
+      "type": "stack",
+      "source_id": "S0_3",
+      "target_id": "S1_4",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-13-04",
+      "type": "stack",
+      "source_id": "S1_3",
+      "target_id": "S0_4",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-04-14",
+      "type": "base_pair",
+      "source_id": "S0_4",
+      "target_id": "S1_4",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-04-05",
+      "type": "backbone",
+      "source_id": "S0_4",
+      "target_id": "S0_5",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-14-15",
+      "type": "backbone",
+      "source_id": "S1_4",
+      "target_id": "S1_5",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-04-15",
+      "type": "stack",
+      "source_id": "S0_4",
+      "target_id": "S1_5",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-14-05",
+      "type": "stack",
+      "source_id": "S1_4",
+      "target_id": "S0_5",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-05-15",
+      "type": "base_pair",
+      "source_id": "S0_5",
+      "target_id": "S1_5",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-05-06",
+      "type": "backbone",
+      "source_id": "S0_5",
+      "target_id": "S0_6",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-15-16",
+      "type": "backbone",
+      "source_id": "S1_5",
+      "target_id": "S1_6",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-05-16",
+      "type": "stack",
+      "source_id": "S0_5",
+      "target_id": "S1_6",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-15-06",
+      "type": "stack",
+      "source_id": "S1_5",
+      "target_id": "S0_6",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-06-16",
+      "type": "base_pair",
+      "source_id": "S0_6",
+      "target_id": "S1_6",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-06-07",
+      "type": "backbone",
+      "source_id": "S0_6",
+      "target_id": "S0_7",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-16-17",
+      "type": "backbone",
+      "source_id": "S1_6",
+      "target_id": "S1_7",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-06-17",
+      "type": "stack",
+      "source_id": "S0_6",
+      "target_id": "S1_7",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-16-07",
+      "type": "stack",
+      "source_id": "S1_6",
+      "target_id": "S0_7",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-07-17",
+      "type": "base_pair",
+      "source_id": "S0_7",
+      "target_id": "S1_7",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-07-08",
+      "type": "backbone",
+      "source_id": "S0_7",
+      "target_id": "S0_8",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-17-18",
+      "type": "backbone",
+      "source_id": "S1_7",
+      "target_id": "S1_8",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-07-18",
+      "type": "stack",
+      "source_id": "S0_7",
+      "target_id": "S1_8",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-17-08",
+      "type": "stack",
+      "source_id": "S1_7",
+      "target_id": "S0_8",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-08-18",
+      "type": "base_pair",
+      "source_id": "S0_8",
+      "target_id": "S1_8",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-08-09",
+      "type": "backbone",
+      "source_id": "S0_8",
+      "target_id": "S0_9",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-18-19",
+      "type": "backbone",
+      "source_id": "S1_8",
+      "target_id": "S1_9",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-08-19",
+      "type": "stack",
+      "source_id": "S0_8",
+      "target_id": "S1_9",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-18-09",
+      "type": "stack",
+      "source_id": "S1_8",
+      "target_id": "S0_9",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-09-19",
+      "type": "base_pair",
+      "source_id": "S0_9",
+      "target_id": "S1_9",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-09-010",
+      "type": "backbone",
+      "source_id": "S0_9",
+      "target_id": "S0_10",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-19-110",
+      "type": "backbone",
+      "source_id": "S1_9",
+      "target_id": "S1_10",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-09-110",
+      "type": "stack",
+      "source_id": "S0_9",
+      "target_id": "S1_10",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-19-010",
+      "type": "stack",
+      "source_id": "S1_9",
+      "target_id": "S0_10",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-010-110",
+      "type": "base_pair",
+      "source_id": "S0_10",
+      "target_id": "S1_10",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-010-011",
+      "type": "backbone",
+      "source_id": "S0_10",
+      "target_id": "S0_11",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-110-111",
+      "type": "backbone",
+      "source_id": "S1_10",
+      "target_id": "S1_11",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-010-111",
+      "type": "stack",
+      "source_id": "S0_10",
+      "target_id": "S1_11",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-110-011",
+      "type": "stack",
+      "source_id": "S1_10",
+      "target_id": "S0_11",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-011-111",
+      "type": "base_pair",
+      "source_id": "S0_11",
+      "target_id": "S1_11",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-011-012",
+      "type": "backbone",
+      "source_id": "S0_11",
+      "target_id": "S0_12",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-111-112",
+      "type": "backbone",
+      "source_id": "S1_11",
+      "target_id": "S1_12",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-011-112",
+      "type": "stack",
+      "source_id": "S0_11",
+      "target_id": "S1_12",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-111-012",
+      "type": "stack",
+      "source_id": "S1_11",
+      "target_id": "S0_12",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-012-112",
+      "type": "base_pair",
+      "source_id": "S0_12",
+      "target_id": "S1_12",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-012-013",
+      "type": "backbone",
+      "source_id": "S0_12",
+      "target_id": "S0_13",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-112-113",
+      "type": "backbone",
+      "source_id": "S1_12",
+      "target_id": "S1_13",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-012-113",
+      "type": "stack",
+      "source_id": "S0_12",
+      "target_id": "S1_13",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-112-013",
+      "type": "stack",
+      "source_id": "S1_12",
+      "target_id": "S0_13",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-013-113",
+      "type": "base_pair",
+      "source_id": "S0_13",
+      "target_id": "S1_13",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-013-014",
+      "type": "backbone",
+      "source_id": "S0_13",
+      "target_id": "S0_14",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-113-114",
+      "type": "backbone",
+      "source_id": "S1_13",
+      "target_id": "S1_14",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-013-114",
+      "type": "stack",
+      "source_id": "S0_13",
+      "target_id": "S1_14",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-113-014",
+      "type": "stack",
+      "source_id": "S1_13",
+      "target_id": "S0_14",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-014-114",
+      "type": "base_pair",
+      "source_id": "S0_14",
+      "target_id": "S1_14",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-014-015",
+      "type": "backbone",
+      "source_id": "S0_14",
+      "target_id": "S0_15",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-114-115",
+      "type": "backbone",
+      "source_id": "S1_14",
+      "target_id": "S1_15",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-014-115",
+      "type": "stack",
+      "source_id": "S0_14",
+      "target_id": "S1_15",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-114-015",
+      "type": "stack",
+      "source_id": "S1_14",
+      "target_id": "S0_15",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-015-115",
+      "type": "base_pair",
+      "source_id": "S0_15",
+      "target_id": "S1_15",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-015-016",
+      "type": "backbone",
+      "source_id": "S0_15",
+      "target_id": "S0_16",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-115-116",
+      "type": "backbone",
+      "source_id": "S1_15",
+      "target_id": "S1_16",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-015-116",
+      "type": "stack",
+      "source_id": "S0_15",
+      "target_id": "S1_16",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-115-016",
+      "type": "stack",
+      "source_id": "S1_15",
+      "target_id": "S0_16",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-016-116",
+      "type": "base_pair",
+      "source_id": "S0_16",
+      "target_id": "S1_16",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-016-017",
+      "type": "backbone",
+      "source_id": "S0_16",
+      "target_id": "S0_17",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-116-117",
+      "type": "backbone",
+      "source_id": "S1_16",
+      "target_id": "S1_17",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-016-117",
+      "type": "stack",
+      "source_id": "S0_16",
+      "target_id": "S1_17",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-116-017",
+      "type": "stack",
+      "source_id": "S1_16",
+      "target_id": "S0_17",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-017-117",
+      "type": "base_pair",
+      "source_id": "S0_17",
+      "target_id": "S1_17",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-017-018",
+      "type": "backbone",
+      "source_id": "S0_17",
+      "target_id": "S0_18",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-117-118",
+      "type": "backbone",
+      "source_id": "S1_17",
+      "target_id": "S1_18",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-017-118",
+      "type": "stack",
+      "source_id": "S0_17",
+      "target_id": "S1_18",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-117-018",
+      "type": "stack",
+      "source_id": "S1_17",
+      "target_id": "S0_18",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-018-118",
+      "type": "base_pair",
+      "source_id": "S0_18",
+      "target_id": "S1_18",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-018-019",
+      "type": "backbone",
+      "source_id": "S0_18",
+      "target_id": "S0_19",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-118-119",
+      "type": "backbone",
+      "source_id": "S1_18",
+      "target_id": "S1_19",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-018-119",
+      "type": "stack",
+      "source_id": "S0_18",
+      "target_id": "S1_19",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-118-019",
+      "type": "stack",
+      "source_id": "S1_18",
+      "target_id": "S0_19",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-019-119",
+      "type": "base_pair",
+      "source_id": "S0_19",
+      "target_id": "S1_19",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-019-020",
+      "type": "backbone",
+      "source_id": "S0_19",
+      "target_id": "S0_20",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-119-120",
+      "type": "backbone",
+      "source_id": "S1_19",
+      "target_id": "S1_20",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-019-120",
+      "type": "stack",
+      "source_id": "S0_19",
+      "target_id": "S1_20",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-119-020",
+      "type": "stack",
+      "source_id": "S1_19",
+      "target_id": "S0_20",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-020-120",
+      "type": "base_pair",
+      "source_id": "S0_20",
+      "target_id": "S1_20",
+      "properties": {
+        "length": 20.0
+      }
+    },
+    {
+      "id": "backbone-020-021",
+      "type": "backbone",
+      "source_id": "S0_20",
+      "target_id": "S0_21",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "backbone-120-121",
+      "type": "backbone",
+      "source_id": "S1_20",
+      "target_id": "S1_21",
+      "properties": {
+        "length": 7.054
+      }
+    },
+    {
+      "id": "stack-020-121",
+      "type": "stack",
+      "source_id": "S0_20",
+      "target_id": "S1_21",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "stack-120-021",
+      "type": "stack",
+      "source_id": "S1_20",
+      "target_id": "S0_21",
+      "properties": {
+        "length": 19.323
+      }
+    },
+    {
+      "id": "base_pair-021-121",
+      "type": "base_pair",
+      "source_id": "S0_21",
+      "target_id": "S1_21",
+      "properties": {
+        "length": 20.0
+      }
+    }
+  ]
+}
