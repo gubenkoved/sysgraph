@@ -1905,12 +1905,13 @@ body {
 }
 
 /* dark theme: the calm accent-blue reads dimly against the dark canvas, so
-   make the running state pop here — a solid bright-blue filled pill with a
-   light glyph and a strong glow — without touching the light-theme look */
+   give the running state a gentle lift here — a soft accent-tinted pill with
+   an accent-colored glyph and a faint glow — subtle yet legible, without
+   touching the light-theme look */
 :root[data-theme="dark"] #physics-indicator.is-running md-icon-button {
-  --md-icon-button-icon-color: #ffffff;
-  background: var(--accent-info);
-  box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent-info) 70%, transparent);
+  --md-icon-button-icon-color: var(--accent-info);
+  background: color-mix(in srgb, var(--accent-info) 24%, transparent);
+  box-shadow: 0 0 8px 0 color-mix(in srgb, var(--accent-info) 30%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
