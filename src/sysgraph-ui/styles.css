@@ -1832,13 +1832,6 @@ body.mode-3d #zoom-indicator {
   display: none;
 }
 
-/* 3D render mode: the renderer embeds its own navigation hint text along the
-   bottom-center of the viewport, which collides with our centered status line.
-   raise the status line clear of it while in 3D */
-body.mode-3d #statusLine {
-  bottom: calc(var(--spacing-md) + 10px);
-}
-
 .muted {
   color: var(--text-muted);
 }

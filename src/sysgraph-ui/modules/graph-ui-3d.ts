@@ -600,6 +600,8 @@ export function build3DRenderer(host: HTMLElement, handlers: RendererHandlers): 
         .onLinkRightClick(handlers.onLinkRightClick)
         .onBackgroundRightClick(handlers.onBackgroundRightClick)
         .onBackgroundClick(handlers.onBackgroundClick)
+        // suppress the library's built-in navigation hint overlay
+        .showNavInfo(false)
         // transparent so the theme-aware #graph CSS background shows through
         .backgroundColor('rgba(0,0,0,0)');
 
