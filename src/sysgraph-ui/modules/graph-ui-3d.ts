@@ -57,6 +57,32 @@ const AXIS_CROSS_OPACITY = 0.35;
 // the showGrid setting (see updateAxisCross3D)
 let axisCross: { visible: boolean } | null = null;
 
+// orbit-center marker: a small cross drawn at the TrackballControls pivot point
+// (controls().target) so the user can see what the camera rotates/pans around.
+// it shares the axis-cross red tint but is smaller and fades in only while the
+// camera is moving, fading back out once navigation settles
+const ORBIT_CENTER_HALF_3D = 10;
+const ORBIT_CENTER_MAX_OPACITY = 0.6;
+// how long the marker takes to fade out after the camera stops moving
+const ORBIT_CENTER_FADE_MS = 450;
+// movement below this (world units, per frame) counts as "idle" so tiny
+// floating-point jitter doesn't keep the marker lit forever
+const ORBIT_CENTER_MOVE_EPSILON = 1e-3;
+
+type Vec3 = { x: number; y: number; z: number };
+
+// the orbit-center marker plus the bookkeeping needed to detect camera motion
+// and drive its fade; kept module-level so the per-frame update can reach it
+let orbitCenter:
+    | {
+          line: { visible: boolean; position: { set(x: number, y: number, z: number): void } };
+          material: { opacity: number };
+          lastCam: Vec3;
+          lastTarget: Vec3;
+          lastActiveAt: number;
+      }
+    | null = null;
+
 /**
  * Builds a persistent text sprite for a node's label, honoring the current
  * label mode, outline toggle and theme. Returns undefined when the node has no
@@ -567,6 +593,93 @@ export function updateAxisCross3D(): void {
 }
 
 /**
+ * Adds the orbit-center marker — a small cross drawn at the camera's rotation
+ * pivot. Created hidden/transparent; `updateOrbitCenter3D` positions it at the
+ * controls target and fades it in while the camera is moving.
+ */
+function addOrbitCenter3D(fg3d: ForceGraph3DInstance): void {
+    const scene = (fg3d as unknown as { scene(): SceneObject }).scene();
+    const h = ORBIT_CENTER_HALF_3D;
+    const material = new THREE.LineBasicMaterial({
+        color: new THREE.Color(AXIS_CROSS_COLOR),
+        transparent: true,
+        opacity: 0,
+        // keep the marker visible through nodes/links so the pivot is always
+        // readable while navigating
+        depthTest: false,
+    });
+    const points = [
+        new THREE.Vector3(-h, 0, 0), new THREE.Vector3(h, 0, 0),
+        new THREE.Vector3(0, -h, 0), new THREE.Vector3(0, h, 0),
+        new THREE.Vector3(0, 0, -h), new THREE.Vector3(0, 0, h),
+    ];
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.LineSegments(geom, material) as {
+        visible: boolean;
+        position: { set(x: number, y: number, z: number): void };
+        renderOrder: number;
+    };
+    line.visible = false;
+    // draw after the rest of the scene so the depth-test-free marker sits on top
+    line.renderOrder = 999;
+    scene.add(line);
+    orbitCenter = {
+        line,
+        material: material as unknown as { opacity: number },
+        lastCam: { x: 0, y: 0, z: 0 },
+        lastTarget: { x: 0, y: 0, z: 0 },
+        lastActiveAt: 0,
+    };
+}
+
+/**
+ * Positions the orbit-center marker at the camera's pivot (controls target) and
+ * fades it in while the camera is moving, fading out when navigation settles.
+ * Gated by the shared `showGrid` setting. Called every frame by the orchestrator.
+ */
+export function updateOrbitCenter3D(fg: ForceGraphInstance): void {
+    if (!orbitCenter) return;
+
+    if (!settings.showGrid) {
+        orbitCenter.line.visible = false;
+        return;
+    }
+
+    const camApi = fg as unknown as {
+        cameraPosition(): Vec3;
+        controls(): { target?: Vec3 };
+    };
+    const cam = camApi.cameraPosition();
+    const target = camApi.controls().target ?? { x: 0, y: 0, z: 0 };
+
+    // treat the camera as "moving" if either its position or the pivot shifted
+    // since the last frame; either changes during orbit, pan or zoom
+    const moved =
+        Math.abs(cam.x - orbitCenter.lastCam.x) > ORBIT_CENTER_MOVE_EPSILON ||
+        Math.abs(cam.y - orbitCenter.lastCam.y) > ORBIT_CENTER_MOVE_EPSILON ||
+        Math.abs(cam.z - orbitCenter.lastCam.z) > ORBIT_CENTER_MOVE_EPSILON ||
+        Math.abs(target.x - orbitCenter.lastTarget.x) > ORBIT_CENTER_MOVE_EPSILON ||
+        Math.abs(target.y - orbitCenter.lastTarget.y) > ORBIT_CENTER_MOVE_EPSILON ||
+        Math.abs(target.z - orbitCenter.lastTarget.z) > ORBIT_CENTER_MOVE_EPSILON;
+
+    const now = performance.now();
+    if (moved) orbitCenter.lastActiveAt = now;
+    orbitCenter.lastCam = { x: cam.x, y: cam.y, z: cam.z };
+    orbitCenter.lastTarget = { x: target.x, y: target.y, z: target.z };
+
+    const fade = 1 - (now - orbitCenter.lastActiveAt) / ORBIT_CENTER_FADE_MS;
+    const opacity = Math.max(0, Math.min(1, fade)) * ORBIT_CENTER_MAX_OPACITY;
+    if (opacity <= 0) {
+        orbitCenter.line.visible = false;
+        return;
+    }
+
+    orbitCenter.line.position.set(target.x, target.y, target.z);
+    orbitCenter.material.opacity = opacity;
+    orbitCenter.line.visible = true;
+}
+
+/**
  * Builds the 3D renderer mounted into `host`, sized to the host's bounding box.
  * Interaction callbacks come from `handlers` (owned by the orchestrator) so this
  * module stays free of circular dependencies on graph-ui.
@@ -622,6 +735,9 @@ export function build3DRenderer(host: HTMLElement, handlers: RendererHandlers): 
 
     // origin axis cross — the 3D analogue of the 2D center cross
     addAxisCross3D(fg3d);
+
+    // orbit-center marker drawn at the camera's rotation pivot
+    addOrbitCenter3D(fg3d);
 
     // TrackballControls derives rotation by normalising the pointer delta
     // against a cached viewport (`controls.screen`) that it only computes in its

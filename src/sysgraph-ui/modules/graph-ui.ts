@@ -22,7 +22,7 @@ import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
 import { build2DRenderer, focusNode2D, recenter2D } from './graph-ui-2d.js';
-import { build3DRenderer, focusNode3D, pulseSearchMatches3D, recenter3D, refreshColors3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updatePinIndicators3D } from './graph-ui-3d.js';
+import { build3DRenderer, focusNode3D, pulseSearchMatches3D, recenter3D, refreshColors3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D } from './graph-ui-3d.js';
 import {
     clearColorCaches,
     getNodeVal,
@@ -266,6 +266,7 @@ function frameLoop(): void {
         updateAdjacencyCounts3D(ForceGraphInstance);
         updateHeatmapValues3D(ForceGraphInstance);
         updateAxisCross3D();
+        updateOrbitCenter3D(ForceGraphInstance);
     }
     callFramePost();
     requestAnimationFrame(frameLoop);

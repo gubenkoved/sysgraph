@@ -129,7 +129,7 @@ sysgraph/
 │           ├── graph-ui-types.ts # shared renderer types (FGNode, FGLink, instance types, RendererHandlers)
 │           ├── graph-ui-appearance.ts # renderer-agnostic appearance (colors, scales, resolve* accessors, pin helpers)
 │           ├── graph-ui-2d.ts    # 2D canvas renderer (force-graph): node/link draw, grid, planar d3 forces
-│           ├── graph-ui-3d.ts    # 3D WebGL renderer (3d-force-graph): label sprites, pin spikes, search pulse, axis cross
+│           ├── graph-ui-3d.ts    # 3D WebGL renderer (3d-force-graph): label sprites, pin spikes, search pulse, axis cross, orbit-center marker
 │           ├── render-mode.ts    # 2D/3D render-mode persistence (localStorage)
 │           ├── graph-ui-helpers.ts # Label-expression helpers (e.g. bytes_to_human)
 │           ├── graph-algs.ts     # BFS algorithm for highlights
@@ -317,7 +317,7 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 **npm dependencies** (`package.json`):
 - `force-graph` — Canvas-based force-directed graph (2D renderer)
 - `3d-force-graph` — WebGL/Three.js force-directed graph (3D renderer)
-- `three` — 3D engine used by the 3D renderer for scene objects (pin spikes, axis cross); ships no types, declared as an untyped module in `globals.d.ts`
+- `three` — 3D engine used by the 3D renderer for scene objects (pin spikes, axis cross, orbit-center marker); ships no types, declared as an untyped module in `globals.d.ts`
 - `three-spritetext` — camera-facing text sprites for 3D node labels & badges
 - `d3@7` — Physics simulation, color utilities
 - `dockview-core` — Dockable panel layout (settings/analytics/details panels around the graph)
@@ -360,7 +360,7 @@ Key commands (1:1 handlers): `"reload-graph"`, `"export-graph"`, `"import-graph"
 - **`graph-ui.ts` (orchestrator/facade)** — owns the active renderer instance, the interaction handlers (`RendererHandlers`), camera dispatch, the adjacency filter, context menus, the graph-data refresh pipeline, and a single always-on rAF frame loop. `setRenderMode()` swaps the active renderer; most modules import the live-binding `ForceGraphInstance` from here.
 - **`graph-ui-appearance.ts`** — renderer-agnostic appearance: color caches/scales, palettes, search match-color computation, tooltips, pin helpers, and the shared `resolve*` accessors (`resolveNodeAppearance`/`resolveNodeColor`, `resolveLink*`) so both renderers decorate nodes/links identically.
 - **`graph-ui-2d.ts`** — 2D canvas renderer (`force-graph`): per-node/link canvas draw callbacks, the reference grid + center cross, the planar d3 forces, and `labelFontSize` (a 2D zoom concept). Custom canvas drawing for nodes (circles, labels, selection rings, pulsing search rings), BFS hover dimming, adjacency `+N` badges, auto-curvature for parallel edges.
-- **`graph-ui-3d.ts`** — 3D WebGL renderer (`3d-force-graph` + `three`): persistent label sprites (`three-spritetext`), the search match recolor + per-frame pulse, the pinned-node spike marker, the adjacency `+N` badge sprite, and the origin axis cross. The 3D renderer has no per-frame canvas hook, so per-frame effects (pulse, pin/badge sync, axis-cross visibility) are driven from the orchestrator's rAF loop. `refreshColors3D()` re-applies only the color accessors (cheap, no sprite rebuild) for search-as-you-type.
+- **`graph-ui-3d.ts`** — 3D WebGL renderer (`3d-force-graph` + `three`): persistent label sprites (`three-spritetext`), the search match recolor + per-frame pulse, the pinned-node spike marker, the adjacency `+N` badge sprite, the origin axis cross, and the orbit-center marker (a small cross at the camera's rotation pivot that fades in while navigating, gated by `showGrid`). The 3D renderer has no per-frame canvas hook, so per-frame effects (pulse, pin/badge sync, axis-cross visibility, orbit-center fade) are driven from the orchestrator's rAF loop. `refreshColors3D()` re-applies only the color accessors (cheap, no sprite rebuild) for search-as-you-type.
 - **`graph-ui-types.ts`** — shared types (`FGNode`, `FGLink`, the two instance types, `RendererHandlers`).
 - **`render-mode.ts`** — persists the 2D/3D choice in `localStorage` (`sysgraph:render-mode`); `is3D()` is the shared predicate.
 
