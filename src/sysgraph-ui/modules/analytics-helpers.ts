@@ -1,4 +1,5 @@
 import type { EdgeWeightFn } from './analytics-algs.js';
+import { buildScopedExpression } from './expression.js';
 import type { GraphEdge } from './graph.js';
 
 /**
@@ -11,18 +12,16 @@ export const DEFAULT_EDGE_WEIGHT_EXPRESSION =
 
 /**
  * Compiles an edge-weight expression into a weight function. The expression is
- * evaluated with `edge` and its `properties` in scope (mirroring the node-size
- * expression mechanism). On any error the weight falls back to 1.
+ * evaluated with `edge` and each of its `properties` exposed as bare
+ * identifiers (mirroring the node/link expression mechanism); well-known edge
+ * keys win over a same-named property. On any error the weight falls back to 1.
  */
 export function makeEdgeWeightFn(expression: string): EdgeWeightFn {
     const expr = expression.trim() || DEFAULT_EDGE_WEIGHT_EXPRESSION;
-    let compiled: ((edge: GraphEdge, properties: Record<string, unknown>) => unknown) | null = null;
+    let compiled: ((...args: unknown[]) => unknown) | null = null;
     try {
-        compiled = new Function(
-            'edge',
-            'properties',
-            `with(properties){return (${expr})}`,
-        ) as (edge: GraphEdge, properties: Record<string, unknown>) => unknown;
+        // properties < edge so well-known edge keys win over a same-named property
+        compiled = buildScopedExpression(expr, ['edge', 'properties'], ['properties', 'edge']);
     } catch {
         compiled = null;
     }
@@ -46,7 +45,7 @@ export function makeEdgeWeightFn(expression: string): EdgeWeightFn {
 export function validateEdgeWeightExpression(expression: string): string | null {
     const expr = expression.trim() || DEFAULT_EDGE_WEIGHT_EXPRESSION;
     try {
-        new Function('edge', 'properties', `with(properties){return (${expr})}`);
+        buildScopedExpression(expr, ['edge', 'properties'], ['properties', 'edge']);
         return null;
     } catch (err) {
         return err instanceof Error ? err.message : 'invalid expression';

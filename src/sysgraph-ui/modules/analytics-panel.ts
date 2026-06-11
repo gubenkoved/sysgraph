@@ -12,6 +12,7 @@ import type { Community } from './analytics-communities.js';
 import { validateEdgeWeightExpression } from './analytics-helpers.js';
 import { EVT_ANALYTICS_UPDATED, EVT_NODE_CLICKED, EVT_SELECTION_CHANGED, PANEL_ANALYTICS } from './constants.js';
 import { emit, on } from './event-bus.js';
+import { createExpressionHelpTrigger } from './expression-help.js';
 import { analyticsHeatmapColorScale, centerOnNode, communityColor, refreshGraphColors } from './graph-ui.js';
 import { closePanel, openPanel, registerPanel } from './layout.js';
 import { getGraph, setAnalyticsParam, state } from './state.js';
@@ -164,6 +165,9 @@ function buildParamRow(param: ParamSpec): HTMLElement {
             param.onInput?.(input.value);
         });
         row.appendChild(input);
+        if (param.type === 'expression') {
+            row.appendChild(createExpressionHelpTrigger());
+        }
     }
     return row;
 }

@@ -132,6 +132,8 @@ sysgraph/
 │           ├── graph-ui-2d.ts    # 2D canvas renderer (force-graph): node/link draw, grid, planar d3 forces
 │           ├── graph-ui-3d.ts    # 3D WebGL renderer (3d-force-graph): label sprites, pin spikes, search pulse, axis cross, orbit-center marker
 │           ├── render-mode.ts    # 2D/3D render-mode persistence (localStorage)
+│           ├── expression.ts     # shared compiler for user expressions (label/sizing/link-distance/edge-weight); properties exposed as bare names, well-known keys always win
+│           ├── expression-help.ts # shared help-icon + popover explaining how expressions are evaluated
 │           ├── graph-ui-helpers.ts # Label-expression helpers (e.g. bytes_to_human)
 │           ├── graph-algs.ts     # BFS algorithm for highlights
 │           ├── graph-display.ts  # Persistence policy for graph-embedded `display` settings
@@ -151,7 +153,7 @@ sysgraph/
 │           ├── analytics-panel.ts # Analytics panel UI (algorithm picker, run/reset)
 │           ├── analytics-algs.ts # Graph algorithms (stats, shortest path, MST, degree centrality)
 │           ├── analytics-communities.ts # Louvain community detection (weighted, undirected)
-│           ├── analytics-helpers.ts # Edge-weight expression helpers for algorithms
+│           ├── analytics-helpers.ts # Edge-weight expression helpers (uses shared expression compiler)
 │           ├── context-menu.ts   # Right-click context menu
 │           ├── long-press.ts     # Long-press gesture → context menu on touch devices
 │           ├── quick-start.ts    # First-run quick-start overlay (load file/example/edit)

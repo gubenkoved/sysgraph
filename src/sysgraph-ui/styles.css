@@ -383,7 +383,8 @@ body {
 }
 
 /* grouped section, mirrors .analytics-block separation */
-.search-help-block {
+.search-help-block,
+.help-block {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -391,12 +392,14 @@ body {
   border-top: 1px solid var(--border-subtle);
 }
 
-.search-help-block:first-child {
+.search-help-block:first-child,
+.help-block:first-child {
   padding-top: 0;
   border-top: none;
 }
 
-.search-help-block-title {
+.search-help-block-title,
+.help-block-title {
   margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-xs);
   font-weight: 600;
@@ -407,13 +410,15 @@ body {
 }
 
 /* aligned row: fixed-width code column + description, like .analytics-field */
-.search-help-row {
+.search-help-row,
+.help-row {
   display: flex;
   align-items: baseline;
   gap: var(--spacing-sm);
 }
 
-.search-help-code {
+.search-help-code,
+.help-code {
   flex: 0 0 132px;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
@@ -424,7 +429,8 @@ body {
   overflow-wrap: break-word;
 }
 
-.search-help-desc {
+.search-help-desc,
+.help-desc {
   flex: 1;
   min-width: 0;
   font-size: var(--font-size-sm);
@@ -445,6 +451,39 @@ body {
 
 .search-help-footer a:hover {
   text-decoration: underline;
+}
+
+/* shared help popover for expression fields (settings + analytics); a single
+   floating, fixed-positioned panel reused by every help trigger */
+.expr-help-popover {
+  display: none;
+  position: fixed;
+  width: 320px;
+  max-width: calc(100vw - 2 * var(--spacing-lg));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  z-index: var(--z-search-help);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: 0 4px 12px var(--shadow-md);
+  background: var(--bg-panel);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--text-primary);
+}
+
+.expr-help-popover.open {
+  display: block;
+}
+
+/* compact help icon shown beside an expression input */
+.expr-help-trigger {
+  --md-icon-button-icon-size: 16px;
+  --md-icon-button-state-layer-width: 24px;
+  --md-icon-button-state-layer-height: 24px;
+  flex: 0 0 auto;
+  color: var(--text-muted);
 }
 
 /* ── Content & Graph ─────────────────────────────────────── */
@@ -1695,10 +1734,13 @@ body {
   font-size: var(--font-size-sm);
 }
 
-/* settings live in a dock panel now; fill the panel and scroll internally */
+/* settings live in a dock panel now; fill the panel and scroll internally.
+   overflow-x is clipped: tweakpane fits the width, so horizontal scroll is
+   never wanted (and the help-icon touch targets must not provoke one) */
 #settingsPane {
   width: 100%;
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: var(--spacing-xs);
 }
@@ -1744,6 +1786,24 @@ body {
    expression that fails to compile) */
 #settingsPane .sg-binding-invalid .tp-txtv_i {
   border: 1px solid var(--accent-danger);
+}
+
+/* expression binding rows carry a help icon pinned to the row's right edge;
+   the input gets right padding so its text never slides under the icon */
+#settingsPane .sg-expr-binding {
+  position: relative;
+}
+
+#settingsPane .sg-expr-binding .tp-txtv_i {
+  box-sizing: border-box;
+  padding-right: 26px;
+}
+
+#settingsPane .sg-expr-binding .expr-help-trigger {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Color-picker popup. The pane's base background is intentionally transparent

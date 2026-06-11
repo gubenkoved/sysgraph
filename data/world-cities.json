@@ -30,7 +30,7 @@
     "nodeSizingMode": "constant",
     "nodeSizingConstant": 2.5,
     "nodeLabelMode": "expression",
-    "nodeLabelExpression": "properties.label",
+    "nodeLabelExpression": "`${name}, ${country}\\n(${lat}, ${lon})`",
     "nodeColors": {
       "north_america": {
         "r": 66,
@@ -86,7 +86,7 @@
       "id": "C0",
       "type": "north_america",
       "properties": {
-        "label": "New York",
+        "name": "New York",
         "country": "USA",
         "continent": "north_america",
         "lat": 40.71,
@@ -97,7 +97,7 @@
       "id": "C1",
       "type": "north_america",
       "properties": {
-        "label": "Los Angeles",
+        "name": "Los Angeles",
         "country": "USA",
         "continent": "north_america",
         "lat": 34.05,
@@ -108,7 +108,7 @@
       "id": "C2",
       "type": "north_america",
       "properties": {
-        "label": "Chicago",
+        "name": "Chicago",
         "country": "USA",
         "continent": "north_america",
         "lat": 41.88,
@@ -119,7 +119,7 @@
       "id": "C3",
       "type": "north_america",
       "properties": {
-        "label": "Houston",
+        "name": "Houston",
         "country": "USA",
         "continent": "north_america",
         "lat": 29.76,
@@ -130,7 +130,7 @@
       "id": "C4",
       "type": "north_america",
       "properties": {
-        "label": "Miami",
+        "name": "Miami",
         "country": "USA",
         "continent": "north_america",
         "lat": 25.76,
@@ -141,7 +141,7 @@
       "id": "C5",
       "type": "north_america",
       "properties": {
-        "label": "Denver",
+        "name": "Denver",
         "country": "USA",
         "continent": "north_america",
         "lat": 39.74,
@@ -152,7 +152,7 @@
       "id": "C6",
       "type": "north_america",
       "properties": {
-        "label": "San Francisco",
+        "name": "San Francisco",
         "country": "USA",
         "continent": "north_america",
         "lat": 37.77,
@@ -163,7 +163,7 @@
       "id": "C7",
       "type": "north_america",
       "properties": {
-        "label": "Seattle",
+        "name": "Seattle",
         "country": "USA",
         "continent": "north_america",
         "lat": 47.61,
@@ -174,7 +174,7 @@
       "id": "C8",
       "type": "north_america",
       "properties": {
-        "label": "Toronto",
+        "name": "Toronto",
         "country": "Canada",
         "continent": "north_america",
         "lat": 43.65,
@@ -185,7 +185,7 @@
       "id": "C9",
       "type": "north_america",
       "properties": {
-        "label": "Vancouver",
+        "name": "Vancouver",
         "country": "Canada",
         "continent": "north_america",
         "lat": 49.28,
@@ -196,7 +196,7 @@
       "id": "C10",
       "type": "north_america",
       "properties": {
-        "label": "Montreal",
+        "name": "Montreal",
         "country": "Canada",
         "continent": "north_america",
         "lat": 45.5,
@@ -207,7 +207,7 @@
       "id": "C11",
       "type": "north_america",
       "properties": {
-        "label": "Mexico City",
+        "name": "Mexico City",
         "country": "Mexico",
         "continent": "north_america",
         "lat": 19.43,
@@ -218,7 +218,7 @@
       "id": "C12",
       "type": "north_america",
       "properties": {
-        "label": "Havana",
+        "name": "Havana",
         "country": "Cuba",
         "continent": "north_america",
         "lat": 23.11,
@@ -229,7 +229,7 @@
       "id": "C13",
       "type": "north_america",
       "properties": {
-        "label": "Panama City",
+        "name": "Panama City",
         "country": "Panama",
         "continent": "north_america",
         "lat": 8.98,
@@ -240,7 +240,7 @@
       "id": "C14",
       "type": "south_america",
       "properties": {
-        "label": "Bogota",
+        "name": "Bogota",
         "country": "Colombia",
         "continent": "south_america",
         "lat": 4.71,
@@ -251,7 +251,7 @@
       "id": "C15",
       "type": "south_america",
       "properties": {
-        "label": "Quito",
+        "name": "Quito",
         "country": "Ecuador",
         "continent": "south_america",
         "lat": -0.18,
@@ -262,7 +262,7 @@
       "id": "C16",
       "type": "south_america",
       "properties": {
-        "label": "Lima",
+        "name": "Lima",
         "country": "Peru",
         "continent": "south_america",
         "lat": -12.05,
@@ -273,7 +273,7 @@
       "id": "C17",
       "type": "south_america",
       "properties": {
-        "label": "Santiago",
+        "name": "Santiago",
         "country": "Chile",
         "continent": "south_america",
         "lat": -33.45,
@@ -284,7 +284,7 @@
       "id": "C18",
       "type": "south_america",
       "properties": {
-        "label": "La Paz",
+        "name": "La Paz",
         "country": "Bolivia",
         "continent": "south_america",
         "lat": -16.5,
@@ -295,7 +295,7 @@
       "id": "C19",
       "type": "south_america",
       "properties": {
-        "label": "Sao Paulo",
+        "name": "Sao Paulo",
         "country": "Brazil",
         "continent": "south_america",
         "lat": -23.55,
@@ -306,7 +306,7 @@
       "id": "C20",
       "type": "south_america",
       "properties": {
-        "label": "Rio de Janeiro",
+        "name": "Rio de Janeiro",
         "country": "Brazil",
         "continent": "south_america",
         "lat": -22.91,
@@ -317,7 +317,7 @@
       "id": "C21",
       "type": "south_america",
       "properties": {
-        "label": "Brasilia",
+        "name": "Brasilia",
         "country": "Brazil",
         "continent": "south_america",
         "lat": -15.79,
@@ -328,7 +328,7 @@
       "id": "C22",
       "type": "south_america",
       "properties": {
-        "label": "Buenos Aires",
+        "name": "Buenos Aires",
         "country": "Argentina",
         "continent": "south_america",
         "lat": -34.6,
@@ -339,7 +339,7 @@
       "id": "C23",
       "type": "south_america",
       "properties": {
-        "label": "Caracas",
+        "name": "Caracas",
         "country": "Venezuela",
         "continent": "south_america",
         "lat": 10.48,
@@ -350,7 +350,7 @@
       "id": "C24",
       "type": "europe",
       "properties": {
-        "label": "London",
+        "name": "London",
         "country": "UK",
         "continent": "europe",
         "lat": 51.51,
@@ -361,7 +361,7 @@
       "id": "C25",
       "type": "europe",
       "properties": {
-        "label": "Dublin",
+        "name": "Dublin",
         "country": "Ireland",
         "continent": "europe",
         "lat": 53.35,
@@ -372,7 +372,7 @@
       "id": "C26",
       "type": "europe",
       "properties": {
-        "label": "Lisbon",
+        "name": "Lisbon",
         "country": "Portugal",
         "continent": "europe",
         "lat": 38.72,
@@ -383,7 +383,7 @@
       "id": "C27",
       "type": "europe",
       "properties": {
-        "label": "Madrid",
+        "name": "Madrid",
         "country": "Spain",
         "continent": "europe",
         "lat": 40.42,
@@ -394,7 +394,7 @@
       "id": "C28",
       "type": "europe",
       "properties": {
-        "label": "Paris",
+        "name": "Paris",
         "country": "France",
         "continent": "europe",
         "lat": 48.85,
@@ -405,7 +405,7 @@
       "id": "C29",
       "type": "europe",
       "properties": {
-        "label": "Amsterdam",
+        "name": "Amsterdam",
         "country": "Netherlands",
         "continent": "europe",
         "lat": 52.37,
@@ -416,7 +416,7 @@
       "id": "C30",
       "type": "europe",
       "properties": {
-        "label": "Brussels",
+        "name": "Brussels",
         "country": "Belgium",
         "continent": "europe",
         "lat": 50.85,
@@ -427,7 +427,7 @@
       "id": "C31",
       "type": "europe",
       "properties": {
-        "label": "Rome",
+        "name": "Rome",
         "country": "Italy",
         "continent": "europe",
         "lat": 41.9,
@@ -438,7 +438,7 @@
       "id": "C32",
       "type": "europe",
       "properties": {
-        "label": "Berlin",
+        "name": "Berlin",
         "country": "Germany",
         "continent": "europe",
         "lat": 52.52,
@@ -449,7 +449,7 @@
       "id": "C33",
       "type": "europe",
       "properties": {
-        "label": "Vienna",
+        "name": "Vienna",
         "country": "Austria",
         "continent": "europe",
         "lat": 48.21,
@@ -460,7 +460,7 @@
       "id": "C34",
       "type": "europe",
       "properties": {
-        "label": "Warsaw",
+        "name": "Warsaw",
         "country": "Poland",
         "continent": "europe",
         "lat": 52.23,
@@ -471,7 +471,7 @@
       "id": "C35",
       "type": "europe",
       "properties": {
-        "label": "Stockholm",
+        "name": "Stockholm",
         "country": "Sweden",
         "continent": "europe",
         "lat": 59.33,
@@ -482,7 +482,7 @@
       "id": "C36",
       "type": "europe",
       "properties": {
-        "label": "Helsinki",
+        "name": "Helsinki",
         "country": "Finland",
         "continent": "europe",
         "lat": 60.17,
@@ -493,7 +493,7 @@
       "id": "C37",
       "type": "europe",
       "properties": {
-        "label": "Athens",
+        "name": "Athens",
         "country": "Greece",
         "continent": "europe",
         "lat": 37.98,
@@ -504,7 +504,7 @@
       "id": "C38",
       "type": "europe",
       "properties": {
-        "label": "Kyiv",
+        "name": "Kyiv",
         "country": "Ukraine",
         "continent": "europe",
         "lat": 50.45,
@@ -515,7 +515,7 @@
       "id": "C39",
       "type": "europe",
       "properties": {
-        "label": "Moscow",
+        "name": "Moscow",
         "country": "Russia",
         "continent": "europe",
         "lat": 55.76,
@@ -526,7 +526,7 @@
       "id": "C40",
       "type": "europe",
       "properties": {
-        "label": "Istanbul",
+        "name": "Istanbul",
         "country": "Turkey",
         "continent": "europe",
         "lat": 41.01,
@@ -537,7 +537,7 @@
       "id": "C41",
       "type": "africa",
       "properties": {
-        "label": "Casablanca",
+        "name": "Casablanca",
         "country": "Morocco",
         "continent": "africa",
         "lat": 33.57,
@@ -548,7 +548,7 @@
       "id": "C42",
       "type": "africa",
       "properties": {
-        "label": "Algiers",
+        "name": "Algiers",
         "country": "Algeria",
         "continent": "africa",
         "lat": 36.75,
@@ -559,7 +559,7 @@
       "id": "C43",
       "type": "africa",
       "properties": {
-        "label": "Dakar",
+        "name": "Dakar",
         "country": "Senegal",
         "continent": "africa",
         "lat": 14.72,
@@ -570,7 +570,7 @@
       "id": "C44",
       "type": "africa",
       "properties": {
-        "label": "Lagos",
+        "name": "Lagos",
         "country": "Nigeria",
         "continent": "africa",
         "lat": 6.52,
@@ -581,7 +581,7 @@
       "id": "C45",
       "type": "africa",
       "properties": {
-        "label": "Cairo",
+        "name": "Cairo",
         "country": "Egypt",
         "continent": "africa",
         "lat": 30.04,
@@ -592,7 +592,7 @@
       "id": "C46",
       "type": "africa",
       "properties": {
-        "label": "Khartoum",
+        "name": "Khartoum",
         "country": "Sudan",
         "continent": "africa",
         "lat": 15.5,
@@ -603,7 +603,7 @@
       "id": "C47",
       "type": "africa",
       "properties": {
-        "label": "Addis Ababa",
+        "name": "Addis Ababa",
         "country": "Ethiopia",
         "continent": "africa",
         "lat": 9.03,
@@ -614,7 +614,7 @@
       "id": "C48",
       "type": "africa",
       "properties": {
-        "label": "Nairobi",
+        "name": "Nairobi",
         "country": "Kenya",
         "continent": "africa",
         "lat": -1.29,
@@ -625,7 +625,7 @@
       "id": "C49",
       "type": "africa",
       "properties": {
-        "label": "Kinshasa",
+        "name": "Kinshasa",
         "country": "DR Congo",
         "continent": "africa",
         "lat": -4.44,
@@ -636,7 +636,7 @@
       "id": "C50",
       "type": "africa",
       "properties": {
-        "label": "Cape Town",
+        "name": "Cape Town",
         "country": "South Africa",
         "continent": "africa",
         "lat": -33.92,
@@ -647,7 +647,7 @@
       "id": "C51",
       "type": "africa",
       "properties": {
-        "label": "Johannesburg",
+        "name": "Johannesburg",
         "country": "South Africa",
         "continent": "africa",
         "lat": -26.2,
@@ -658,7 +658,7 @@
       "id": "C52",
       "type": "asia",
       "properties": {
-        "label": "Dubai",
+        "name": "Dubai",
         "country": "UAE",
         "continent": "asia",
         "lat": 25.2,
@@ -669,7 +669,7 @@
       "id": "C53",
       "type": "asia",
       "properties": {
-        "label": "Riyadh",
+        "name": "Riyadh",
         "country": "Saudi Arabia",
         "continent": "asia",
         "lat": 24.71,
@@ -680,7 +680,7 @@
       "id": "C54",
       "type": "asia",
       "properties": {
-        "label": "Tehran",
+        "name": "Tehran",
         "country": "Iran",
         "continent": "asia",
         "lat": 35.69,
@@ -691,7 +691,7 @@
       "id": "C55",
       "type": "asia",
       "properties": {
-        "label": "Karachi",
+        "name": "Karachi",
         "country": "Pakistan",
         "continent": "asia",
         "lat": 24.86,
@@ -702,7 +702,7 @@
       "id": "C56",
       "type": "asia",
       "properties": {
-        "label": "Mumbai",
+        "name": "Mumbai",
         "country": "India",
         "continent": "asia",
         "lat": 19.08,
@@ -713,7 +713,7 @@
       "id": "C57",
       "type": "asia",
       "properties": {
-        "label": "Delhi",
+        "name": "Delhi",
         "country": "India",
         "continent": "asia",
         "lat": 28.61,
@@ -724,7 +724,7 @@
       "id": "C58",
       "type": "asia",
       "properties": {
-        "label": "Kolkata",
+        "name": "Kolkata",
         "country": "India",
         "continent": "asia",
         "lat": 22.57,
@@ -735,7 +735,7 @@
       "id": "C59",
       "type": "asia",
       "properties": {
-        "label": "Dhaka",
+        "name": "Dhaka",
         "country": "Bangladesh",
         "continent": "asia",
         "lat": 23.81,
@@ -746,7 +746,7 @@
       "id": "C60",
       "type": "asia",
       "properties": {
-        "label": "Bangkok",
+        "name": "Bangkok",
         "country": "Thailand",
         "continent": "asia",
         "lat": 13.76,
@@ -757,7 +757,7 @@
       "id": "C61",
       "type": "asia",
       "properties": {
-        "label": "Singapore",
+        "name": "Singapore",
         "country": "Singapore",
         "continent": "asia",
         "lat": 1.35,
@@ -768,7 +768,7 @@
       "id": "C62",
       "type": "asia",
       "properties": {
-        "label": "Kuala Lumpur",
+        "name": "Kuala Lumpur",
         "country": "Malaysia",
         "continent": "asia",
         "lat": 3.14,
@@ -779,7 +779,7 @@
       "id": "C63",
       "type": "asia",
       "properties": {
-        "label": "Jakarta",
+        "name": "Jakarta",
         "country": "Indonesia",
         "continent": "asia",
         "lat": -6.21,
@@ -790,7 +790,7 @@
       "id": "C64",
       "type": "asia",
       "properties": {
-        "label": "Manila",
+        "name": "Manila",
         "country": "Philippines",
         "continent": "asia",
         "lat": 14.6,
@@ -801,7 +801,7 @@
       "id": "C65",
       "type": "asia",
       "properties": {
-        "label": "Hong Kong",
+        "name": "Hong Kong",
         "country": "China",
         "continent": "asia",
         "lat": 22.32,
@@ -812,7 +812,7 @@
       "id": "C66",
       "type": "asia",
       "properties": {
-        "label": "Shanghai",
+        "name": "Shanghai",
         "country": "China",
         "continent": "asia",
         "lat": 31.23,
@@ -823,7 +823,7 @@
       "id": "C67",
       "type": "asia",
       "properties": {
-        "label": "Beijing",
+        "name": "Beijing",
         "country": "China",
         "continent": "asia",
         "lat": 39.9,
@@ -834,7 +834,7 @@
       "id": "C68",
       "type": "asia",
       "properties": {
-        "label": "Seoul",
+        "name": "Seoul",
         "country": "South Korea",
         "continent": "asia",
         "lat": 37.57,
@@ -845,7 +845,7 @@
       "id": "C69",
       "type": "asia",
       "properties": {
-        "label": "Tokyo",
+        "name": "Tokyo",
         "country": "Japan",
         "continent": "asia",
         "lat": 35.68,
@@ -856,7 +856,7 @@
       "id": "C70",
       "type": "asia",
       "properties": {
-        "label": "Osaka",
+        "name": "Osaka",
         "country": "Japan",
         "continent": "asia",
         "lat": 34.69,
@@ -867,7 +867,7 @@
       "id": "C71",
       "type": "oceania",
       "properties": {
-        "label": "Perth",
+        "name": "Perth",
         "country": "Australia",
         "continent": "oceania",
         "lat": -31.95,
@@ -878,7 +878,7 @@
       "id": "C72",
       "type": "oceania",
       "properties": {
-        "label": "Sydney",
+        "name": "Sydney",
         "country": "Australia",
         "continent": "oceania",
         "lat": -33.87,
@@ -889,7 +889,7 @@
       "id": "C73",
       "type": "oceania",
       "properties": {
-        "label": "Melbourne",
+        "name": "Melbourne",
         "country": "Australia",
         "continent": "oceania",
         "lat": -37.81,
@@ -900,7 +900,7 @@
       "id": "C74",
       "type": "oceania",
       "properties": {
-        "label": "Brisbane",
+        "name": "Brisbane",
         "country": "Australia",
         "continent": "oceania",
         "lat": -27.47,
@@ -911,7 +911,7 @@
       "id": "C75",
       "type": "oceania",
       "properties": {
-        "label": "Auckland",
+        "name": "Auckland",
         "country": "New Zealand",
         "continent": "oceania",
         "lat": -36.85,
@@ -922,7 +922,7 @@
       "id": "C76",
       "type": "oceania",
       "properties": {
-        "label": "Port Moresby",
+        "name": "Port Moresby",
         "country": "Papua New Guinea",
         "continent": "oceania",
         "lat": -9.44,

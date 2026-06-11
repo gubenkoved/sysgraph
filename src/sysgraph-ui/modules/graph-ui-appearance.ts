@@ -9,6 +9,7 @@ import {
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     SEARCH_NOT_MATCHING_OPACITY,
 } from './constants.js';
+import { buildScopedExpression } from './expression.js';
 import { labelHelpers } from './graph-ui-helpers.js';
 import type { FGLink, FGNode } from './graph-ui-types.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
@@ -23,33 +24,6 @@ import { getTheme } from './theme.js';
 // Label & sizing helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Compiles a user-supplied expression into a callable with a shadow-safe scope,
- * shared by the node label, node sizing and link-distance expressions so they
- * all expose values the same way.
- *
- * `params` names the injected values (the callable takes them in this order).
- * Names in `spread` additionally expose their object's keys as bare identifiers
- * via `with` (e.g. a `length` property becomes usable as `length`); when several
- * names are spread, later ones shadow earlier ones. Every injected name is then
- * re-bound with `const` *inside* the innermost `with`, so a property that
- * happens to share a well-known name (e.g. a `source` property) can never shadow
- * the injected value. Throws when the expression does not compile.
- */
-function buildScopedExpression(
-    expr: string,
-    params: readonly string[],
-    spread: readonly string[] = [],
-): (...args: unknown[]) => unknown {
-    const mangled = params.map((n) => `__${n}`);
-    const rebind = `const ${params.map((n) => `${n}=__${n}`).join(',')};`;
-    let body = `${rebind}return (${expr});`;
-    for (let i = spread.length - 1; i >= 0; i--) {
-        body = `with(__${spread[i]}){${body}}`;
-    }
-    return new Function(...mangled, body) as (...args: unknown[]) => unknown;
-}
-
 export function getNodeLabel(node: FGNode): string {
     switch (settings.nodeLabelMode) {
         case 'none':
@@ -60,15 +34,17 @@ export function getNodeLabel(node: FGNode): string {
             return String(node.id);
         case 'expression':
             try {
-                // expose node keys (id/type/properties) and the label helpers as
-                // bare identifiers; node keys win over helper names, the const
-                // re-bindings win over both
+                // expose node keys (id/type/properties), each property as a bare
+                // identifier, and the label helpers; precedence (low→high) is
+                // helpers < properties < node, so a well-known node key always
+                // wins over a same-named property, and the const re-bindings of
+                // the injected names win over everything
                 const fn = buildScopedExpression(
                     `String(${settings.nodeLabelExpression})`,
-                    ['node', 'helpers'],
-                    ['helpers', 'node'],
+                    ['node', 'properties', 'helpers'],
+                    ['helpers', 'properties', 'node'],
                 );
-                return fn(node, labelHelpers) as string;
+                return fn(node, node.properties ?? {}, labelHelpers) as string;
             } catch {
                 return '<expr error>';
             }
@@ -83,12 +59,14 @@ export function getNodeVal(node: FGNode, degree: number): number {
             return settings.nodeSizingConstant;
         case 'expression':
             try {
+                // expose node keys plus each property as a bare identifier;
+                // properties < node so well-known node keys win
                 const fn = buildScopedExpression(
                     settings.nodeSizingExpression,
-                    ['node', 'degree'],
-                    ['node'],
+                    ['node', 'properties', 'degree'],
+                    ['properties', 'node'],
                 );
-                const val = (fn(node, degree) as number) || 1;
+                const val = (fn(node, node.properties ?? {}, degree) as number) || 1;
                 return Math.min(val, MAX_NODE_VAL);
             } catch {
                 return 1;
@@ -112,10 +90,11 @@ export function makeLinkDistanceFn(
 ): (link: FGLink) => number {
     let compiled: ((...args: unknown[]) => unknown) | null = null;
     try {
+        // properties < edge so well-known edge keys (id/type/source/target) win
         compiled = buildScopedExpression(
             expression.trim(),
             ['edge', 'properties', 'source', 'target'],
-            ['properties'],
+            ['properties', 'edge'],
         );
     } catch {
         compiled = null;
@@ -147,7 +126,7 @@ export function validateLinkDistanceExpression(expression: string): string | nul
         buildScopedExpression(
             expression.trim(),
             ['edge', 'properties', 'source', 'target'],
-            ['properties'],
+            ['properties', 'edge'],
         );
         return null;
     } catch (err) {

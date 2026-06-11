@@ -8,6 +8,7 @@ import {
     PANEL_SETTINGS,
 } from './constants.js';
 import { emit } from './event-bus.js';
+import { createExpressionHelpTrigger } from './expression-help.js';
 import type { GraphDisplay } from './graph.js';
 import {
     GRAPH_DISPLAY_MODES,
@@ -49,6 +50,13 @@ function getRequiredElement(id: string): HTMLElement {
         throw new Error(`Missing element: ${id}`);
     }
     return element;
+}
+
+// adds the shared expression-help icon to a tweakpane expression binding row;
+// it rides the binding's element so it auto-hides when the row is hidden
+function attachExpressionHelp(binding: { element: HTMLElement }): void {
+    binding.element.classList.add('sg-expr-binding');
+    binding.element.appendChild(createExpressionHelpTrigger());
 }
 
 const settingsPaneElement = getRequiredElement('settingsPane');
@@ -149,6 +157,7 @@ const linkDistanceConstantBinding = d3RenderingSettingsFolder.addBinding(setting
 const linkDistanceExpressionBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceExpression', {
     label: 'link distance',
 });
+attachExpressionHelp(linkDistanceExpressionBinding);
 
 function updateLinkDistanceVisibility(): void {
     const isExpr = settings.d3LinkDistanceMode === 'expression';
@@ -234,6 +243,7 @@ const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings as unknown
 const nodeLabelExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelExpression', {
     label: 'label expr',
 });
+attachExpressionHelp(nodeLabelExpressionBinding);
 
 function updateExpressionVisibility(): void {
     nodeLabelExpressionBinding.hidden = settings.nodeLabelMode !== 'expression';
@@ -278,6 +288,7 @@ const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings as un
 const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingExpression', {
     label: 'node size',
 });
+attachExpressionHelp(nodeSizingExpressionBinding);
 
 function updateSizingVisibility(): void {
     nodeSizingConstantBinding.hidden = settings.nodeSizingMode !== 'constant';
