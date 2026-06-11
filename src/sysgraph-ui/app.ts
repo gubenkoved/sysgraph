@@ -5,6 +5,7 @@ import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, rebuildGraphObjects, refreshGraphColors, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
 import { initLayout } from './modules/layout.js';
 import { initLongPress } from './modules/long-press.js';
+import { initPhysicsIndicator } from './modules/physics-indicator.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
@@ -221,6 +222,7 @@ initToolbar(selectionCanvas, canvas);
 initAnalyticsPanel();
 initQuickStart(() => setTool('edit', selectionCanvas, canvas));
 initZoomIndicator();
+initPhysicsIndicator();
 initLongPress();
 
 // --- guard against losing unexported graph data on close/reload ---

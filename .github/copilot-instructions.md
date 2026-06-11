@@ -157,6 +157,7 @@ sysgraph/
 │           ├── color-scale.ts    # Color interpolation for search heatmap
 │           ├── theme.ts          # Light/dark theme toggle (persisted)
 │           ├── zoom-indicator.ts # Floating zoom widget (-/+ and live %)
+│           ├── physics-indicator.ts # Floating physics run indicator + play/pause toggle
 │           └── util.ts           # FNV-1a hash + toast error helpers
 ```
 
@@ -405,6 +406,8 @@ Layout-related event/command constants live in `constants.ts` (e.g. `PANEL_GRAPH
 **Settings Presets (`settings-presets.ts`):** Predefined and user-defined settings presets persisted in `localStorage` (`sysgraph:settings-presets`).
 
 **Zoom Indicator (`zoom-indicator.ts`):** Floating bottom-left widget showing the live zoom level with `-`/`+` buttons that animate the camera (2D only; hidden in 3D).
+
+**Physics Indicator (`physics-indicator.ts`):** Floating top-right widget that tracks the force simulation's live activity via the renderers' `onEngineTick`/`onEngineStop` callbacks (works in 2D and 3D). The icon spins while the engine is churning and decolors once it settles; clicking it toggles `settings.d3EnablePhysics` (freeze/reheat via `applyD3Params()`) and keeps the settings pane in sync (`syncSettingsPane()`).
 
 **Render Hooks (`render-hooks.ts`):** Registerable pre/post per-frame hooks. In 2D they fire from the force-graph canvas frame; for both renderers they are driven by the orchestrator's always-on rAF loop, which also powers the FPS graph and the 3D per-frame effects.
 

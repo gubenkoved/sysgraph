@@ -10,6 +10,7 @@
   --z-selection-overlay: 10;
   --z-version-badge: 10;
   --z-zoom-indicator: 10;
+  --z-physics-indicator: 10;
 
   /* colors */
   --bg-toolbar: rgba(255, 255, 255, 0.95);
@@ -1821,6 +1822,75 @@ body {
 
 #zoomLevel:hover {
   background: var(--hover-overlay);
+}
+
+/* ── Physics Indicator ───────────────────────────────────── */
+
+/* floating top-right play/pause toggle for the force simulation. intentionally
+   chrome-less — no chip background/border/shadow — so it reads as part of the
+   canvas itself. muted at rest; while the engine runs the icon spins with an
+   accent-tinted pill (brighter and glowing in dark theme) */
+#physics-indicator {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  z-index: var(--z-physics-indicator);
+  display: flex;
+  align-items: center;
+}
+
+#physics-indicator md-icon-button {
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-state-layer-height: var(--button-height);
+  --md-icon-button-state-layer-width: var(--button-height);
+  height: var(--button-height);
+  width: var(--button-height);
+  /* decolored at rest (physics settled): muted gray, low-key but legible.
+     Material Web colors the glyph via this custom property, not `color` */
+  --md-icon-button-icon-color: var(--text-muted);
+  opacity: 0.75;
+  transition: --md-icon-button-icon-color 0.3s ease, opacity 0.3s ease;
+}
+
+#physics-indicator md-icon-button:hover {
+  --md-icon-button-icon-color: var(--text-primary);
+  opacity: 1;
+}
+
+/* active state: a subtle accent-tinted pill behind the accent-colored spinning
+   glyph — clearly legible on any theme without being loud */
+#physics-indicator.is-running md-icon-button {
+  --md-icon-button-icon-color: var(--accent-primary);
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  border-radius: 50%;
+  animation: physics-motion 3s linear infinite;
+}
+
+@keyframes physics-motion {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* dark theme: the calm accent-blue reads dimly against the dark canvas, so
+   make the running state pop here — a solid bright-blue filled pill with a
+   light glyph and a strong glow — without touching the light-theme look */
+:root[data-theme="dark"] #physics-indicator.is-running md-icon-button {
+  --md-icon-button-icon-color: #ffffff;
+  background: var(--accent-info);
+  box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent-info) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #physics-indicator.is-running md-icon-button {
+    animation: none;
+    --md-icon-button-icon-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  }
 }
 
 /* 3D render mode: hide chrome that only applies to the 2D canvas renderer

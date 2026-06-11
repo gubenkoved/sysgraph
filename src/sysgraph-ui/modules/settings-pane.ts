@@ -68,6 +68,13 @@ registerPanel({
 });
 
 
+// re-reads the current settings object into the pane widgets; used when a
+// setting is changed outside the pane (e.g. the floating physics toggle) so the
+// corresponding control stays in sync
+export function syncSettingsPane(): void {
+    pane.refresh();
+}
+
 // tags a folder's root element with a category class so it can be visually
 // color-coded via CSS (left accent stripe + tinted title bar)
 function tagFolder(folder: FolderApi, category: string): FolderApi {
