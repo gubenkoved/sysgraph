@@ -16,6 +16,8 @@ export interface SettingsShape {
     d3EnablePhysics: boolean;
     d3Charge: number;
     d3LinkDistance: number;
+    d3LinkDistanceMode: string;
+    d3LinkDistanceExpression: string;
     d3LinkStrength: number;
     d3CollisionMultiplier: number;
     d3AlphaTarget: number;
@@ -45,6 +47,9 @@ export function createDefaultSettings(): SettingsShape {
         d3EnablePhysics: true,
         d3Charge: -400,
         d3LinkDistance: 140,
+        d3LinkDistanceMode: 'constant',
+        d3LinkDistanceExpression:
+            'Number(properties.length) || Number(properties.weight) || 140',
         d3LinkStrength: 0.8,
         d3CollisionMultiplier: 1.0,
         d3AlphaTarget: 0.0,

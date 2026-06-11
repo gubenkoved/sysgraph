@@ -16,6 +16,7 @@ import {
     setGraphDisplayMode,
 } from './graph-display.js';
 import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
+import { validateLinkDistanceExpression } from './graph-ui-appearance.js';
 import { registerPanel } from './layout.js';
 import { setFrameHooks } from './render-hooks.js';
 import type { SettingsShape } from './settings.js';
@@ -107,7 +108,6 @@ const d3RenderingSettingsFolder = tagFolder(pane.addFolder({ title: 'd3 forces s
 
 const d3Params: { key: keyof SettingsShape; label: string; min: number; max: number; step: number }[] = [
     { key: 'd3Charge', label: 'charge force', min: -800, max: 100, step: 10 },
-    { key: 'd3LinkDistance', label: 'link distance', min: 40, max: 500, step: 5 },
     { key: 'd3LinkStrength', label: 'link strength', min: 0.0, max: 1.0, step: 0.01 },
     { key: 'd3CollisionMultiplier', label: 'collision', min: 0.5, max: 2.0, step: 0.05 },
     { key: 'd3AlphaTarget', label: 'alpha target', min: 0.0, max: 0.5, step: 0.01 },
@@ -128,6 +128,57 @@ for (const p of d3Params) {
         emit(EVT_D3_PARAMS_CHANGED, null);
     });
 }
+
+// --- link distance (constant slider or per-link expression) ---
+const linkDistanceModeBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceMode', {
+    label: 'link distance mode',
+    view: 'list',
+    options: [
+        { text: 'constant', value: 'constant' },
+        { text: 'expression', value: 'expression' },
+    ],
+});
+
+const linkDistanceConstantBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistance', {
+    label: 'link distance',
+    min: 40,
+    max: 500,
+    step: 5,
+});
+
+const linkDistanceExpressionBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceExpression', {
+    label: 'link distance',
+});
+
+function updateLinkDistanceVisibility(): void {
+    const isExpr = settings.d3LinkDistanceMode === 'expression';
+    linkDistanceConstantBinding.hidden = isExpr;
+    linkDistanceExpressionBinding.hidden = !isExpr;
+}
+updateLinkDistanceVisibility();
+
+function updateLinkDistanceValidity(): void {
+    const error = settings.d3LinkDistanceMode === 'expression'
+        ? validateLinkDistanceExpression(settings.d3LinkDistanceExpression)
+        : null;
+    linkDistanceExpressionBinding.element.classList.toggle('sg-binding-invalid', error !== null);
+}
+updateLinkDistanceValidity();
+
+linkDistanceModeBinding.on('change', () => {
+    updateLinkDistanceVisibility();
+    updateLinkDistanceValidity();
+    emit(EVT_D3_PARAMS_CHANGED, null);
+});
+
+linkDistanceConstantBinding.on('change', () => {
+    emit(EVT_D3_PARAMS_CHANGED, null);
+});
+
+linkDistanceExpressionBinding.on('change', () => {
+    updateLinkDistanceValidity();
+    emit(EVT_D3_PARAMS_CHANGED, null);
+});
 
 d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3CenterForce', { label: 'center force' }).on('change', () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
@@ -208,7 +259,7 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
 displayOptionsFolder.addBlade({ view: 'separator' });
 
 const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingMode', {
-    label: 'node sizing',
+    label: 'node sizing mode',
     view: 'list',
     options: [
         { text: 'degree', value: 'degree' },
@@ -218,14 +269,14 @@ const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings as unknow
 });
 
 const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingConstant', {
-    label: 'size',
+    label: 'node size',
     min: 1,
     max: 10,
     step: 0.5,
 });
 
 const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingExpression', {
-    label: 'size expr',
+    label: 'node size',
 });
 
 function updateSizingVisibility(): void {
@@ -250,6 +301,8 @@ nodeSizingExpressionBinding.on('change', () => {
 function syncStaticSettingsPane(): void {
     updateExpressionVisibility();
     updateSizingVisibility();
+    updateLinkDistanceVisibility();
+    updateLinkDistanceValidity();
     pane.refresh();
 }
 

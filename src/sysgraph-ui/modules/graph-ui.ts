@@ -29,6 +29,7 @@ import {
     isNodePinned,
     linkSourceId,
     linkTargetId,
+    makeLinkDistanceFn,
     pinNode,
     unpinNode,
 } from './graph-ui-appearance.js';
@@ -746,7 +747,15 @@ export function applyD3Params(): void {
 
     const linkForce = ForceGraphInstance.d3Force('link');
     if (linkForce) {
-        if (typeof linkForce.distance === 'function') linkForce.distance(settings.d3LinkDistance);
+        if (typeof linkForce.distance === 'function') {
+            // expression mode drives per-link distance from edge properties
+            // (e.g. road length); otherwise the slider value is a flat distance
+            if (settings.d3LinkDistanceMode === 'expression') {
+                linkForce.distance(makeLinkDistanceFn(settings.d3LinkDistanceExpression, settings.d3LinkDistance));
+            } else {
+                linkForce.distance(settings.d3LinkDistance);
+            }
+        }
         if (typeof linkForce.strength === 'function') linkForce.strength(settings.d3LinkStrength);
     }
 

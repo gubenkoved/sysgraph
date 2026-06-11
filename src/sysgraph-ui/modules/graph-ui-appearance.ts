@@ -23,6 +23,33 @@ import { getTheme } from './theme.js';
 // Label & sizing helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Compiles a user-supplied expression into a callable with a shadow-safe scope,
+ * shared by the node label, node sizing and link-distance expressions so they
+ * all expose values the same way.
+ *
+ * `params` names the injected values (the callable takes them in this order).
+ * Names in `spread` additionally expose their object's keys as bare identifiers
+ * via `with` (e.g. a `length` property becomes usable as `length`); when several
+ * names are spread, later ones shadow earlier ones. Every injected name is then
+ * re-bound with `const` *inside* the innermost `with`, so a property that
+ * happens to share a well-known name (e.g. a `source` property) can never shadow
+ * the injected value. Throws when the expression does not compile.
+ */
+function buildScopedExpression(
+    expr: string,
+    params: readonly string[],
+    spread: readonly string[] = [],
+): (...args: unknown[]) => unknown {
+    const mangled = params.map((n) => `__${n}`);
+    const rebind = `const ${params.map((n) => `${n}=__${n}`).join(',')};`;
+    let body = `${rebind}return (${expr});`;
+    for (let i = spread.length - 1; i >= 0; i--) {
+        body = `with(__${spread[i]}){${body}}`;
+    }
+    return new Function(...mangled, body) as (...args: unknown[]) => unknown;
+}
+
 export function getNodeLabel(node: FGNode): string {
     switch (settings.nodeLabelMode) {
         case 'none':
@@ -33,7 +60,14 @@ export function getNodeLabel(node: FGNode): string {
             return String(node.id);
         case 'expression':
             try {
-                const fn = new Function('node', '__helpers', `with(__helpers){with(node){return String(${settings.nodeLabelExpression})}}`);
+                // expose node keys (id/type/properties) and the label helpers as
+                // bare identifiers; node keys win over helper names, the const
+                // re-bindings win over both
+                const fn = buildScopedExpression(
+                    `String(${settings.nodeLabelExpression})`,
+                    ['node', 'helpers'],
+                    ['helpers', 'node'],
+                );
                 return fn(node, labelHelpers) as string;
             } catch {
                 return '<expr error>';
@@ -49,7 +83,11 @@ export function getNodeVal(node: FGNode, degree: number): number {
             return settings.nodeSizingConstant;
         case 'expression':
             try {
-                const fn = new Function('node', 'degree', `with(node){return (${settings.nodeSizingExpression})}`);
+                const fn = buildScopedExpression(
+                    settings.nodeSizingExpression,
+                    ['node', 'degree'],
+                    ['node'],
+                );
                 const val = (fn(node, degree) as number) || 1;
                 return Math.min(val, MAX_NODE_VAL);
             } catch {
@@ -57,6 +95,63 @@ export function getNodeVal(node: FGNode, degree: number): number {
             }
         default:
             return Math.sqrt(Math.max(1, degree));
+    }
+}
+
+/**
+ * Compiles a link-distance expression into a d3 link-force distance accessor.
+ * The expression is evaluated with the edge's `properties` in scope plus the
+ * resolved `source`/`target` node objects (mirroring the edge-weight mechanism),
+ * so real-world metrics like `properties.length` can drive layout distance. On
+ * any error — or a non-finite result — it falls back to the provided value (the
+ * link-distance slider).
+ */
+export function makeLinkDistanceFn(
+    expression: string,
+    fallback: number,
+): (link: FGLink) => number {
+    let compiled: ((...args: unknown[]) => unknown) | null = null;
+    try {
+        compiled = buildScopedExpression(
+            expression.trim(),
+            ['edge', 'properties', 'source', 'target'],
+            ['properties'],
+        );
+    } catch {
+        compiled = null;
+    }
+
+    return (link: FGLink): number => {
+        if (!compiled) return fallback;
+        try {
+            const value = compiled(
+                link,
+                link.properties ?? {},
+                link.source,
+                link.target,
+            );
+            const num = Number(value);
+            return Number.isFinite(num) ? num : fallback;
+        } catch {
+            return fallback;
+        }
+    };
+}
+
+/**
+ * Validates a link-distance expression by attempting to compile it. Returns an
+ * error message when the expression is syntactically invalid, otherwise null.
+ */
+export function validateLinkDistanceExpression(expression: string): string | null {
+    try {
+        buildScopedExpression(
+            expression.trim(),
+            ['edge', 'properties', 'source', 'target'],
+            ['properties'],
+        );
+        return null;
+    } catch (err) {
+        return err instanceof Error ? err.message : 'invalid expression';
     }
 }
 

@@ -1714,6 +1714,12 @@ body {
 /* actions */
 #settingsPane .sg-folder-actions { --sg-folder-hue: 350; }
 
+/* invalid expression feedback on a tweakpane binding row (e.g. link distance
+   expression that fails to compile) */
+#settingsPane .sg-binding-invalid .tp-txtv_i {
+  border: 1px solid var(--accent-danger);
+}
+
 /* Color-picker popup. The pane's base background is intentionally transparent
    (the frosted card chrome lives on #settingsPane), but the picker popover
    floats over other controls and needs its own opaque surface so it doesn't
