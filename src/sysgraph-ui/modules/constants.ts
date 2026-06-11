@@ -92,6 +92,12 @@ export const GRID_CENTER_COLOR_UNSTRESSED_DARK = 'rgba(255, 80, 80, 0.18)';
 // and opacity are preserved; already-bright edges are left untouched.
 export const EDGE_DARK_MIN_LIGHTNESS = 0.55;
 
+// Same idea for node fills: in dark mode node colours darker than this HSL
+// lightness are raised to this floor so near-black nodes don't disappear
+// against the dark canvas. Nodes are filled shapes, so the floor can sit a
+// little lower than the edge floor.
+export const NODE_DARK_MIN_LIGHTNESS = 0.4;
+
 // ── Search & highlight ──────────────────────────────────────
 export const SEARCH_NOT_MATCHING_OPACITY = 0.5;
 export const SCORE_EPSILON = 1e-12;

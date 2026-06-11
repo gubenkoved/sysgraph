@@ -1,0 +1,1276 @@
+{
+  "title": "Buckyball (C60)",
+  "display": {
+    "d3EnablePhysics": true,
+    "d3Charge": -150,
+    "d3LinkDistance": 40,
+    "d3LinkStrength": 1.0,
+    "d3CollisionMultiplier": 1.0,
+    "d3VelocityDecay": 0.7,
+    "d3CenterForce": false,
+    "showGrid": false,
+    "nodeLabelMode": "none",
+    "nodeSizingMode": "constant",
+    "nodeSizingConstant": 3,
+    "nodeColors": {
+      "carbon": {
+        "r": 38,
+        "g": 38,
+        "b": 38,
+        "a": 1
+      }
+    },
+    "edgeColors": {
+      "bond_66": {
+        "r": 224,
+        "g": 122,
+        "b": 95,
+        "a": 0.9
+      },
+      "bond_65": {
+        "r": 130,
+        "g": 160,
+        "b": 180,
+        "a": 0.7
+      }
+    },
+    "edgeWidths": {
+      "bond_66": 2.5,
+      "bond_65": 1.5
+    }
+  },
+  "nodes": [
+    {
+      "id": "C1",
+      "type": "carbon",
+      "properties": {
+        "label": "C1"
+      }
+    },
+    {
+      "id": "C2",
+      "type": "carbon",
+      "properties": {
+        "label": "C2"
+      }
+    },
+    {
+      "id": "C3",
+      "type": "carbon",
+      "properties": {
+        "label": "C3"
+      }
+    },
+    {
+      "id": "C4",
+      "type": "carbon",
+      "properties": {
+        "label": "C4"
+      }
+    },
+    {
+      "id": "C5",
+      "type": "carbon",
+      "properties": {
+        "label": "C5"
+      }
+    },
+    {
+      "id": "C6",
+      "type": "carbon",
+      "properties": {
+        "label": "C6"
+      }
+    },
+    {
+      "id": "C7",
+      "type": "carbon",
+      "properties": {
+        "label": "C7"
+      }
+    },
+    {
+      "id": "C8",
+      "type": "carbon",
+      "properties": {
+        "label": "C8"
+      }
+    },
+    {
+      "id": "C9",
+      "type": "carbon",
+      "properties": {
+        "label": "C9"
+      }
+    },
+    {
+      "id": "C10",
+      "type": "carbon",
+      "properties": {
+        "label": "C10"
+      }
+    },
+    {
+      "id": "C11",
+      "type": "carbon",
+      "properties": {
+        "label": "C11"
+      }
+    },
+    {
+      "id": "C12",
+      "type": "carbon",
+      "properties": {
+        "label": "C12"
+      }
+    },
+    {
+      "id": "C13",
+      "type": "carbon",
+      "properties": {
+        "label": "C13"
+      }
+    },
+    {
+      "id": "C14",
+      "type": "carbon",
+      "properties": {
+        "label": "C14"
+      }
+    },
+    {
+      "id": "C15",
+      "type": "carbon",
+      "properties": {
+        "label": "C15"
+      }
+    },
+    {
+      "id": "C16",
+      "type": "carbon",
+      "properties": {
+        "label": "C16"
+      }
+    },
+    {
+      "id": "C17",
+      "type": "carbon",
+      "properties": {
+        "label": "C17"
+      }
+    },
+    {
+      "id": "C18",
+      "type": "carbon",
+      "properties": {
+        "label": "C18"
+      }
+    },
+    {
+      "id": "C19",
+      "type": "carbon",
+      "properties": {
+        "label": "C19"
+      }
+    },
+    {
+      "id": "C20",
+      "type": "carbon",
+      "properties": {
+        "label": "C20"
+      }
+    },
+    {
+      "id": "C21",
+      "type": "carbon",
+      "properties": {
+        "label": "C21"
+      }
+    },
+    {
+      "id": "C22",
+      "type": "carbon",
+      "properties": {
+        "label": "C22"
+      }
+    },
+    {
+      "id": "C23",
+      "type": "carbon",
+      "properties": {
+        "label": "C23"
+      }
+    },
+    {
+      "id": "C24",
+      "type": "carbon",
+      "properties": {
+        "label": "C24"
+      }
+    },
+    {
+      "id": "C25",
+      "type": "carbon",
+      "properties": {
+        "label": "C25"
+      }
+    },
+    {
+      "id": "C26",
+      "type": "carbon",
+      "properties": {
+        "label": "C26"
+      }
+    },
+    {
+      "id": "C27",
+      "type": "carbon",
+      "properties": {
+        "label": "C27"
+      }
+    },
+    {
+      "id": "C28",
+      "type": "carbon",
+      "properties": {
+        "label": "C28"
+      }
+    },
+    {
+      "id": "C29",
+      "type": "carbon",
+      "properties": {
+        "label": "C29"
+      }
+    },
+    {
+      "id": "C30",
+      "type": "carbon",
+      "properties": {
+        "label": "C30"
+      }
+    },
+    {
+      "id": "C31",
+      "type": "carbon",
+      "properties": {
+        "label": "C31"
+      }
+    },
+    {
+      "id": "C32",
+      "type": "carbon",
+      "properties": {
+        "label": "C32"
+      }
+    },
+    {
+      "id": "C33",
+      "type": "carbon",
+      "properties": {
+        "label": "C33"
+      }
+    },
+    {
+      "id": "C34",
+      "type": "carbon",
+      "properties": {
+        "label": "C34"
+      }
+    },
+    {
+      "id": "C35",
+      "type": "carbon",
+      "properties": {
+        "label": "C35"
+      }
+    },
+    {
+      "id": "C36",
+      "type": "carbon",
+      "properties": {
+        "label": "C36"
+      }
+    },
+    {
+      "id": "C37",
+      "type": "carbon",
+      "properties": {
+        "label": "C37"
+      }
+    },
+    {
+      "id": "C38",
+      "type": "carbon",
+      "properties": {
+        "label": "C38"
+      }
+    },
+    {
+      "id": "C39",
+      "type": "carbon",
+      "properties": {
+        "label": "C39"
+      }
+    },
+    {
+      "id": "C40",
+      "type": "carbon",
+      "properties": {
+        "label": "C40"
+      }
+    },
+    {
+      "id": "C41",
+      "type": "carbon",
+      "properties": {
+        "label": "C41"
+      }
+    },
+    {
+      "id": "C42",
+      "type": "carbon",
+      "properties": {
+        "label": "C42"
+      }
+    },
+    {
+      "id": "C43",
+      "type": "carbon",
+      "properties": {
+        "label": "C43"
+      }
+    },
+    {
+      "id": "C44",
+      "type": "carbon",
+      "properties": {
+        "label": "C44"
+      }
+    },
+    {
+      "id": "C45",
+      "type": "carbon",
+      "properties": {
+        "label": "C45"
+      }
+    },
+    {
+      "id": "C46",
+      "type": "carbon",
+      "properties": {
+        "label": "C46"
+      }
+    },
+    {
+      "id": "C47",
+      "type": "carbon",
+      "properties": {
+        "label": "C47"
+      }
+    },
+    {
+      "id": "C48",
+      "type": "carbon",
+      "properties": {
+        "label": "C48"
+      }
+    },
+    {
+      "id": "C49",
+      "type": "carbon",
+      "properties": {
+        "label": "C49"
+      }
+    },
+    {
+      "id": "C50",
+      "type": "carbon",
+      "properties": {
+        "label": "C50"
+      }
+    },
+    {
+      "id": "C51",
+      "type": "carbon",
+      "properties": {
+        "label": "C51"
+      }
+    },
+    {
+      "id": "C52",
+      "type": "carbon",
+      "properties": {
+        "label": "C52"
+      }
+    },
+    {
+      "id": "C53",
+      "type": "carbon",
+      "properties": {
+        "label": "C53"
+      }
+    },
+    {
+      "id": "C54",
+      "type": "carbon",
+      "properties": {
+        "label": "C54"
+      }
+    },
+    {
+      "id": "C55",
+      "type": "carbon",
+      "properties": {
+        "label": "C55"
+      }
+    },
+    {
+      "id": "C56",
+      "type": "carbon",
+      "properties": {
+        "label": "C56"
+      }
+    },
+    {
+      "id": "C57",
+      "type": "carbon",
+      "properties": {
+        "label": "C57"
+      }
+    },
+    {
+      "id": "C58",
+      "type": "carbon",
+      "properties": {
+        "label": "C58"
+      }
+    },
+    {
+      "id": "C59",
+      "type": "carbon",
+      "properties": {
+        "label": "C59"
+      }
+    },
+    {
+      "id": "C60",
+      "type": "carbon",
+      "properties": {
+        "label": "C60"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "1-3",
+      "type": "bond_66",
+      "source_id": "C1",
+      "target_id": "C3",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "1-37",
+      "type": "bond_65",
+      "source_id": "C1",
+      "target_id": "C37",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "1-41",
+      "type": "bond_65",
+      "source_id": "C1",
+      "target_id": "C41",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "2-4",
+      "type": "bond_66",
+      "source_id": "C2",
+      "target_id": "C4",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "2-38",
+      "type": "bond_65",
+      "source_id": "C2",
+      "target_id": "C38",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "2-42",
+      "type": "bond_65",
+      "source_id": "C2",
+      "target_id": "C42",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "3-39",
+      "type": "bond_65",
+      "source_id": "C3",
+      "target_id": "C39",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "3-43",
+      "type": "bond_65",
+      "source_id": "C3",
+      "target_id": "C43",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "4-40",
+      "type": "bond_65",
+      "source_id": "C4",
+      "target_id": "C40",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "4-44",
+      "type": "bond_65",
+      "source_id": "C4",
+      "target_id": "C44",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "5-7",
+      "type": "bond_66",
+      "source_id": "C5",
+      "target_id": "C7",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "5-45",
+      "type": "bond_65",
+      "source_id": "C5",
+      "target_id": "C45",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "5-46",
+      "type": "bond_65",
+      "source_id": "C5",
+      "target_id": "C46",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "6-8",
+      "type": "bond_66",
+      "source_id": "C6",
+      "target_id": "C8",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "6-47",
+      "type": "bond_65",
+      "source_id": "C6",
+      "target_id": "C47",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "6-48",
+      "type": "bond_65",
+      "source_id": "C6",
+      "target_id": "C48",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "7-49",
+      "type": "bond_65",
+      "source_id": "C7",
+      "target_id": "C49",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "7-50",
+      "type": "bond_65",
+      "source_id": "C7",
+      "target_id": "C50",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "8-51",
+      "type": "bond_65",
+      "source_id": "C8",
+      "target_id": "C51",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "8-52",
+      "type": "bond_65",
+      "source_id": "C8",
+      "target_id": "C52",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "9-10",
+      "type": "bond_66",
+      "source_id": "C9",
+      "target_id": "C10",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "9-53",
+      "type": "bond_65",
+      "source_id": "C9",
+      "target_id": "C53",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "9-55",
+      "type": "bond_65",
+      "source_id": "C9",
+      "target_id": "C55",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "10-54",
+      "type": "bond_65",
+      "source_id": "C10",
+      "target_id": "C54",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "10-56",
+      "type": "bond_65",
+      "source_id": "C10",
+      "target_id": "C56",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "11-12",
+      "type": "bond_66",
+      "source_id": "C11",
+      "target_id": "C12",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "11-57",
+      "type": "bond_65",
+      "source_id": "C11",
+      "target_id": "C57",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "11-59",
+      "type": "bond_65",
+      "source_id": "C11",
+      "target_id": "C59",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "12-58",
+      "type": "bond_65",
+      "source_id": "C12",
+      "target_id": "C58",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "12-60",
+      "type": "bond_65",
+      "source_id": "C12",
+      "target_id": "C60",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "13-17",
+      "type": "bond_65",
+      "source_id": "C13",
+      "target_id": "C17",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "13-37",
+      "type": "bond_65",
+      "source_id": "C13",
+      "target_id": "C37",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "13-45",
+      "type": "bond_66",
+      "source_id": "C13",
+      "target_id": "C45",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "14-18",
+      "type": "bond_65",
+      "source_id": "C14",
+      "target_id": "C18",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "14-38",
+      "type": "bond_65",
+      "source_id": "C14",
+      "target_id": "C38",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "14-46",
+      "type": "bond_66",
+      "source_id": "C14",
+      "target_id": "C46",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "15-19",
+      "type": "bond_65",
+      "source_id": "C15",
+      "target_id": "C19",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "15-39",
+      "type": "bond_65",
+      "source_id": "C15",
+      "target_id": "C39",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "15-47",
+      "type": "bond_66",
+      "source_id": "C15",
+      "target_id": "C47",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "16-20",
+      "type": "bond_65",
+      "source_id": "C16",
+      "target_id": "C20",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "16-40",
+      "type": "bond_65",
+      "source_id": "C16",
+      "target_id": "C40",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "16-48",
+      "type": "bond_66",
+      "source_id": "C16",
+      "target_id": "C48",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "17-41",
+      "type": "bond_65",
+      "source_id": "C17",
+      "target_id": "C41",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "17-49",
+      "type": "bond_66",
+      "source_id": "C17",
+      "target_id": "C49",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "18-42",
+      "type": "bond_65",
+      "source_id": "C18",
+      "target_id": "C42",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "18-50",
+      "type": "bond_66",
+      "source_id": "C18",
+      "target_id": "C50",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "19-43",
+      "type": "bond_65",
+      "source_id": "C19",
+      "target_id": "C43",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "19-51",
+      "type": "bond_66",
+      "source_id": "C19",
+      "target_id": "C51",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "20-44",
+      "type": "bond_65",
+      "source_id": "C20",
+      "target_id": "C44",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "20-52",
+      "type": "bond_66",
+      "source_id": "C20",
+      "target_id": "C52",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "21-22",
+      "type": "bond_65",
+      "source_id": "C21",
+      "target_id": "C22",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "21-45",
+      "type": "bond_65",
+      "source_id": "C21",
+      "target_id": "C45",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "21-53",
+      "type": "bond_66",
+      "source_id": "C21",
+      "target_id": "C53",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "22-46",
+      "type": "bond_65",
+      "source_id": "C22",
+      "target_id": "C46",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "22-54",
+      "type": "bond_66",
+      "source_id": "C22",
+      "target_id": "C54",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "23-24",
+      "type": "bond_65",
+      "source_id": "C23",
+      "target_id": "C24",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "23-47",
+      "type": "bond_65",
+      "source_id": "C23",
+      "target_id": "C47",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "23-55",
+      "type": "bond_66",
+      "source_id": "C23",
+      "target_id": "C55",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "24-48",
+      "type": "bond_65",
+      "source_id": "C24",
+      "target_id": "C48",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "24-56",
+      "type": "bond_66",
+      "source_id": "C24",
+      "target_id": "C56",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "25-26",
+      "type": "bond_65",
+      "source_id": "C25",
+      "target_id": "C26",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "25-49",
+      "type": "bond_65",
+      "source_id": "C25",
+      "target_id": "C49",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "25-57",
+      "type": "bond_66",
+      "source_id": "C25",
+      "target_id": "C57",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "26-50",
+      "type": "bond_65",
+      "source_id": "C26",
+      "target_id": "C50",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "26-58",
+      "type": "bond_66",
+      "source_id": "C26",
+      "target_id": "C58",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "27-28",
+      "type": "bond_65",
+      "source_id": "C27",
+      "target_id": "C28",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "27-51",
+      "type": "bond_65",
+      "source_id": "C27",
+      "target_id": "C51",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "27-59",
+      "type": "bond_66",
+      "source_id": "C27",
+      "target_id": "C59",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "28-52",
+      "type": "bond_65",
+      "source_id": "C28",
+      "target_id": "C52",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "28-60",
+      "type": "bond_66",
+      "source_id": "C28",
+      "target_id": "C60",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "29-31",
+      "type": "bond_65",
+      "source_id": "C29",
+      "target_id": "C31",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "29-37",
+      "type": "bond_66",
+      "source_id": "C29",
+      "target_id": "C37",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "29-53",
+      "type": "bond_65",
+      "source_id": "C29",
+      "target_id": "C53",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "30-32",
+      "type": "bond_65",
+      "source_id": "C30",
+      "target_id": "C32",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "30-38",
+      "type": "bond_66",
+      "source_id": "C30",
+      "target_id": "C38",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "30-54",
+      "type": "bond_65",
+      "source_id": "C30",
+      "target_id": "C54",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "31-39",
+      "type": "bond_66",
+      "source_id": "C31",
+      "target_id": "C39",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "31-55",
+      "type": "bond_65",
+      "source_id": "C31",
+      "target_id": "C55",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "32-40",
+      "type": "bond_66",
+      "source_id": "C32",
+      "target_id": "C40",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "32-56",
+      "type": "bond_65",
+      "source_id": "C32",
+      "target_id": "C56",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "33-35",
+      "type": "bond_65",
+      "source_id": "C33",
+      "target_id": "C35",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "33-41",
+      "type": "bond_66",
+      "source_id": "C33",
+      "target_id": "C41",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "33-57",
+      "type": "bond_65",
+      "source_id": "C33",
+      "target_id": "C57",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "34-36",
+      "type": "bond_65",
+      "source_id": "C34",
+      "target_id": "C36",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "34-42",
+      "type": "bond_66",
+      "source_id": "C34",
+      "target_id": "C42",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "34-58",
+      "type": "bond_65",
+      "source_id": "C34",
+      "target_id": "C58",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "35-43",
+      "type": "bond_66",
+      "source_id": "C35",
+      "target_id": "C43",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "35-59",
+      "type": "bond_65",
+      "source_id": "C35",
+      "target_id": "C59",
+      "properties": {
+        "bond": "single"
+      }
+    },
+    {
+      "id": "36-44",
+      "type": "bond_66",
+      "source_id": "C36",
+      "target_id": "C44",
+      "properties": {
+        "bond": "double"
+      }
+    },
+    {
+      "id": "36-60",
+      "type": "bond_65",
+      "source_id": "C36",
+      "target_id": "C60",
+      "properties": {
+        "bond": "single"
+      }
+    }
+  ]
+}

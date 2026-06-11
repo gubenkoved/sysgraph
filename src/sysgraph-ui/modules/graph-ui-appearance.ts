@@ -4,6 +4,7 @@ import {
     EDGE_DARK_MIN_LIGHTNESS,
     HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,
     MAX_NODE_VAL,
+    NODE_DARK_MIN_LIGHTNESS,
     SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     SEARCH_NOT_MATCHING_OPACITY,
@@ -73,7 +74,7 @@ export function clearColorCaches(): void {
 
 function getCachedNodeCssColor(nodeType: string): string {
     if (!nodeCssColorCache.has(nodeType)) {
-        nodeCssColorCache.set(nodeType, getNodeCssColor(nodeType));
+        nodeCssColorCache.set(nodeType, adjustNodeColorForTheme(getNodeCssColor(nodeType)));
     }
     return nodeCssColorCache.get(nodeType)!;
 }
@@ -206,17 +207,27 @@ export function nodeOutlineColor(color: string): string {
 }
 
 /**
- * In dark mode, raises the lightness of edge colours that are too dark to be
- * legible against the dark canvas up to EDGE_DARK_MIN_LIGHTNESS, preserving hue,
- * saturation and opacity. Already-bright colours are returned unchanged. In
- * light mode the colour is returned as-is.
+ * In dark mode, raises the lightness of a colour that is too dark to stay
+ * legible against the dark canvas up to `floor`, preserving hue, saturation and
+ * opacity. Already-bright colours are returned unchanged; in light mode the
+ * colour is returned as-is.
  */
-function adjustEdgeColorForTheme(color: string): string {
+function raiseLightnessFloorInDark(color: string, floor: number): string {
     if (getTheme() !== 'dark') return color;
     const hsl = d3.hsl(color);
-    if (hsl.l >= EDGE_DARK_MIN_LIGHTNESS) return color;
-    hsl.l = EDGE_DARK_MIN_LIGHTNESS;
+    if (hsl.l >= floor) return color;
+    hsl.l = floor;
     return hsl.toString();
+}
+
+/** Edge colour adjusted for the active theme (see raiseLightnessFloorInDark). */
+function adjustEdgeColorForTheme(color: string): string {
+    return raiseLightnessFloorInDark(color, EDGE_DARK_MIN_LIGHTNESS);
+}
+
+/** Node fill adjusted for the active theme (see raiseLightnessFloorInDark). */
+function adjustNodeColorForTheme(color: string): string {
+    return raiseLightnessFloorInDark(color, NODE_DARK_MIN_LIGHTNESS);
 }
 
 // ---------------------------------------------------------------------------
