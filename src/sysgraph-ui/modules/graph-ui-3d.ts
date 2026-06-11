@@ -420,6 +420,119 @@ export function updateAdjacencyCounts3D(fg: ForceGraphInstance): void {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Analytics heatmap value labels (3D)
+// ---------------------------------------------------------------------------
+// the 2D renderer draws the raw per-node value (e.g. distance/degree) under
+// each node when the analytics "show values" tweaker is on; the 3D renderer
+// mounts an equivalent text sprite below each heatmap node. it is synced from
+// the shared rAF loop (no rebuild) and only regenerates its text when the value
+// actually changes. the sprite hangs below the node's label sprite so the two
+// never overlap.
+
+// world-unit height of the value text (slightly smaller than the node label)
+const VALUE_TEXT_HEIGHT_3D = 4;
+
+interface ValueSprite extends SceneObject {
+    text: string;
+    textHeight: number;
+    fontFace: string;
+    fontWeight: string;
+    color: string;
+    strokeWidth: number;
+    strokeColor: string;
+    material: { depthWrite: boolean };
+    center: { x: number; y: number };
+}
+
+// theme-aware value text + contrasting halo, mirroring the 2D value labels
+function valueSpriteStyle(): { color: string; strokeColor: string } {
+    return getTheme() === 'dark'
+        ? { color: 'rgba(255,255,255,0.95)', strokeColor: 'rgba(0,0,0,0.85)' }
+        : { color: 'rgba(0,0,0,0.9)', strokeColor: 'rgba(255,255,255,0.9)' };
+}
+
+function buildValueSprite(node: FGNode): ValueSprite {
+    const sprite = new SpriteText('') as unknown as ValueSprite;
+    sprite.textHeight = VALUE_TEXT_HEIGHT_3D;
+    sprite.fontFace = UI_FONT_FAMILY;
+    sprite.fontWeight = 'bold';
+    const { color, strokeColor } = valueSpriteStyle();
+    sprite.color = color;
+    sprite.strokeWidth = 2;
+    sprite.strokeColor = strokeColor;
+    sprite.material.depthWrite = false;
+    // hang the value below the node, clearing the sphere AND the label sprite
+    // (which already hangs below the node — see buildNodeLabelSprite). center.y
+    // is in sprite-height units: 1 puts the value's top edge at the node center,
+    // each extra unit pushes it further down (mirror of the label anchor)
+    const radius = Math.cbrt(Math.max(node.val ?? 1, 1)) * 6;
+    const labelText = getNodeLabel(node);
+    const labelLines = labelText ? labelText.split('\n').length : 0;
+    const labelHeight = labelLines * LABEL_TEXT_HEIGHT_3D;
+    const labelGap = LABEL_TEXT_HEIGHT_3D / 2;
+    const valueGap = VALUE_TEXT_HEIGHT_3D / 2;
+    // distance from the node center down to the value sprite's top edge
+    const drop = radius + labelGap + labelHeight + valueGap;
+    sprite.center.x = 0.5;
+    sprite.center.y = 1 + drop / VALUE_TEXT_HEIGHT_3D;
+    return sprite;
+}
+
+// tracks the theme the currently-attached value sprites were colored for, so a
+// theme switch rebuilds them in the new color
+let lastValueTheme = getTheme();
+
+/**
+ * Per-frame analytics heatmap value-label sync. While a heatmap decoration with
+ * "show values" on is active, shows the raw value sprite below each node that
+ * has one, updating the text only when it changes and re-attaching after a node
+ * object rebuild. Removes the sprite when the decoration clears, "show values"
+ * is turned off, or the node has no value. Driven by the shared rAF loop.
+ */
+export function updateHeatmapValues3D(fg: ForceGraphInstance): void {
+    const decoration = state.analytics.active ? state.analytics.decoration : null;
+    const labels = decoration?.kind === 'heatmap' && decoration.showValues
+        ? decoration.nodeLabels ?? null
+        : null;
+
+    const theme = getTheme();
+    const themeChanged = theme !== lastValueTheme;
+    lastValueTheme = theme;
+
+    for (const n of fg.graphData().nodes as FGNode[]) {
+        const holder = n as FGNode & {
+            __threeObj?: SceneObject;
+            __valueSprite?: ValueSprite;
+            __valueText?: string;
+        };
+        const sphere = holder.__threeObj;
+        const text = labels?.get(n.id);
+
+        // theme switch: drop cached sprite so it rebuilds in the new color
+        if (themeChanged && holder.__valueSprite) {
+            holder.__valueSprite.parent?.remove(holder.__valueSprite);
+            holder.__valueSprite = undefined;
+            holder.__valueText = undefined;
+        }
+
+        if (text !== undefined && sphere) {
+            if (!holder.__valueSprite) holder.__valueSprite = buildValueSprite(n);
+            const sprite = holder.__valueSprite;
+            // only rewrite the text (which regenerates the canvas texture) when
+            // the value actually changes
+            if (holder.__valueText !== text) {
+                sprite.text = text;
+                holder.__valueText = text;
+            }
+            if (sprite.parent !== sphere) sphere.add(sprite);
+        } else if (holder.__valueSprite?.parent) {
+            holder.__valueSprite.parent.remove(holder.__valueSprite);
+            holder.__valueText = undefined;
+        }
+    }
+}
+
 
 /**
  * Adds three axis lines through the origin to the scene — the 3D analogue of
