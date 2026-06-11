@@ -61,7 +61,20 @@ whole, not just line-by-line.
   module-level comments that are now stale.
 - Keep docs accurate to the new state; don't document things that didn't change.
 
-## 5. Verification gates
+## 5. Bump the version
+- By default, bump the last (patch) component of `__version__` in
+  `src/sysgraph/__init__.py` (e.g. `0.2.25` → `0.2.26`). This is the single
+  source of truth for the app version (Vite injects it at build time).
+- Skip the bump when the change is miniscule (e.g. a typo fix, comment-only
+  tweak, or trivial doc edit), when it only affects metadata that isn't the
+  product itself (e.g. these prompt/instruction files, `README.md`, repo docs),
+  or when I explicitly instruct otherwise.
+- If the version was already bumped earlier in this session, don't bump it
+  again — just confirm it reflects the change.
+- If a frontend bump happens, make sure the rebuild in the verification gates
+  picks up the new version.
+
+## 6. Verification gates
 Run the checks relevant to what changed and fix any failures before proceeding.
 - Frontend changed (`src/sysgraph-ui/`): `npm run typecheck`, `npm run lint`
   (fix all errors/warnings — the codebase must stay lint-clean), `npm run test`,
@@ -72,7 +85,7 @@ Run the checks relevant to what changed and fix any failures before proceeding.
   to relock `requirements.txt`.
 - npm deps changed (`package.json`): rebuild via `./scripts/build-ui.sh`.
 
-## 6. Final summary
+## 7. Final summary
 When everything is clean and green, report back:
 - A concise bullet summary of the final changeset.
 - The verification commands you ran and their results.

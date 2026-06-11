@@ -66,6 +66,10 @@ initTheme();
 on(EVT_GRAPH_UPDATED, async () => {
     updateDynamicGraphPanes();
     await refreshGraphUI();
+    // reconcile the engine after the visible graph changed: it warms up for a
+    // non-empty graph and stays frozen for an empty one (e.g. after a clear),
+    // even when the display mode skipped re-emitting the d3-params event
+    applyD3Params();
     updateGraphInfo();
 });
 

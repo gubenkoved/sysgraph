@@ -748,6 +748,14 @@ export function applyD3Params(): void {
         return;
     }
 
+    // an empty graph has nothing to simulate, so don't warm/reheat the engine —
+    // otherwise it ticks forever on the blank startup page and the physics
+    // indicator shows as "running" for no reason
+    if (getVisibleGraph().getNodes().length === 0) {
+        ForceGraphInstance.cooldownTicks(0);
+        return;
+    }
+
     ForceGraphInstance.cooldownTicks(Infinity);
 
     const chargeForce = ForceGraphInstance.d3Force('charge');
