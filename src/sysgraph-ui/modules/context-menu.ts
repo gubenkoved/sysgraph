@@ -5,6 +5,13 @@ export interface ContextMenuItem {
     divider?: boolean;
     disabled?: boolean;
     danger?: boolean;
+    /** optional trailing pill (e.g. a warning for large example graphs) */
+    badge?: {
+        text: string;
+        icon?: string;
+        title?: string;
+        tone?: 'warning';
+    };
 }
 
 const menu = document.getElementById('contextMenu') as HTMLElement;
@@ -39,6 +46,26 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
         const labelEl = document.createElement('span');
         labelEl.textContent = item.label ?? '';
         el.appendChild(labelEl);
+        if (item.badge) {
+            const badgeEl = document.createElement('span');
+            badgeEl.className = 'context-menu-badge';
+            if (item.badge.tone) {
+                badgeEl.classList.add(item.badge.tone);
+            }
+            if (item.badge.title) {
+                badgeEl.title = item.badge.title;
+            }
+            if (item.badge.icon) {
+                const badgeIconEl = document.createElement('span');
+                badgeIconEl.className = 'material-symbols-outlined';
+                badgeIconEl.textContent = item.badge.icon;
+                badgeEl.appendChild(badgeIconEl);
+            }
+            const badgeTextEl = document.createElement('span');
+            badgeTextEl.textContent = item.badge.text;
+            badgeEl.appendChild(badgeTextEl);
+            el.appendChild(badgeEl);
+        }
         if (!item.disabled) {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();

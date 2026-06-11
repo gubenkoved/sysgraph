@@ -24,6 +24,7 @@
   --accent-primary: #1a56db;
   --accent-info: #1a73e8;
   --accent-danger: #dc2626;
+  --accent-warning: #d97706;
 
   /* surfaces & text (theme-aware — overridden in [data-theme="dark"]) */
   --bg-canvas: #ffffff;
@@ -1572,6 +1573,33 @@ body {
 
 .context-menu-item.disabled:hover {
   background: transparent;
+}
+
+.context-menu-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--bg-pill);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.context-menu-badge .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.context-menu-badge.warning {
+  background: hsla(38, 92%, 50%, 0.16);
+  color: hsla(38, 85%, 32%, 0.95);
+}
+
+:root[data-theme="dark"] .context-menu-badge.warning {
+  background: hsla(38, 90%, 60%, 0.22);
+  color: hsla(38, 90%, 75%, 0.95);
 }
 
 .context-menu-divider {

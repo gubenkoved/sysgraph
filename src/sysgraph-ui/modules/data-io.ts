@@ -1,4 +1,8 @@
+import { CMD_LOAD_EXAMPLE, LARGE_EXAMPLE_THRESHOLD } from './constants.js';
+import type { ContextMenuItem } from './context-menu.js';
+import { handle } from './event-bus.js';
 import { type Graph, type GraphDisplay, type GraphEdge, type GraphNode, generateId } from './graph.js';
+import { showError } from './util.js';
 
 /** Result of loading or parsing graph data, including any embedded display block. */
 export interface LoadedGraphData {
@@ -250,6 +254,39 @@ export async function loadExamplesManifest(): Promise<ExampleInfo[]> {
     } catch {
         return [];
     }
+}
+
+/**
+ * Maps the examples manifest into context-menu items, flagging graphs whose
+ * total node + edge count exceeds LARGE_EXAMPLE_THRESHOLD with a warning badge.
+ */
+export function buildExampleMenuItems(examples: ExampleInfo[]): ContextMenuItem[] {
+    return examples.map((example) => {
+        const isLarge =
+            example.nodes + example.edges > LARGE_EXAMPLE_THRESHOLD;
+        return {
+            label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
+            icon: 'category',
+            badge: isLarge
+                ? {
+                      text: 'large',
+                      icon: 'warning',
+                      title: 'Large graph — may render slowly',
+                      tone: 'warning' as const,
+                  }
+                : undefined,
+            action: async () => {
+                try {
+                    await handle(CMD_LOAD_EXAMPLE, example.file);
+                } catch (err) {
+                    console.error('load example failed:', err);
+                    showError(
+                        `Load example failed: ${err instanceof Error ? err.message : String(err)}`,
+                    );
+                }
+            },
+        };
+    });
 }
 
 /**

@@ -1,9 +1,8 @@
-import { CMD_LOAD_EXAMPLE, EVT_GRAPH_UPDATED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
+import { EVT_GRAPH_UPDATED, EVT_TOOL_CHANGED, STANDALONE } from './constants.js';
 import { showContextMenu } from './context-menu.js';
-import { loadExamplesManifest } from './data-io.js';
-import { handle, on } from './event-bus.js';
+import { buildExampleMenuItems, loadExamplesManifest } from './data-io.js';
+import { on } from './event-bus.js';
 import { state } from './state.js';
-import { showError } from './util.js';
 
 // cached DOM elements
 const quickStartEl = document.getElementById('quickStart') as HTMLElement;
@@ -81,18 +80,7 @@ async function initExampleButton(): Promise<void> {
         showContextMenu(
             rect.left,
             rect.bottom + 4,
-            examples.map((example) => ({
-                label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
-                icon: 'category',
-                action: async () => {
-                    try {
-                        await handle(CMD_LOAD_EXAMPLE, example.file);
-                    } catch (err) {
-                        console.error('load example failed:', err);
-                        showError(`Load example failed: ${err instanceof Error ? err.message : String(err)}`);
-                    }
-                },
-            })),
+            buildExampleMenuItems(examples),
         );
     });
     activateOnKey(exampleBtn);

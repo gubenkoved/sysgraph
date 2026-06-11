@@ -89,7 +89,12 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
     manifest.push({ file: entry, title, nodes, edges });
   }
 
-  manifest.sort((a, b) => a.title.localeCompare(b.title));
+  // order by composite size (nodes + edges), then title for stable ties
+  manifest.sort(
+    (a, b) =>
+      a.nodes + a.edges - (b.nodes + b.edges) ||
+      a.title.localeCompare(b.title),
+  );
   return { manifest, files };
 }
 

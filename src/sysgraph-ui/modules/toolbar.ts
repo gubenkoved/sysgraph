@@ -2,9 +2,9 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_LOAD_EXAMPLE, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
-import { type ExampleInfo, loadExamplesManifest } from './data-io.js';
+import { buildExampleMenuItems, type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
 import { getVisibleGraph, setRenderMode } from './graph-ui.js';
@@ -279,22 +279,7 @@ function doClear(): void {
 
 /** Opens a compact picker listing the bundled example graphs. */
 function openExampleMenu(x: number, y: number): void {
-    showContextMenu(
-        x,
-        y,
-        examples.map((example) => ({
-            label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
-            icon: 'category',
-            action: async () => {
-                try {
-                    await handle(CMD_LOAD_EXAMPLE, example.file);
-                } catch (err) {
-                    console.error('load example failed:', err);
-                    showError(`Load example failed: ${err instanceof Error ? err.message : String(err)}`);
-                }
-            },
-        })),
-    );
+    showContextMenu(x, y, buildExampleMenuItems(examples));
 }
 
 /** Builds the logo dropdown menu items based on the current state. */
