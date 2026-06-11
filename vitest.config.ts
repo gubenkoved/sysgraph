@@ -8,4 +8,9 @@ export default defineConfig({
     include: ['src/sysgraph-ui/**/*.test.ts'],
     environment: 'node',
   },
+  // mirror the build-time globals injected by vite so modules that read them
+  // (e.g. constants.ts → STANDALONE) load under the test runner
+  define: {
+    __STANDALONE__: false,
+  },
 });

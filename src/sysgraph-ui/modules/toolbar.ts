@@ -7,7 +7,7 @@ import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { buildExampleMenuItems, type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
 import { emit, handle, on } from './event-bus.js';
-import { getVisibleGraph, setRenderMode } from './graph-ui.js';
+import { getVisibleGraph, requestRecenterView, setRenderMode } from './graph-ui.js';
 import { isPanelOpen, resetLayout, togglePanel } from './layout.js';
 import { is3D } from './render-mode.js';
 import { deleteSelectedNodes } from './selection.js';
@@ -35,6 +35,7 @@ const invertSelectionBtn = document.getElementById('invertSelection') as HTMLBut
 const rectAddModeBtn = document.getElementById('rectAddMode') as HTMLButtonElement;
 const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLElement;
 const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
+const recenterViewBtn = document.getElementById('recenterView') as HTMLElement;
 const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonElement;
 const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
 const toolbarEl = document.getElementById('toolbar') as HTMLElement;
@@ -588,6 +589,11 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         editTemplatesBtn.classList.toggle('active', isPanelOpen(PANEL_TEMPLATES));
     });
 
+    // recenter the view — fits the whole graph in 3D, recenters on origin in 2D
+    recenterViewBtn.addEventListener('click', () => {
+        requestRecenterView();
+    });
+
     // dark mode toggle
     themeToggleBtn.addEventListener('click', () => {
         toggleTheme();
@@ -629,6 +635,8 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             setTool('edit', selectionCanvas, canvas);
         } else if (event.key === 'a' || event.key === 'A') {
             setTool('analytics', selectionCanvas, canvas);
+        } else if (event.key === 'f' || event.key === 'F') {
+            requestRecenterView();
         } else if (event.key === 'Escape' && state.edit.active) {
             cancelPendingEdge();
         } else if (event.key === 'Delete' && state.currentTool === 'rect-select' && state.selection.selectedNodeIds.size > 0) {
