@@ -211,6 +211,11 @@
         <div id="version-badge">
           <span id="app-version">v__APP_VERSION__</span>
         </div>
+
+        <div id="loading-overlay">
+          <div class="loading-spinner"></div>
+          <span class="loading-label">Loading…</span>
+        </div>
       </div><!-- /#graphPanel -->
 
       <div id="detailsPanelBody" class="panel-body"></div>
@@ -222,11 +227,6 @@
     <input type="file" id="importFile" accept=".json" style="display:none">
 
     <div id="contextMenu"></div>
-
-    <div id="loading-overlay">
-      <div class="loading-spinner"></div>
-      <span class="loading-label">Loading…</span>
-    </div>
 
     <script src="./app.ts" type="module"></script>
   </body>
