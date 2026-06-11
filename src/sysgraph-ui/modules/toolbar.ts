@@ -2,7 +2,7 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { buildExampleMenuItems, type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -11,6 +11,7 @@ import { getVisibleGraph, setRenderMode } from './graph-ui.js';
 import { isPanelOpen, resetLayout, togglePanel } from './layout.js';
 import { is3D } from './render-mode.js';
 import { deleteSelectedNodes } from './selection.js';
+import type { ShareDisplayMode, ShareEncodeResult } from './share.js';
 import type { EditSubTool } from './state.js';
 import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
 import { closeTemplatesPanel } from './templates-panel.js';
@@ -38,6 +39,14 @@ const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonE
 const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
 const toolbarEl = document.getElementById('toolbar') as HTMLElement;
 const importFileInput = document.getElementById('importFile') as HTMLInputElement;
+const shareDialogOverlay = document.getElementById('shareDialogOverlay') as HTMLElement;
+const shareDialogClose = document.getElementById('shareDialogClose') as HTMLElement;
+const shareDisplayModes = document.getElementById('shareDisplayModes') as HTMLElement;
+const shareDisplayEmbeddedRow = document.getElementById('shareDisplayEmbeddedRow') as HTMLElement;
+const shareUrlInput = document.getElementById('shareUrlInput') as HTMLInputElement;
+const shareUrlSize = document.getElementById('shareUrlSize') as HTMLElement;
+const shareCopyBtn = document.getElementById('shareCopyBtn') as HTMLButtonElement;
+const shareTooLarge = document.getElementById('shareTooLarge') as HTMLElement;
 const graphInfoEl = document.getElementById('graphInfo') as HTMLElement;
 const searchBar = document.getElementById('searchBar') as HTMLElement;
 const searchInput = document.getElementById('searchInput') as HTMLInputElement;
@@ -277,6 +286,86 @@ function doClear(): void {
     emit(EVT_CLEAR_CLICKED, null);
 }
 
+/** Formats a byte count as a compact human-readable size. */
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+/** Minimal shape of the md-radio elements in the share-display group. */
+type ShareRadio = HTMLElement & { value: string; checked: boolean; disabled: boolean };
+
+/** Returns the radio elements backing the view-settings choice. */
+function shareDisplayRadios(): ShareRadio[] {
+    return [...shareDisplayModes.querySelectorAll('md-radio')] as ShareRadio[];
+}
+
+/** Reads the currently selected view-settings mode. */
+function getShareDisplayMode(): ShareDisplayMode {
+    const selected = shareDisplayRadios().find(r => r.checked);
+    return (selected?.value as ShareDisplayMode | undefined) ?? 'none';
+}
+
+/** Selects the given view-settings mode in the radio group. */
+function setShareDisplayMode(mode: ShareDisplayMode): void {
+    for (const radio of shareDisplayRadios()) {
+        radio.checked = radio.value === mode;
+    }
+}
+
+/** Regenerates the data URL based on the current dialog options. */
+async function regenerateShareUrl(): Promise<void> {
+    let result: ShareEncodeResult;
+    try {
+        result = await handle<ShareDisplayMode, Promise<ShareEncodeResult>>(CMD_SHARE, getShareDisplayMode());
+    } catch (err) {
+        console.error('data URL generation failed:', err);
+        showError(`Failed to generate data URL: ${err instanceof Error ? err.message : String(err)}`);
+        return;
+    }
+
+    // always offer the URL; just warn when it's large enough that some clients
+    // (chat apps, email, QR codes) may truncate it
+    shareTooLarge.hidden = !result.tooLarge;
+    shareUrlInput.value = result.url;
+    shareUrlSize.textContent = formatBytes(result.bytes);
+}
+
+/** Copies the generated link to the clipboard, falling back to selection. */
+async function copyShareUrl(): Promise<void> {
+    const url = shareUrlInput.value;
+    if (!url) return;
+    try {
+        await navigator.clipboard.writeText(url);
+        showInfoToast('Data URL copied to clipboard', { id: 'share-copied', icon: 'link' });
+    } catch {
+        // clipboard API needs a secure context — fall back to selecting the text
+        shareUrlInput.focus();
+        shareUrlInput.select();
+        showInfoToast('Press Ctrl+C to copy the data URL', { id: 'share-copied', icon: 'link' });
+    }
+}
+
+/** Closes the share dialog. */
+function closeShareDialog(): void {
+    shareDialogOverlay.hidden = true;
+}
+
+/** Opens the share dialog and generates an initial link. */
+function openShareDialog(): void {
+    // the "embedded" option only makes sense when the loaded graph carries its
+    // own display block; disable it otherwise
+    const hasEmbedded = state.graph.display != null;
+    const embeddedRadio = shareDisplayRadios().find(r => r.value === 'embedded');
+    if (embeddedRadio) embeddedRadio.disabled = !hasEmbedded;
+    shareDisplayEmbeddedRow.classList.toggle('disabled', !hasEmbedded);
+
+    // default to not embedding any view settings (smallest, most-shareable URL)
+    setShareDisplayMode('none');
+    shareDialogOverlay.hidden = false;
+    void regenerateShareUrl();
+}
+
 /** Opens a compact picker listing the bundled example graphs. */
 function openExampleMenu(x: number, y: number): void {
     showContextMenu(x, y, buildExampleMenuItems(examples));
@@ -311,6 +400,12 @@ function buildLogoMenu(): ContextMenuItem[] {
         icon: 'download',
         disabled: isEmpty,
         action: doExport,
+    });
+    items.push({
+        label: 'Share as data URL…',
+        icon: 'share',
+        disabled: isEmpty,
+        action: openShareDialog,
     });
     items.push({ divider: true });
     items.push({
@@ -463,6 +558,19 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
         event.stopPropagation();
         const rect = logoButton.getBoundingClientRect();
         showContextMenu(rect.left, rect.bottom + 4, buildLogoMenu());
+    });
+
+    // share dialog wiring
+    shareDialogClose.addEventListener('click', closeShareDialog);
+    shareCopyBtn.addEventListener('click', () => void copyShareUrl());
+    // regenerate the link whenever the view-settings choice changes
+    shareDisplayModes.addEventListener('change', () => void regenerateShareUrl());
+    // click on the backdrop (outside the dialog) closes it
+    shareDialogOverlay.addEventListener('click', (event) => {
+        if (event.target === shareDialogOverlay) closeShareDialog();
+    });
+    shareDialogOverlay.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeShareDialog();
     });
 
     // load the bundled example manifest so the logo menu can offer it

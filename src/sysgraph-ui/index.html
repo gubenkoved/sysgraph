@@ -232,6 +232,50 @@
 
     <input type="file" id="importFile" accept=".json" style="display:none">
 
+    <div id="shareDialogOverlay" class="dialog-overlay" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="shareDialogTitle">
+        <div class="dialog-header">
+          <span id="shareDialogTitle" class="dialog-title">Share as data URL</span>
+          <md-icon-button id="shareDialogClose" title="Close">
+            <md-icon>close</md-icon>
+          </md-icon-button>
+        </div>
+        <div class="dialog-body">
+          <div class="dialog-field">
+            <span class="dialog-field-label">View settings</span>
+            <div id="shareDisplayModes" class="share-display-modes" role="radiogroup" aria-label="View settings">
+              <label class="dialog-radio">
+                <md-radio name="shareDisplay" value="none" checked></md-radio>
+                <span>Don’t include</span>
+              </label>
+              <label class="dialog-radio">
+                <md-radio name="shareDisplay" value="current"></md-radio>
+                <span>Current view settings</span>
+              </label>
+              <label class="dialog-radio" id="shareDisplayEmbeddedRow">
+                <md-radio name="shareDisplay" value="embedded"></md-radio>
+                <span>Embedded view settings</span>
+              </label>
+            </div>
+          </div>
+          <div id="shareUrlGroup" class="share-url-group">
+            <input id="shareUrlInput" class="share-url-input" type="text" readonly aria-label="Data URL">
+            <div class="share-url-actions">
+              <span id="shareUrlSize" class="share-url-size"></span>
+              <md-outlined-button id="shareCopyBtn">
+                <md-icon slot="icon">content_copy</md-icon>
+                Copy
+              </md-outlined-button>
+            </div>
+          </div>
+          <div id="shareTooLarge" class="share-too-large" hidden>
+            <md-icon>warning</md-icon>
+            <span>This data URL is large and may be truncated by some clients (chat apps, email, QR codes). If it doesn’t work, use “Export graph…” to save it as a file instead.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="contextMenu"></div>
 
     <script src="./app.ts" type="module"></script>

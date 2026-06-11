@@ -28,6 +28,26 @@ export const CMD_RELOAD = 'reload-graph';
 export const CMD_EXPORT = 'export-graph';
 export const CMD_IMPORT = 'import-graph';
 export const CMD_LOAD_EXAMPLE = 'load-example';
+export const CMD_SHARE = 'share-graph';
+
+// ── Share-as-link ───────────────────────────────────────────
+// graphs are serialized, gzipped and base64url-encoded into the URL hash
+// fragment (never a query param, so the backend never sees the payload)
+/** Hash-fragment key carrying the encoded graph (e.g. #share=1<base64url>). */
+export const SHARE_HASH_KEY = 'share';
+/** Payload format version, prefixed to the encoded data for forward compat. */
+export const SHARE_VERSION = '1';
+/**
+ * Encoded URL size (bytes) beyond which a data URL is flagged as large. We
+ * still let the user copy it, but warn that some clients (chat apps, email,
+ * QR codes) may truncate the link and suggest file export as a fallback.
+ */
+export const SHARE_MAX_URL_BYTES = 8000;
+/**
+ * Hard cap on the decompressed payload size (bytes) when decoding a shared
+ * link — guards against a decompression-bomb in a hostile URL.
+ */
+export const SHARE_MAX_DECODED_BYTES = 16 * 1024 * 1024;
 
 // ── Build-time configuration ────────────────────────────────
 /**

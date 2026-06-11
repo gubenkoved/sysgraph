@@ -1,5 +1,5 @@
 import { initAnalyticsPanel } from './modules/analytics-panel.js';
-import { loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
+import { type LoadedGraphData, loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
 import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, rebuildGraphObjects, refreshGraphColors, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
@@ -10,6 +10,8 @@ import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
 import { maybeApplyGraphDisplay, updateDynamicGraphPanes } from './modules/settings-pane.js';
+import { snapshotCurrentSettings } from './modules/settings-presets.js';
+import { decodeShareFromHash, encodeGraphToShareUrl, type ShareDisplayMode, stripShareHash } from './modules/share.js';
 import { getGraph, isGraphDirty, resetState, setGraphDirty, setSearch, state, updateGraph } from './modules/state.js';
 import { initTheme } from './modules/theme.js';
 import { initToolbar, setTool, updateGraphInfo } from './modules/toolbar.js';
@@ -19,7 +21,7 @@ import './modules/details-panel.js';
 import './modules/templates-panel.js';
 import {CMD_EXPORT, CMD_IMPORT,
     CMD_LOAD_EXAMPLE,
-    CMD_RELOAD, EVT_CLEAR_CLICKED,
+    CMD_RELOAD, CMD_SHARE, EVT_CLEAR_CLICKED,
     EVT_COLORS_UPDATED,
     EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,EVT_FILTERS_UPDATED,
     EVT_GRAPH_UPDATED,
@@ -33,6 +35,7 @@ import '@material/web/button/text-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/iconbutton/outlined-icon-button.js';
+import '@material/web/radio/radio.js';
 import '@material/web/switch/switch.js';
 import '@material/web/textfield/outlined-text-field.js';
 import 'dockview-core/dist/styles/dockview.css';
@@ -156,6 +159,22 @@ registerHandler(CMD_EXPORT, () => {
     return new Blob([serializeGraph(graph)], { type: 'application/json' });
 });
 
+registerHandler(CMD_SHARE, async (displayMode?: ShareDisplayMode) => {
+    // toData() already includes the graph's own embedded display block when present
+    const data = getGraph().toData();
+    if (displayMode === 'current') {
+        // embed a snapshot of the live view settings so the recipient
+        // reproduces this view (consumed on load by maybeApplyGraphDisplay,
+        // respecting its apply/ask mode)
+        data.display = snapshotCurrentSettings() as unknown as typeof data.display;
+    } else if (displayMode !== 'embedded') {
+        // 'none' (or unset): share the graph without any view settings
+        delete data.display;
+    }
+    // 'embedded': keep the graph's own display block untouched
+    return encodeGraphToShareUrl(data);
+});
+
 registerHandler(CMD_IMPORT, async (text?: string) => {
     if (!text) return;
     try {
@@ -234,9 +253,53 @@ window.addEventListener('beforeunload', (event) => {
     }
 });
 
+/**
+ * Loads a graph carried in the URL hash fragment (a data URL), if present.
+ * Returns true when a graph was loaded so the caller skips the backend
+ * / standalone empty-graph paths.
+ */
+async function tryLoadSharedGraph(): Promise<boolean> {
+    let loadedData: LoadedGraphData | null;
+    try {
+        loadedData = await decodeShareFromHash(window.location.hash);
+    } catch (err) {
+        console.error('failed to load graph from data URL:', err);
+        showError(`Failed to load graph from data URL: ${(err as Error).message}`);
+        // drop the broken hash so a reload doesn't keep failing
+        stripShareHash();
+        return false;
+    }
+
+    if (!loadedData) return false;
+
+    resetState();
+    updateGraph(new Graph(loadedData.nodes, loadedData.edges, loadedData.display));
+    maybeApplyGraphDisplay(loadedData.display);
+    requestRecenterView();
+    setGraphDirty(false);
+    emit(EVT_GRAPH_UPDATED, null);
+
+    const skipped = loadedData.skippedEdges ?? 0;
+    showInfoToast(
+        `Loaded graph from data URL: ${loadedData.nodes.length} nodes, ${loadedData.edges.length} edges${skipped > 0 ? ` (skipped ${skipped} edge${skipped !== 1 ? 's' : ''})` : ''}`,
+        { icon: 'link' },
+    );
+
+    // strip the (potentially huge) hash so it never lingers in history
+    stripShareHash();
+    return true;
+}
+
 // --- initial load ---
 window.addEventListener('load', async () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
+
+    // a shared-link hash takes precedence over both the backend and the
+    // standalone empty-graph path
+    if (await tryLoadSharedGraph()) {
+        markQuickStartReady();
+        return;
+    }
 
     // Standalone mode: no backend. Start with an empty graph; the user loads
     // data via JSON import.

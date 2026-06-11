@@ -140,6 +140,7 @@ sysgraph/
 │           ├── layout.ts         # dockview dock-layout: panel registry, persistence, placement memory, stable-size enforcement
 │           ├── render-hooks.ts   # Pre/post per-frame render hooks (FPS graph; also drives 3D per-frame effects)
 │           ├── data-io.ts        # API fetch, JSON serialization/parsing, examples manifest
+│           ├── share.ts          # share graph as a "data URL" (gzip + base64url in the URL hash)
 │           ├── search.ts         # Search via Fuse.js (uses search-parser)
 │           ├── search-parser.ts  # Search grammar (field:value, AND/OR, grouping, quotes)
 │           ├── selection.ts      # Rectangle selection overlay
@@ -404,6 +405,8 @@ Layout-related event/command constants live in `constants.ts` (e.g. `PANEL_GRAPH
 - `badges` — array of trailing pills, each `{ text, icon?, title?, tone? }` with `tone` ∈ `info` | `success` | `warning`. Badges are fully static/example-driven (e.g. a `warning` "large" pill on big graphs, an `info` "3D friendly" pill); the UI does not compute any badges itself.
 
 The manifest entry shape (`ExampleInfo`) and the menu-item builder (`buildExampleMenuItems`) live in `data-io.ts`; the multi-badge context-menu item type (`ContextMenuBadge` / `ContextMenuItem.badges`) lives in `context-menu.ts`, with tone styles in `styles.css`.
+
+**Share as data URL (`share.ts`):** Serializes the current graph to compact JSON, gzips it via the browser-native `CompressionStream` (no dependency), base64url-encodes it, and puts it in the URL **hash fragment** (`#share=<version><payload>`, never a query param, so the backend never sees it). On startup `app.ts` (`tryLoadSharedGraph()`) decodes any such hash before the backend/standalone paths, loads the graph, then strips the hash via `history.replaceState` so the long URL never lingers in history. The share dialog (logo menu → "Share as data URL…") offers a three-state **view-settings** choice driving `CMD_SHARE`: `none` (strip the `display` block), `current` (embed `snapshotCurrentSettings()`), or `embedded` (keep the graph's own `display` block; disabled when absent). Oversized URLs (> `SHARE_MAX_URL_BYTES`) are still copyable but flagged with a truncation warning; decoding caps the inflated size (`SHARE_MAX_DECODED_BYTES`) as a decompression-bomb guard. Constants live in `constants.ts` (`SHARE_*`, `CMD_SHARE`).
 
 **Edit Mode (`edit-mode.ts` + `details-panel.ts`):** The Edit tool (E) enables graph authoring:
 - `modify` sub-tool — click empty canvas to add a node; click a node to edit it
