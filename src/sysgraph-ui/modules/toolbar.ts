@@ -387,7 +387,7 @@ function buildLogoMenu(): ContextMenuItem[] {
 
     if (examples.length > 0) {
         items.push({
-            label: 'Load example',
+            label: 'Load example…',
             icon: 'category',
             action: () => {
                 const rect = logoButton.getBoundingClientRect();
@@ -427,6 +427,15 @@ function buildLogoMenu(): ContextMenuItem[] {
         disabled: isEmpty,
         action: doClear,
     });
+
+    // non-clickable footer showing the app version — the version is otherwise
+    // only in the logo tooltip, which is unreachable on touch/mobile. reuse the
+    // #app-version text so the standalone "S" suffix is included automatically
+    const versionText = document.getElementById('app-version')?.textContent;
+    if (versionText) {
+        items.push({ divider: true });
+        items.push({ label: `sysgraph ${versionText}`, disabled: true });
+    }
 
     return items;
 }

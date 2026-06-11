@@ -45,6 +45,11 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
             iconEl.className = 'material-symbols-outlined';
             iconEl.textContent = item.icon;
             el.appendChild(iconEl);
+        } else {
+            // reserve the icon column so iconless items stay aligned with iconed ones
+            const spacerEl = document.createElement('span');
+            spacerEl.className = 'context-menu-icon-spacer';
+            el.appendChild(spacerEl);
         }
         const labelEl = document.createElement('span');
         labelEl.textContent = item.label ?? '';

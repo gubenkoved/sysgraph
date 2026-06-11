@@ -1764,7 +1764,7 @@ body {
   min-width: 0;
 }
 
-.context-menu-item > span:not(.material-symbols-outlined):not(.context-menu-badges) {
+.context-menu-item > span:not(.material-symbols-outlined):not(.context-menu-badges):not(.context-menu-icon-spacer) {
   /* keep labels on a single line; widen the menu first, ellipsize as fallback */
   flex: 1 1 auto;
   min-width: 0;
@@ -1775,6 +1775,13 @@ body {
 
 .context-menu-item .material-symbols-outlined {
   font-size: 18px;
+}
+
+/* fixed-width icon column so iconless items align with iconed ones */
+.context-menu-item .material-symbols-outlined,
+.context-menu-item .context-menu-icon-spacer {
+  flex: 0 0 18px;
+  width: 18px;
 }
 
 .context-menu-item:hover {
@@ -2219,14 +2226,18 @@ hr {
     font-size: var(--font-size-xs);
   }
 
-  /* Move the status pill from center-bottom to the bottom-right corner. The
-     version label is just a faint canvas watermark, so the pill overlays it
-     freely instead of being lifted to clear it. */
+  /* Move the status pill from center-bottom to the bottom-right corner, where
+     the version badge also lives. Hide the badge here so the two don't stack
+     (the version is still available via the logo's title tooltip). */
   #statusLine {
     left: auto;
     right: var(--spacing-md);
     transform: none;
     justify-content: flex-end;
+  }
+
+  #version-badge {
+    display: none;
   }
 
   /* The search bar is centered and near full-width on phones, so the match
