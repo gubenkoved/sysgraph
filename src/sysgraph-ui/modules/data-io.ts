@@ -1,5 +1,5 @@
 import { CMD_LOAD_EXAMPLE, LARGE_EXAMPLE_THRESHOLD } from './constants.js';
-import type { ContextMenuItem } from './context-menu.js';
+import type { ContextMenuBadge, ContextMenuItem } from './context-menu.js';
 import { handle } from './event-bus.js';
 import { type Graph, type GraphDisplay, type GraphEdge, type GraphNode, generateId } from './graph.js';
 import { showError } from './util.js';
@@ -239,6 +239,10 @@ export interface ExampleInfo {
     title: string;
     nodes: number;
     edges: number;
+    // menu-ordering hint sourced from the example's `metadata` block
+    rank?: number;
+    // badges sourced from the example's `metadata` block
+    badges?: ContextMenuBadge[];
 }
 
 /**
@@ -257,24 +261,28 @@ export async function loadExamplesManifest(): Promise<ExampleInfo[]> {
 }
 
 /**
- * Maps the examples manifest into context-menu items, flagging graphs whose
- * total node + edge count exceeds LARGE_EXAMPLE_THRESHOLD with a warning badge.
+ * Maps the examples manifest into context-menu items. Metadata-driven badges
+ * (from each example's `metadata` block) render first, followed by an
+ * auto "large" warning when the total node + edge count exceeds
+ * LARGE_EXAMPLE_THRESHOLD.
  */
 export function buildExampleMenuItems(examples: ExampleInfo[]): ContextMenuItem[] {
     return examples.map((example) => {
         const isLarge =
             example.nodes + example.edges > LARGE_EXAMPLE_THRESHOLD;
+        const badges: ContextMenuBadge[] = [...(example.badges ?? [])];
+        if (isLarge) {
+            badges.push({
+                text: 'large',
+                icon: 'warning',
+                title: 'Large graph — may render slowly',
+                tone: 'warning',
+            });
+        }
         return {
             label: `${example.title} (${example.nodes}n / ${example.edges}e)`,
             icon: 'category',
-            badge: isLarge
-                ? {
-                      text: 'large',
-                      icon: 'warning',
-                      title: 'Large graph — may render slowly',
-                      tone: 'warning' as const,
-                  }
-                : undefined,
+            ...(badges.length ? { badges } : {}),
             action: async () => {
                 try {
                     await handle(CMD_LOAD_EXAMPLE, example.file);

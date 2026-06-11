@@ -1578,8 +1578,14 @@ body {
   background: transparent;
 }
 
-.context-menu-badge {
+.context-menu-badges {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.context-menu-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -1593,6 +1599,26 @@ body {
 
 .context-menu-badge .material-symbols-outlined {
   font-size: 14px;
+}
+
+.context-menu-badge.info {
+  background: hsla(211, 92%, 50%, 0.16);
+  color: hsla(211, 85%, 38%, 0.95);
+}
+
+:root[data-theme="dark"] .context-menu-badge.info {
+  background: hsla(211, 90%, 60%, 0.22);
+  color: hsla(211, 90%, 78%, 0.95);
+}
+
+.context-menu-badge.success {
+  background: hsla(145, 70%, 42%, 0.16);
+  color: hsla(145, 65%, 30%, 0.95);
+}
+
+:root[data-theme="dark"] .context-menu-badge.success {
+  background: hsla(145, 65%, 55%, 0.22);
+  color: hsla(145, 70%, 75%, 0.95);
 }
 
 .context-menu-badge.warning {

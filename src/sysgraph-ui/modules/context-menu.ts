@@ -1,3 +1,11 @@
+/** A trailing pill shown at the right edge of a context-menu item. */
+export interface ContextMenuBadge {
+    text: string;
+    icon?: string;
+    title?: string;
+    tone?: 'info' | 'success' | 'warning';
+}
+
 export interface ContextMenuItem {
     label?: string;
     icon?: string;
@@ -5,13 +13,8 @@ export interface ContextMenuItem {
     divider?: boolean;
     disabled?: boolean;
     danger?: boolean;
-    /** optional trailing pill (e.g. a warning for large example graphs) */
-    badge?: {
-        text: string;
-        icon?: string;
-        title?: string;
-        tone?: 'warning';
-    };
+    /** optional trailing pills (e.g. a "large" warning or example metadata) */
+    badges?: ContextMenuBadge[];
 }
 
 const menu = document.getElementById('contextMenu') as HTMLElement;
@@ -46,25 +49,30 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
         const labelEl = document.createElement('span');
         labelEl.textContent = item.label ?? '';
         el.appendChild(labelEl);
-        if (item.badge) {
-            const badgeEl = document.createElement('span');
-            badgeEl.className = 'context-menu-badge';
-            if (item.badge.tone) {
-                badgeEl.classList.add(item.badge.tone);
+        if (item.badges?.length) {
+            const badgesEl = document.createElement('span');
+            badgesEl.className = 'context-menu-badges';
+            for (const badge of item.badges) {
+                const badgeEl = document.createElement('span');
+                badgeEl.className = 'context-menu-badge';
+                if (badge.tone) {
+                    badgeEl.classList.add(badge.tone);
+                }
+                if (badge.title) {
+                    badgeEl.title = badge.title;
+                }
+                if (badge.icon) {
+                    const badgeIconEl = document.createElement('span');
+                    badgeIconEl.className = 'material-symbols-outlined';
+                    badgeIconEl.textContent = badge.icon;
+                    badgeEl.appendChild(badgeIconEl);
+                }
+                const badgeTextEl = document.createElement('span');
+                badgeTextEl.textContent = badge.text;
+                badgeEl.appendChild(badgeTextEl);
+                badgesEl.appendChild(badgeEl);
             }
-            if (item.badge.title) {
-                badgeEl.title = item.badge.title;
-            }
-            if (item.badge.icon) {
-                const badgeIconEl = document.createElement('span');
-                badgeIconEl.className = 'material-symbols-outlined';
-                badgeIconEl.textContent = item.badge.icon;
-                badgeEl.appendChild(badgeIconEl);
-            }
-            const badgeTextEl = document.createElement('span');
-            badgeTextEl.textContent = item.badge.text;
-            badgeEl.appendChild(badgeTextEl);
-            el.appendChild(badgeEl);
+            el.appendChild(badgesEl);
         }
         if (!item.disabled) {
             el.addEventListener('click', (e) => {

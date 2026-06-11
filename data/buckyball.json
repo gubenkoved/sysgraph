@@ -1,5 +1,16 @@
 {
-  "title": "Buckyball (C60)",
+  "metadata": {
+    "title": "Buckyball (C60)",
+    "rank": 3,
+    "badges": [
+      {
+        "text": "3D friendly",
+        "icon": "deployed_code",
+        "tone": "info",
+        "title": "Looks great in 3D mode"
+      }
+    ]
+  },
   "display": {
     "d3EnablePhysics": true,
     "d3Charge": -150,

@@ -1,5 +1,8 @@
 {
-  "title": "US Airports",
+  "metadata": {
+    "title": "US Airports",
+    "rank": 5
+  },
   "display": {
     "d3Charge": -420,
     "d3LinkDistance": 500,

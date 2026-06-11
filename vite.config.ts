@@ -17,11 +17,71 @@ function readPythonVersion(): string {
   return match[1];
 }
 
+/**
+ * A trailing pill rendered next to an example in the "Load example" menu.
+ * Examples-only metadata — has no effect on regular graph imports.
+ */
+interface BadgeMeta {
+  text: string;
+  icon?: string;
+  title?: string;
+  tone?: 'info' | 'success' | 'warning';
+}
+
 interface ExampleInfo {
   file: string;
   title: string;
   nodes: number;
   edges: number;
+  // optional menu-ordering hint; ranked examples sort before unranked ones
+  rank?: number;
+  // optional badges driven by the example's own `metadata`
+  badges?: BadgeMeta[];
+}
+
+/**
+ * Extracts and lightly validates the examples-only `metadata` block from a
+ * parsed graph JSON. Returns the display title, menu-ordering rank, and badge
+ * pills, ignoring anything malformed so a bad metadata block never breaks the
+ * manifest.
+ */
+function parseExampleMetadata(
+  data: Record<string, unknown>,
+): { title?: string; rank?: number; badges?: BadgeMeta[] } {
+  const meta = data.metadata;
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return {};
+  const m = meta as Record<string, unknown>;
+
+  const result: { title?: string; rank?: number; badges?: BadgeMeta[] } = {};
+  if (typeof m.title === 'string' && m.title.trim()) {
+    result.title = m.title.trim();
+  }
+  if (typeof m.rank === 'number' && Number.isFinite(m.rank)) {
+    result.rank = m.rank;
+  }
+
+  if (Array.isArray(m.badges)) {
+    const badges: BadgeMeta[] = [];
+    for (const raw of m.badges) {
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      const b = raw as Record<string, unknown>;
+      if (typeof b.text !== 'string' || !b.text.trim()) continue;
+      const badge: BadgeMeta = { text: b.text.trim() };
+      if (typeof b.icon === 'string' && b.icon.trim()) {
+        badge.icon = b.icon.trim();
+      }
+      if (typeof b.title === 'string' && b.title.trim()) {
+        badge.title = b.title.trim();
+      }
+      if (b.tone === 'info' || b.tone === 'success' || b.tone === 'warning') {
+        badge.tone = b.tone;
+      }
+      badges.push(badge);
+    }
+    if (badges.length) result.badges = badges;
+  }
+
+  return result;
 }
 
 /**
@@ -66,6 +126,7 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
     let nodes = 0;
     let edges = 0;
     let title = titleFromFilename(entry);
+    let metadata: { title?: string; rank?: number; badges?: BadgeMeta[] } = {};
     try {
       const data = JSON.parse(raw) as Record<string, unknown>;
       const rawNodes = data.nodes;
@@ -76,9 +137,13 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
       edges = Array.isArray(rawEdges)
         ? rawEdges.length
         : rawEdges ? Object.keys(rawEdges).length : 0;
-      // an explicit `title` in the graph JSON wins over the filename-derived
-      // one (lets examples control exact casing, e.g. "US Airports")
-      if (typeof data.title === 'string' && data.title.trim()) {
+      // examples-only `metadata` drives the menu title, badges, and ordering
+      metadata = parseExampleMetadata(data);
+      // title precedence: metadata.title -> legacy top-level title ->
+      // filename-derived (lets examples control exact casing, e.g. "US Airports")
+      if (metadata.title) {
+        title = metadata.title;
+      } else if (typeof data.title === 'string' && data.title.trim()) {
         title = data.title.trim();
       }
     } catch {
@@ -86,15 +151,28 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
       continue;
     }
     files.set(entry, raw);
-    manifest.push({ file: entry, title, nodes, edges });
+    manifest.push({
+      file: entry,
+      title,
+      nodes,
+      edges,
+      ...(metadata.rank !== undefined ? { rank: metadata.rank } : {}),
+      ...(metadata.badges ? { badges: metadata.badges } : {}),
+    });
   }
 
-  // order by composite size (nodes + edges), then title for stable ties
-  manifest.sort(
-    (a, b) =>
-      a.nodes + a.edges - (b.nodes + b.edges) ||
-      a.title.localeCompare(b.title),
-  );
+  // order by explicit `rank` first (ascending), then unranked examples
+  // alphabetically by title; ranked ties also fall back to title
+  manifest.sort((a, b) => {
+    const ar = a.rank;
+    const br = b.rank;
+    if (ar !== undefined && br !== undefined) {
+      return ar - br || a.title.localeCompare(b.title);
+    }
+    if (ar !== undefined) return -1;
+    if (br !== undefined) return 1;
+    return a.title.localeCompare(b.title);
+  });
   return { manifest, files };
 }
 

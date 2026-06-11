@@ -1,5 +1,8 @@
 {
-  "title": "Greek Mythology",
+  "metadata": {
+    "title": "Greek Mythology",
+    "rank": 2
+  },
   "nodes": [
     {
       "id": "chaos",

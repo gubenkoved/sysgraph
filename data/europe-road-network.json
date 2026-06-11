@@ -1,5 +1,8 @@
 {
-  "title": "Europe Road Network",
+  "metadata": {
+    "title": "Europe Road Network",
+    "rank": 6
+  },
   "display": {
     "d3EnablePhysics": true,
     "d3Charge": -300,

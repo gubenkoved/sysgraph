@@ -1,5 +1,8 @@
 {
-  "title": "Euroroad",
+  "metadata": {
+    "title": "Euroroad",
+    "rank": 4
+  },
   "display": {
     "d3EnablePhysics": true,
     "d3Charge": -200,
