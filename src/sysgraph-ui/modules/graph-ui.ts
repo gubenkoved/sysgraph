@@ -739,7 +739,10 @@ export function autoAdjustCurvature(): void {
 }
 
 export function applyD3Params(): void {
-    if (!settings.d3EnablePhysics) {
+    // the transient runtime override wins over the persisted setting (without
+    // mutating it), so a toolbar pause never leaks into the exported settings
+    const physicsEnabled = state.physicsOverride ?? settings.d3EnablePhysics;
+    if (!physicsEnabled) {
         // Freeze the engine: it stops after the next tick check.
         ForceGraphInstance.cooldownTicks(0);
         return;

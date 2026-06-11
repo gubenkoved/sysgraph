@@ -77,6 +77,11 @@
       </div>
       <div class="tool-group" id="settingsGroup">
         <span class="tool-divider"></span>
+        <span class="physics-toggle-wrap">
+          <md-icon-button id="physicsToggle" title="Physics running — click to pause">
+            <md-icon id="physicsToggleIcon">motion_blur</md-icon>
+          </md-icon-button>
+        </span>
         <md-icon-button id="recenterView" title="Recenter view (F)">
           <md-icon>recenter</md-icon>
         </md-icon-button>
@@ -204,12 +209,6 @@
           <span id="zoomLevel">100%</span>
           <md-icon-button id="zoomIn" title="Zoom In">
             <md-icon>add</md-icon>
-          </md-icon-button>
-        </div>
-
-        <div id="physics-indicator">
-          <md-icon-button id="physicsToggle" title="Physics running — click to pause">
-            <md-icon id="physicsToggleIcon">pause</md-icon>
           </md-icon-button>
         </div>
 

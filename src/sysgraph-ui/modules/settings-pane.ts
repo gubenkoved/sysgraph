@@ -41,7 +41,7 @@ import {
     saveSettingsPreset,
     snapshotCurrentSettings,
 } from './settings-presets.js';
-import { getGraph, setGraphDirty } from './state.js';
+import { clearPhysicsOverride, getGraph, setGraphDirty } from './state.js';
 import { showActionToast, showError, showInfoToast } from './util.js';
 
 function getRequiredElement(id: string): HTMLElement {
@@ -124,6 +124,9 @@ const d3Params: { key: keyof SettingsShape; label: string; min: number; max: num
 ];
 
 d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3EnablePhysics', { label: 'enable physics' }).on('change', () => {
+    // a deliberate change to the persisted setting wins over any transient
+    // toolbar override, so drop it
+    clearPhysicsOverride();
     emit(EVT_D3_PARAMS_CHANGED, null);
 });
 
@@ -360,6 +363,9 @@ function resetGraphDisplayAndRefresh(): void {
  * touches settings.
  */
 export function maybeApplyGraphDisplay(display: GraphDisplay | undefined): void {
+    // loading any graph drops a transient physics override so the new graph's
+    // persisted setting takes effect regardless of display mode
+    clearPhysicsOverride();
     const mode = getGraphDisplayMode();
     if (mode === 'ignore') {
         return;

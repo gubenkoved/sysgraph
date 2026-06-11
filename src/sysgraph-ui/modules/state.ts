@@ -128,6 +128,10 @@ export interface AppState {
     search: SearchState | null;
     edit: EditState;
     analytics: AnalyticsState;
+    // transient, runtime-only override of physics enablement; null means follow
+    // the persisted `settings.d3EnablePhysics`, true/false force-override it for
+    // this session without ever mutating (or exporting) the persisted setting
+    physicsOverride: boolean | null;
 }
 
 function initializeSelectionState(): SelectionState {
@@ -177,6 +181,7 @@ export const state: AppState = {
     search: null,
     edit: initializeEditState(),
     analytics: initializeAnalyticsState(),
+    physicsOverride: null,
 };
 
 /** Resets all application state to initial defaults. */
@@ -191,6 +196,7 @@ export function resetState(): void {
     state.analytics.awaitingPickRole = null;
     state.analytics.result = null;
     state.analytics.decoration = null;
+    state.physicsOverride = null;
     graphDirty = false;
 }
 
@@ -228,6 +234,21 @@ export function setEditSubTool(subTool: EditSubTool): void {
 
 export function setPendingEdgeSource(nodeId: string | null): void {
     state.edit.pendingEdgeSourceId = nodeId;
+}
+
+/** Current runtime physics override (null = follow the persisted setting). */
+export function getPhysicsOverride(): boolean | null {
+    return state.physicsOverride;
+}
+
+/** Sets a transient physics-enablement override without touching settings. */
+export function setPhysicsOverride(value: boolean | null): void {
+    state.physicsOverride = value;
+}
+
+/** Drops the transient override so physics follows the persisted setting again. */
+export function clearPhysicsOverride(): void {
+    state.physicsOverride = null;
 }
 
 export function setNodeTemplate(template: EntityTemplate): void {
