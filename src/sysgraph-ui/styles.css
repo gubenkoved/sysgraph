@@ -1747,6 +1747,10 @@ body {
   padding: var(--spacing-xs) 0;
   box-shadow: 0 4px 12px var(--shadow-md);
   min-width: 160px;
+  /* grow to fit labels but never overflow the viewport; long lists scroll */
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   font-size: var(--font-size-md);
 }
 
@@ -1757,6 +1761,17 @@ body {
   padding: var(--spacing-sm) 14px;
   cursor: pointer;
   user-select: none;
+  /* allow the label to shrink so it can ellipsize instead of wrapping */
+  min-width: 0;
+}
+
+.context-menu-item > span:not(.material-symbols-outlined):not(.context-menu-badges) {
+  /* keep labels on a single line; widen the menu first, ellipsize as fallback */
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .context-menu-item .material-symbols-outlined {
@@ -1790,6 +1805,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  /* pills stay fully visible even when the label is ellipsized */
+  flex-shrink: 0;
 }
 
 .context-menu-badge {

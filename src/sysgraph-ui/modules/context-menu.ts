@@ -88,14 +88,16 @@ export function showContextMenu(x: number, y: number, items: ContextMenuItem[]):
     menu.style.top = `${y}px`;
     menu.style.display = 'block';
 
-    // clamp to viewport
+    // clamp to viewport (keep a small margin on every edge so a wide/tall
+    // menu stays fully visible on narrow screens)
     requestAnimationFrame(() => {
         const rect = menu.getBoundingClientRect();
+        const margin = 4;
         if (rect.right > window.innerWidth) {
-            menu.style.left = `${window.innerWidth - rect.width - 4}px`;
+            menu.style.left = `${Math.max(margin, window.innerWidth - rect.width - margin)}px`;
         }
         if (rect.bottom > window.innerHeight) {
-            menu.style.top = `${window.innerHeight - rect.height - 4}px`;
+            menu.style.top = `${Math.max(margin, window.innerHeight - rect.height - margin)}px`;
         }
     });
 }
