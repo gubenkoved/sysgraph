@@ -154,7 +154,7 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { label: 'curvature step', min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { label: 'link curvature', min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
     emit(EVT_CURVATURE_UPDATED, null);
 });
 

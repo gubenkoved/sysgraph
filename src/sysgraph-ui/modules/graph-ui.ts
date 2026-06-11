@@ -660,13 +660,6 @@ function mergeGraphDataIntoForceGraph(nodes: FGNode[], edges: FGLink[]): void {
     ForceGraphInstance.graphData({ nodes: mergedNodes, links: mergedLinks });
 
     autoAdjustCurvature();
-
-    // the 3D renderer builds geometry when graphData is set and evaluates
-    // accessors lazily; autoAdjustCurvature mutated link curvature afterwards,
-    // so refresh to rebuild link geometry with the new curvatures
-    if (is3D()) {
-        ForceGraphInstance.refresh();
-    }
 }
 
 export function autoAdjustCurvature(): void {
@@ -728,6 +721,13 @@ export function autoAdjustCurvature(): void {
         for (let idx = 0; idx < loopGroup.length; idx++) {
             loopGroup[idx]!.curvature = SELF_LOOP_BASE_CURVATURE + idx * SELF_LOOP_CURVATURE_STEP;
         }
+    }
+
+    // the 3D renderer builds link geometry lazily and caches it, so mutating
+    // link curvature above has no effect until we force a rebuild; 2D re-reads
+    // accessors every frame and needs no refresh
+    if (is3D()) {
+        ForceGraphInstance.refresh();
     }
 }
 
