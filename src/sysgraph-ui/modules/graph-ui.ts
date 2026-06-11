@@ -2,6 +2,7 @@ import * as d3 from 'd3';
 import { handleAnalyticsNodeClick } from './analytics.js';
 import {
     D3_COLLISION_BASE_RADIUS, D3_COLLISION_RADIUS_PER_VAL,
+    D3_COOLDOWN_TIME_MS,
     EVT_BACKGROUND_CLICK, EVT_LINK_CLICKED,
     EVT_NODE_CLICKED, EVT_RENDER_MODE_CHANGED,
     nodeRadius,
@@ -782,6 +783,18 @@ export function applyD3Params(): void {
 
     if (typeof ForceGraphInstance.d3VelocityDecay === 'function') {
         ForceGraphInstance.d3VelocityDecay(settings.d3VelocityDecay);
+    }
+
+    // alpha target keeps the simulation "warm": a value > 0 means the engine
+    // never fully cools, so the layout stays in gentle continuous motion. The
+    // engine also stops once cooldownTime elapses, so lift that cap while a
+    // positive target is set; otherwise restore the default so a target of 0
+    // settles to rest as usual
+    if (typeof ForceGraphInstance.d3AlphaTarget === 'function') {
+        ForceGraphInstance.d3AlphaTarget(settings.d3AlphaTarget);
+    }
+    if (typeof ForceGraphInstance.cooldownTime === 'function') {
+        ForceGraphInstance.cooldownTime(settings.d3AlphaTarget > 0 ? Infinity : D3_COOLDOWN_TIME_MS);
     }
 
     // Reheat so updated forces (and a re-enabled engine) take effect.

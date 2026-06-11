@@ -464,6 +464,7 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 - DOM elements cast to specific types (`HTMLElement`, `HTMLButtonElement`, etc.)
 - Arrow functions preferred for short callbacks
 - `const` by default, `let` when mutation needed
+- No magic numbers — extract tunables/thresholds into named `export const`s in `constants.ts` (e.g. the `D3_*`, `SEARCH_PULSE_*` families) and import them, rather than inlining literals. Reuse an existing constant if one already fits instead of duplicating the value
 - npm packages imported by bare specifier (e.g., `import ForceGraph from 'force-graph'`)
 - Lint: `npm run lint` / `./scripts/lint-ui.sh`; type-check: `npm run typecheck` / `./scripts/typecheck-ui.sh`
 
@@ -516,10 +517,12 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 3. Vite will bundle it automatically
 
 ### Modifying the graph visualization
+> **Both renderers, always.** There are two graph representations (2D canvas and 3D WebGL). Any graph-related change — appearance, behavior, physics, interactions, features — MUST be applied to BOTH the 2D (`graph-ui-2d.ts`) and 3D (`graph-ui-3d.ts`) renderers (and any shared logic in `graph-ui-appearance.ts` / orchestration in `graph-ui.ts`), unless it is genuinely inapplicable to one mode (e.g. 2D-only rectangle-select/edit tools, or 3D-only camera effects) or the user explicitly says otherwise. Do not forget there are 2 modes here — never update just one side. When something only makes sense in one renderer, call it out explicitly rather than silently skipping the other.
+
 - Shared appearance (colors, sizes, labels, `resolve*` accessors used by both renderers): `graph-ui-appearance.ts`
 - 2D node/link rendering: `graph-ui-2d.ts` → `drawNode` / link accessors
 - 3D node/link rendering: `graph-ui-3d.ts` → label sprites, pulse, pin spikes, badges
-- Physics: Adjust defaults in `settings.ts` or tune via settings pane at runtime
+- Physics: Adjust defaults in `settings.ts` or tune via settings pane at runtime (forces are applied to both renderers via `applyD3Params()` in `graph-ui.ts`)
 - Colors: `settings.ts` → `overrideNodeColors` / `overrideEdgeColors` / `palette`
 
 ### Modifying the settings panel

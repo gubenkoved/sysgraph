@@ -25,11 +25,13 @@ export interface FGLink extends LinkObject<FGNode> {
     target_id?: string;
 }
 
-// Force-graph exposes d3ReheatSimulation / d3VelocityDecay / refresh at runtime
-// but some are absent from its shipped .d.ts. We extend the type here.
+// Force-graph exposes d3ReheatSimulation / d3VelocityDecay / refresh / d3AlphaTarget /
+// cooldownTime at runtime but some are absent from its shipped .d.ts. We extend it here.
 type FGBaseType<N extends NodeObject, L extends LinkObject<N>> = ForceGraphGeneric<FGBaseType<N, L>, N, L>;
 export type ForceGraphInstance = FGBaseType<FGNode, FGLink> & {
     refresh(): ForceGraphInstance;
+    d3AlphaTarget(target: number): ForceGraphInstance;
+    cooldownTime(ms: number): ForceGraphInstance;
 };
 
 // 3d-force-graph instance specialized to our node/link shapes. Its accessor API

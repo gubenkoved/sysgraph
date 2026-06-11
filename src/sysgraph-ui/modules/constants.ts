@@ -122,3 +122,7 @@ export const D3_COLLISION_BASE_RADIUS = 18;
 export const D3_COLLISION_RADIUS_PER_VAL = 6;
 export const D3_COLLISION_STRENGTH = 1;
 export const D3_COLLISION_ITERATIONS = 4;
+
+// how long the force engine keeps ticking before it stops (ms); lifted to
+// Infinity while a positive alpha target keeps the layout in motion
+export const D3_COOLDOWN_TIME_MS = 10000;
