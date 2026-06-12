@@ -2,7 +2,7 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE, TOOLBAR_SCROLL_EDGE_EPSILON_PX } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { buildExampleMenuItems, type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -223,15 +223,26 @@ export function updateGraphInfo(): void {
 }
 
 /**
- * Enables a subtle horizontal scrollbar on the toolbar only when its content
- * genuinely overflows the available width. Leaving overflow-x:auto on
- * permanently would surface a phantom 1px scrollbar from sub-pixel centering
- * (translateX(-50%)) even on wide screens with plenty of room.
+ * Enables a subtle horizontal scroll on the toolbar only when its content
+ * genuinely overflows the available width, and marks which side(s) still have
+ * hidden content so the CSS can draw a tooth/notched edge there (the scroll
+ * affordance). Leaving overflow-x:auto on permanently would surface a phantom
+ * 1px scrollbar from sub-pixel rounding of the auto-centered pill even on wide
+ * screens with plenty of room.
  */
 function updateToolbarOverflow(): void {
-    // tolerate 1px of sub-pixel rounding so the phantom bar never appears
-    const overflowing = toolbarEl.scrollWidth - toolbarEl.clientWidth > 1;
+    const eps = TOOLBAR_SCROLL_EDGE_EPSILON_PX;
+    // distance the pill can scroll; > eps (tolerating sub-pixel rounding) means
+    // it genuinely overflows, so the scroll affordance never flickers at rest
+    const maxScroll = toolbarEl.scrollWidth - toolbarEl.clientWidth;
+    const overflowing = maxScroll > eps;
     toolbarEl.classList.toggle('is-scrollable', overflowing);
+
+    // more content to the left when scrolled away from the start; more to the
+    // right when not yet at the end. teeth are shown on the side(s) that have
+    // hidden content, so they disappear as you reach each edge
+    toolbarEl.classList.toggle('can-scroll-left', overflowing && toolbarEl.scrollLeft > eps);
+    toolbarEl.classList.toggle('can-scroll-right', overflowing && toolbarEl.scrollLeft < maxScroll - eps);
 }
 
 /**
@@ -658,5 +669,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     const overflowObserver = new ResizeObserver(() => updateToolbarOverflow());
     overflowObserver.observe(toolbarEl);
     window.addEventListener('resize', updateToolbarOverflow);
+    // update the tooth edges as the user scrolls toward either end
+    toolbarEl.addEventListener('scroll', updateToolbarOverflow, { passive: true });
     updateToolbarOverflow();
 }

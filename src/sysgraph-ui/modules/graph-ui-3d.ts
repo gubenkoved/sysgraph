@@ -5,6 +5,12 @@ import {
     D3_CHARGE_STRENGTH,
     D3_LINK_DISTANCE, D3_LINK_STRENGTH,
     SEARCH_COLOR_BEST,
+    SELECTION_RING_COLOR,
+    SELECTION_RING_DASH_FILL,
+    SELECTION_RING_DASHES,
+    SELECTION_RING_GAP,
+    SELECTION_RING_SPIN_FREQ,
+    SELECTION_RING_TUBE,
     UI_FONT_FAMILY,
 } from './constants.js';
 import {
@@ -362,6 +368,107 @@ export function updatePinIndicators3D(fg: ForceGraphInstance): void {
             if (holder.__pinSpikes.parent !== sphere) sphere.add(holder.__pinSpikes);
         } else if (holder.__pinSpikes?.parent) {
             holder.__pinSpikes.parent.remove(holder.__pinSpikes);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Selection indicator (3D)
+// ---------------------------------------------------------------------------
+// the 2D renderer draws an animated red dashed ring around selected nodes; the
+// 3D renderer mounts an equivalent dashed ring that is billboarded to face the
+// camera (so it always reads as a circle, never edge-on) and spins like the 2D
+// ring. it is synced from the shared rAF loop (no rebuild) and re-attached after
+// a node object rebuild, mirroring the pinned-node spikes.
+
+// minimal structural views of the three objects whose pose we touch per frame
+// (three is untyped here, so its members aren't visible to TS)
+interface PositionedObject extends SceneObject {
+    getWorldPosition(target: { x: number; y: number; z: number }): {
+        x: number;
+        y: number;
+        z: number;
+    };
+}
+interface RingObject extends SceneObject {
+    quaternion: { copy(q: unknown): void };
+}
+
+// builds a flat dashed ring (in its local XY plane) sized to the node's sphere
+function buildSelectionRing(node: FGNode): RingObject {
+    const radius = Math.cbrt(Math.max(node.val ?? 1, 1)) * 6;
+    const ringRadius = radius + SELECTION_RING_GAP;
+    const slot = (2 * Math.PI) / SELECTION_RING_DASHES;
+    const dashArc = slot * SELECTION_RING_DASH_FILL;
+
+    // one material shared by every dash of this ring
+    const mat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(SELECTION_RING_COLOR),
+        transparent: true,
+        opacity: 0.95,
+        // double-sided so the ring stays visible even if it briefly faces away
+        // while the billboard orientation catches up
+        side: THREE.DoubleSide,
+        // draw over the scene so the ring isn't occluded by the node sphere as
+        // the camera orbits (matches the always-on-top 2D overlay)
+        depthWrite: false,
+        depthTest: false,
+    });
+    const group = new THREE.Group();
+
+    for (let i = 0; i < SELECTION_RING_DASHES; i++) {
+        // a short torus arc swept by dashArc, then rotated into its slot
+        const geom = new THREE.TorusGeometry(ringRadius, SELECTION_RING_TUBE, 6, 8, dashArc);
+        const dash = new THREE.Mesh(geom, mat);
+        dash.rotation.z = i * slot;
+        dash.renderOrder = 10;
+        group.add(dash);
+    }
+    return group as unknown as RingObject;
+}
+
+// reused per frame to avoid per-node allocations
+const RING_LOCAL_NORMAL = new THREE.Vector3(0, 0, 1);
+const ringFaceQuat = new THREE.Quaternion();
+const ringSpinQuat = new THREE.Quaternion();
+const ringCamDir = new THREE.Vector3();
+const ringNodeWorldPos = new THREE.Vector3();
+
+/**
+ * Per-frame selection-ring sync. Attaches a dashed ring to selected nodes and
+ * removes it from deselected ones, re-attaching after a node object rebuild.
+ * Each frame the ring is oriented to face the camera and spun about its normal
+ * so it mirrors the animated 2D selection ring from every viewing angle. Driven
+ * by the shared rAF loop.
+ */
+export function updateSelectionIndicators3D(fg: ForceGraphInstance): void {
+    const selected = state.selection.selectedNodeIds;
+    const camPos = (fg as unknown as { cameraPosition(): Vec3 }).cameraPosition();
+    // shared spin angle (revolutions per second), mirroring the 2D rotation
+    const spin = (Date.now() / 1000) * SELECTION_RING_SPIN_FREQ * 2 * Math.PI;
+    ringSpinQuat.setFromAxisAngle(RING_LOCAL_NORMAL, spin);
+
+    for (const n of fg.graphData().nodes as FGNode[]) {
+        const holder = n as FGNode & { __threeObj?: PositionedObject; __selectionRing?: RingObject };
+        const sphere = holder.__threeObj;
+
+        if (selected.has(n.id) && sphere) {
+            if (!holder.__selectionRing) holder.__selectionRing = buildSelectionRing(n);
+            const ring = holder.__selectionRing;
+            // (re)attach if missing or orphaned by a sphere rebuild
+            if (ring.parent !== sphere) sphere.add(ring);
+
+            // billboard: orient the ring's local +Z toward the camera so it
+            // always reads as a circle. use the node's true world position
+            // (getWorldPosition) so the facing direction is correct regardless
+            // of any parent-group transform
+            const p = sphere.getWorldPosition(ringNodeWorldPos);
+            ringCamDir.set(camPos.x - p.x, camPos.y - p.y, camPos.z - p.z).normalize();
+            ringFaceQuat.setFromUnitVectors(RING_LOCAL_NORMAL, ringCamDir);
+            // face the camera first, then spin within that plane
+            ring.quaternion.copy(ringFaceQuat.multiply(ringSpinQuat));
+        } else if (holder.__selectionRing?.parent) {
+            holder.__selectionRing.parent.remove(holder.__selectionRing);
         }
     }
 }

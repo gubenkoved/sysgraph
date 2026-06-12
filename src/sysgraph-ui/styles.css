@@ -173,49 +173,106 @@ body {
 
 /* ── Toolbar (floating pill) ─────────────────────────────── */
 
+/* #toolbar is a transparent scroll VIEWPORT pinned across the graph panel
+   (minus a minimal margin on each side); #toolbarInner is the visible pill.
+   this split is what makes overflow reliable: a single shrink-to-fit element
+   pinned by left/right never clamps consistently across engines, so it would
+   either slide under a docked side pane or refuse to scroll. with a viewport +
+   inner pill, the pill keeps its natural (fit-content) width and the viewport
+   simply scrolls it when it does not fit */
 #toolbar {
   position: absolute;
   top: var(--spacing-md);
-  left: 50%;
-  transform: translateX(-50%);
+  left: var(--spacing-md);
+  right: var(--spacing-md);
   z-index: var(--z-toolbar);
+  display: flex;
+  /* centered while it fits; "safe" keeps the start edge visible (so the logo
+     stays reachable) once the pill overflows and we scroll */
+  justify-content: safe center;
+  /* torn/sawtooth scroll affordance (see can-scroll-* rules below). the mask
+     lives on this VIEWPORT, not on #toolbarInner: the pill scrolls, so a mask
+     on it would put the teeth on the pill's own far edge — off-screen, beyond
+     the viewport's straight overflow clip. masking the (fixed, non-scrolling)
+     viewport instead serrates the edge you actually see. teeth are SVG
+     triangle tiles; union compositing (the mask default) merges the solid
+     interior with the tooth strip seamlessly (each tile is fully opaque along
+     its inner edge, so it abuts the interior with no hairline gap) */
+  --tooth-depth: 7px;
+  --tooth-period: 9px;
+  --tooth-solid: linear-gradient(#000 0 0);
+  --teeth-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L10 10 L0 20 Z' fill='%23000'/%3E%3C/svg%3E");
+  --teeth-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' preserveAspectRatio='none'%3E%3Cpath d='M10 0 L0 10 L10 20 Z' fill='%23000'/%3E%3C/svg%3E");
+}
+
+#toolbarInner {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs);
+  /* never shrink — overflow into the scrollable viewport instead of squashing */
+  flex: 0 0 auto;
   background: var(--bg-pill);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: 0 2px 12px var(--shadow-sm);
-  /* never exceed the viewport on narrow screens */
-  max-width: calc(100vw - 2 * var(--spacing-md));
 }
 
 /* scrolling is enabled only when the content genuinely overflows (toggled
-   from toolbar.ts); leaving overflow-x:auto on permanently would surface a
-   phantom 1px scrollbar from sub-pixel centering on wide screens */
+   from toolbar.ts); the scrollbar is hidden so it never eats into the pill's
+   geometry — overflow is still touch/trackpad/wheel scrollable, and the
+   serrated edge below is the affordance */
 #toolbar.is-scrollable {
   overflow-x: auto;
   overflow-y: hidden;
-  /* subtle thin scrollbar (Firefox) */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-light) transparent;
+  /* reliable horizontal touch panning even when the drag starts on a button */
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  /* hide the scrollbar (Firefox) */
+  scrollbar-width: none;
 }
 
-/* subtle thin scrollbar (WebKit/Chromium) */
+/* hide the scrollbar (WebKit/Chromium) */
 #toolbar.is-scrollable::-webkit-scrollbar {
-  height: 4px;
+  display: none;
 }
 
-#toolbar.is-scrollable::-webkit-scrollbar-track {
-  background: transparent;
+/* tooth/serrated edge: the side(s) that still have hidden content get a zigzag
+   bitten out of the viewport edge (revealing the canvas behind), signalling
+   "scroll continues this way". toolbar.ts toggles can-scroll-left/right by
+   scroll position, so the teeth vanish as you reach each end. the mask is a
+   solid interior (inset by one tooth on the active side) unioned with a
+   repeating triangle strip pinned to that edge */
+#toolbar.can-scroll-right {
+  -webkit-mask:
+    var(--tooth-solid) 0 0 / calc(100% - var(--tooth-depth)) 100% no-repeat,
+    var(--teeth-right) 100% 0 / var(--tooth-depth) var(--tooth-period) repeat-y;
+  mask:
+    var(--tooth-solid) 0 0 / calc(100% - var(--tooth-depth)) 100% no-repeat,
+    var(--teeth-right) 100% 0 / var(--tooth-depth) var(--tooth-period) repeat-y;
 }
 
-#toolbar.is-scrollable::-webkit-scrollbar-thumb {
-  background: var(--border-light);
-  border-radius: var(--radius-sm);
+#toolbar.can-scroll-left {
+  -webkit-mask:
+    var(--tooth-solid) 100% 0 / calc(100% - var(--tooth-depth)) 100% no-repeat,
+    var(--teeth-left) 0 0 / var(--tooth-depth) var(--tooth-period) repeat-y;
+  mask:
+    var(--tooth-solid) 100% 0 / calc(100% - var(--tooth-depth)) 100% no-repeat,
+    var(--teeth-left) 0 0 / var(--tooth-depth) var(--tooth-period) repeat-y;
+}
+
+/* higher specificity (two classes) wins when both edges overflow; notch both */
+#toolbar.can-scroll-left.can-scroll-right {
+  -webkit-mask:
+    var(--tooth-solid) 50% 0 / calc(100% - 2 * var(--tooth-depth)) 100% no-repeat,
+    var(--teeth-right) 100% 0 / var(--tooth-depth) var(--tooth-period) repeat-y,
+    var(--teeth-left) 0 0 / var(--tooth-depth) var(--tooth-period) repeat-y;
+  mask:
+    var(--tooth-solid) 50% 0 / calc(100% - 2 * var(--tooth-depth)) 100% no-repeat,
+    var(--teeth-right) 100% 0 / var(--tooth-depth) var(--tooth-period) repeat-y,
+    var(--teeth-left) 0 0 / var(--tooth-depth) var(--tooth-period) repeat-y;
 }
 
 #toolbar-logo-button {

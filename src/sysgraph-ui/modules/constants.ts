@@ -58,6 +58,11 @@ export const SHARE_MAX_DECODED_BYTES = 16 * 1024 * 1024;
  */
 export const STANDALONE = __STANDALONE__;
 
+// ── Toolbar ─────────────────────────────────────────────────
+// px slack when deciding if the toolbar overflows / sits at a scroll edge, to
+// absorb sub-pixel rounding so the scroll affordance never flickers at rest
+export const TOOLBAR_SCROLL_EDGE_EPSILON_PX = 1;
+
 // ── Node rendering ──────────────────────────────────────────
 export const MIN_NODE_RADIUS = 4;
 export const MIN_POINTER_AREA_RADIUS = 8;
@@ -133,6 +138,22 @@ export const REHEAT_ALPHA = 0.25;
 export const REHEAT_TIMEOUT_MS = 600;
 export const SEARCH_PULSE_BASE = 5;
 export const SEARCH_PULSE_FREQ = 2;
+
+// ── Selection indicator (3D) ────────────────────────────────
+// the 2D renderer draws an animated red dashed ring around selected nodes
+// (canvas-drawn in graph-ui-2d.ts); the 3D renderer mounts an equivalent
+// billboarded, spinning dashed ring. these tune the 3D ring only
+export const SELECTION_RING_COLOR = 'rgb(255, 0, 0)';
+// number of dash segments around the ring
+export const SELECTION_RING_DASHES = 8;
+// fraction of each dash slot that is "on" (the rest is the gap)
+export const SELECTION_RING_DASH_FILL = 0.55;
+// world-unit gap between the node's surface and the ring
+export const SELECTION_RING_GAP = 4;
+// ring tube thickness (world units)
+export const SELECTION_RING_TUBE = 1.4;
+// ring spin rate (revolutions per second), mirroring the 2D rotation
+export const SELECTION_RING_SPIN_FREQ = 0.15;
 
 // ── D3 force defaults ───────────────────────────────────────
 export const D3_CHARGE_STRENGTH = -450;

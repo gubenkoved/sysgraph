@@ -23,7 +23,7 @@ import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
 import { build2DRenderer, focusNode2D, recenter2D } from './graph-ui-2d.js';
-import { build3DRenderer, focusNode3D, pulseSearchMatches3D, recenter3D, refreshColors3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D } from './graph-ui-3d.js';
+import { build3DRenderer, focusNode3D, pulseSearchMatches3D, recenter3D, refreshColors3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D } from './graph-ui-3d.js';
 import {
     clearColorCaches,
     getNodeVal,
@@ -260,11 +260,12 @@ registerPanel({
 function frameLoop(): void {
     callFramePre();
     // the 3D renderer has no per-frame draw callback, so the search-match pulse
-    // (2D draws its pulsing ring every frame), the pinned-node spike marker and
-    // the adjacency hidden-count badge are driven from here
+    // (2D draws its pulsing ring every frame), the pinned-node spike marker, the
+    // selection ring and the adjacency hidden-count badge are driven from here
     if (is3D()) {
         pulseSearchMatches3D(ForceGraphInstance);
         updatePinIndicators3D(ForceGraphInstance);
+        updateSelectionIndicators3D(ForceGraphInstance);
         updateAdjacencyCounts3D(ForceGraphInstance);
         updateHeatmapValues3D(ForceGraphInstance);
         updateAxisCross3D();
