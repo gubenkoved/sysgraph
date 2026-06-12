@@ -36,6 +36,7 @@ import {
 } from './graph-ui-appearance.js';
 import type { FGLink, FGNode, ForceGraphInstance as ForceGraphInstanceType, RendererHandlers } from './graph-ui-types.js';
 import { registerPanel } from './layout.js';
+import { isQuickStartVisible } from './quick-start.js';
 import { callFramePost, callFramePre } from './render-hooks.js';
 import { getRenderMode, is3D, persistRenderMode, type RenderMode } from './render-mode.js';
 import { settings } from './settings.js';
@@ -489,6 +490,12 @@ export function showLinkContextMenu(link: FGLink, clientX: number, clientY: numb
 
 /** Builds and shows the background context menu at the given screen coordinates. */
 export function showBackgroundContextMenu(clientX: number, clientY: number): void {
+    // the quick-start overlay covers an empty graph, where none of these actions
+    // make sense; skip the menu while it is shown
+    if (isQuickStartVisible()) {
+        return;
+    }
+
     const items: ContextMenuItem[] = [];
 
     items.push({

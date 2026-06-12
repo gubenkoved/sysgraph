@@ -4,9 +4,11 @@ name: "prepare for commit"
 argument-hint: "Optional: scope/focus (e.g. 'only the frontend changes') or a git ref to review (e.g. 'the last commit', HEAD~2..HEAD)"
 agent: "agent"
 ---
-Perform the final preparation ritual before committing. Do NOT run `git commit`,
-`git push`, or any history-altering command — stop just before committing and
-hand control back to me.
+Perform the final preparation ritual before committing. Do NOT commit, amend,
+push, or run any history-altering git command (`git commit`, `git commit
+--amend`, `git push`, `git rebase`, `git reset`, etc.) UNLESS I explicitly ask
+you to in this prompt's arguments — by default, stop just before committing and
+hand control back to me so I can commit/amend myself.
 
 Follow the project conventions in [copilot-instructions](../copilot-instructions.md).
 

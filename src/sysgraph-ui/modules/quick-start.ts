@@ -15,6 +15,15 @@ const importFileInput = document.getElementById('importFile') as HTMLInputElemen
 // have no backend, so they are ready immediately
 let ready = STANDALONE;
 
+// tracks whether the overlay is currently shown, so other modules can avoid
+// reacting to canvas gestures that sit underneath it
+let visible = false;
+
+/** Whether the quick-start overlay is currently shown. */
+export function isQuickStartVisible(): boolean {
+    return visible;
+}
+
 /**
  * Marks the quick-start panel ready to appear (called once the initial backend
  * load has settled) and refreshes its visibility.
@@ -27,7 +36,7 @@ export function markQuickStartReady(): void {
 /** Shows the quick-start panel only when the graph is empty and edit mode is inactive. */
 function refreshVisibility(): void {
     const isEmpty = state.graph.nodesMap.size === 0;
-    const visible = ready && isEmpty && state.currentTool !== 'edit';
+    visible = ready && isEmpty && state.currentTool !== 'edit';
     quickStartEl.classList.toggle('visible', visible);
 }
 
