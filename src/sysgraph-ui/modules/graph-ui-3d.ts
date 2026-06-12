@@ -635,15 +635,11 @@ function addOrbitCenter3D(fg3d: ForceGraph3DInstance): void {
 /**
  * Positions the orbit-center marker at the camera's pivot (controls target) and
  * fades it in while the camera is moving, fading out when navigation settles.
- * Gated by the shared `showGrid` setting. Called every frame by the orchestrator.
+ * Shown independently of the grid (it's a navigation aid, not a grid element).
+ * Called every frame by the orchestrator.
  */
 export function updateOrbitCenter3D(fg: ForceGraphInstance): void {
     if (!orbitCenter) return;
-
-    if (!settings.showGrid) {
-        orbitCenter.line.visible = false;
-        return;
-    }
 
     const camApi = fg as unknown as {
         cameraPosition(): Vec3;
