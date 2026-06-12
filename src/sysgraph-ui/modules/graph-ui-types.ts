@@ -1,9 +1,7 @@
 import type { ForceGraph3DInstance as ForceGraph3DGenericInstance } from '3d-force-graph';
 import type { ForceGraphGeneric, LinkObject, NodeObject } from 'force-graph';
 
-// ---------------------------------------------------------------------------
-// Custom node / link types shared by the 2D and 3D renderers
-// ---------------------------------------------------------------------------
+// ── custom node / link types shared by the 2D and 3D renderers ─
 
 export interface FGNode extends NodeObject {
     id: string;

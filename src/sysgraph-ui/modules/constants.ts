@@ -1,4 +1,4 @@
-// ── Event names ─────────────────────────────────────────────
+// ── event names ─────────────────────────────────────────────
 export const EVT_GRAPH_UPDATED = 'graph-updated';
 export const EVT_CLEAR_CLICKED = 'clear-button-clicked';
 export const EVT_FILTERS_UPDATED = 'graph-filters-updated';
@@ -18,19 +18,19 @@ export const EVT_ANALYTICS_UPDATED = 'analytics-updated';
 export const EVT_LAYOUT_CHANGED = 'layout-changed';
 export const EVT_RENDER_MODE_CHANGED = 'render-mode-changed';
 
-// ── Dock panel ids ──────────────────────────────────────────
+// ── dock panel ids ──────────────────────────────────────────
 export const PANEL_GRAPH = 'graph';
 export const PANEL_DETAILS = 'details';
 export const PANEL_ANALYTICS = 'analytics';
 export const PANEL_SETTINGS = 'settings';export const PANEL_TEMPLATES = 'templates';
-// ── Command names ───────────────────────────────────────────
+// ── command names ───────────────────────────────────────────
 export const CMD_RELOAD = 'reload-graph';
 export const CMD_EXPORT = 'export-graph';
 export const CMD_IMPORT = 'import-graph';
 export const CMD_LOAD_EXAMPLE = 'load-example';
 export const CMD_SHARE = 'share-graph';
 
-// ── Share-as-link ───────────────────────────────────────────
+// ── share-as-link ───────────────────────────────────────────
 // graphs are serialized, gzipped and base64url-encoded into the URL hash
 // fragment (never a query param, so the backend never sees the payload)
 /** Hash-fragment key carrying the encoded graph (e.g. #share=1<base64url>). */
@@ -49,7 +49,7 @@ export const SHARE_MAX_URL_BYTES = 8000;
  */
 export const SHARE_MAX_DECODED_BYTES = 16 * 1024 * 1024;
 
-// ── Build-time configuration ────────────────────────────────
+// ── build-time configuration ────────────────────────────────
 /**
  * Standalone mode (build-time flag). When true the UI never contacts the
  * backend: no initial /api/graph fetch and no "reload sysgraph" action.
@@ -58,12 +58,12 @@ export const SHARE_MAX_DECODED_BYTES = 16 * 1024 * 1024;
  */
 export const STANDALONE = __STANDALONE__;
 
-// ── Toolbar ─────────────────────────────────────────────────
+// ── toolbar ─────────────────────────────────────────────────
 // px slack when deciding if the toolbar overflows / sits at a scroll edge, to
 // absorb sub-pixel rounding so the scroll affordance never flickers at rest
 export const TOOLBAR_SCROLL_EDGE_EPSILON_PX = 1;
 
-// ── Node rendering ──────────────────────────────────────────
+// ── node rendering ──────────────────────────────────────────
 export const MIN_NODE_RADIUS = 4;
 export const MIN_POINTER_AREA_RADIUS = 8;
 export const NODE_RADIUS_MULTIPLIER = 3;
@@ -91,7 +91,7 @@ export function nodePointerRadius(node: { val?: number }): number {
     return Math.max(MIN_POINTER_AREA_RADIUS, (node.val ?? 1) * NODE_RADIUS_MULTIPLIER);
 }
 
-// ── Grid ────────────────────────────────────────────────────
+// ── grid ────────────────────────────────────────────────────
 export const GRID_SPACING = 100;
 export const GRID_CROSS_HALF = 5;
 export const GRID_CENTER_CROSS_HALF = 10;
@@ -119,7 +119,7 @@ export const EDGE_DARK_MIN_LIGHTNESS = 0.55;
 // little lower than the edge floor.
 export const NODE_DARK_MIN_LIGHTNESS = 0.4;
 
-// ── Search & highlight ──────────────────────────────────────
+// ── search & highlight ──────────────────────────────────────
 export const SEARCH_NOT_MATCHING_OPACITY = 0.5;
 export const SCORE_EPSILON = 1e-12;
 
@@ -127,19 +127,19 @@ export const SEARCH_COLOR_BEST = 'rgb(255, 0, 0)';
 export const SEARCH_COLOR_MID = 'rgb(255, 140, 0)';
 export const SEARCH_COLOR_WORST = 'rgb(195, 179, 41)';
 
-// ── Analytics heatmap scale (cold → hot) ────────────────────
+// ── analytics heatmap scale (cold → hot) ────────────────────
 export const HEATMAP_COLOR_LOW = 'rgb(44, 123, 182)';
 export const HEATMAP_COLOR_MID = 'rgb(255, 225, 100)';
 export const HEATMAP_COLOR_HIGH = 'rgb(215, 25, 28)';
 
-// ── Animation & zoom ────────────────────────────────────────
+// ── animation & zoom ────────────────────────────────────────
 export const MAX_ZOOM_BOOST = 3;
 export const REHEAT_ALPHA = 0.25;
 export const REHEAT_TIMEOUT_MS = 600;
 export const SEARCH_PULSE_BASE = 5;
 export const SEARCH_PULSE_FREQ = 2;
 
-// ── Selection indicator (3D) ────────────────────────────────
+// ── selection indicator (3D) ────────────────────────────────
 // the 2D renderer draws an animated red dashed ring around selected nodes
 // (canvas-drawn in graph-ui-2d.ts); the 3D renderer mounts an equivalent
 // billboarded, spinning dashed ring. these tune the 3D ring only
@@ -168,7 +168,7 @@ export const D3_COLLISION_ITERATIONS = 4;
 // Infinity while a positive alpha target keeps the layout in motion
 export const D3_COOLDOWN_TIME_MS = 10000;
 
-// ── Render-mode transition (2D ↔ 3D) ────────────────────────
+// ── render-mode transition (2D ↔ 3D) ────────────────────────
 // switching renderers animates the 3D camera into an axis-aligned top-down
 // pose that projects the xy-plane exactly like the 2D canvas, so the swap is
 // seamless: 3D→2D glides overhead then swaps; 2D→3D starts aligned then orbits

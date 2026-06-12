@@ -1,9 +1,7 @@
 import type { EdgeWeightFn } from './analytics-algs.js';
 import type { Graph } from './graph.js';
 
-// ---------------------------------------------------------------------------
-// community detection (Louvain, weighted & undirected)
-// ---------------------------------------------------------------------------
+// ── community detection (Louvain, weighted & undirected) ────
 
 export interface Community {
     // stable id assigned after sorting communities by size (0 = largest)

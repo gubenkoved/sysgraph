@@ -274,9 +274,7 @@ export function pulseSearchMatches3D(fg: ForceGraphInstance): void {
     pulsedNodeIds = stillPulsed;
 }
 
-// ---------------------------------------------------------------------------
-// Pinned-node indicator (3D)
-// ---------------------------------------------------------------------------
+// ── pinned-node indicator (3D) ──────────────────────────────
 // the 2D renderer draws a double ring around pinned nodes every frame; the 3D
 // renderer has no per-frame canvas hook, so a pinned node instead grows a small
 // burst of spikes radiating from its center (an "anchored" cue). the spikes are
@@ -374,9 +372,7 @@ export function updatePinIndicators3D(fg: ForceGraphInstance): void {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Selection indicator (3D)
-// ---------------------------------------------------------------------------
+// ── selection indicator (3D) ────────────────────────────────
 // the 2D renderer draws an animated red dashed ring around selected nodes; the
 // 3D renderer mounts an equivalent dashed ring that is billboarded to face the
 // camera (so it always reads as a circle, never edge-on) and spins like the 2D
@@ -475,9 +471,7 @@ export function updateSelectionIndicators3D(fg: ForceGraphInstance): void {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Adjacency hidden-count badge (3D)
-// ---------------------------------------------------------------------------
+// ── adjacency hidden-count badge (3D) ───────────────────────
 // the 2D renderer draws a "+N" badge under nodes whose neighbors are hidden by
 // the adjacency filter; the 3D renderer mounts an equivalent text sprite above
 // each such node. it is synced from the shared rAF loop (no rebuild) and only
@@ -555,9 +549,7 @@ export function updateAdjacencyCounts3D(fg: ForceGraphInstance): void {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Analytics heatmap value labels (3D)
-// ---------------------------------------------------------------------------
+// ── analytics heatmap value labels (3D) ─────────────────────
 // the 2D renderer draws the raw per-node value (e.g. distance/degree) under
 // each node when the analytics "show values" tweaker is on; the 3D renderer
 // mounts an equivalent text sprite below each heatmap node. it is synced from
@@ -882,9 +874,7 @@ function refresh3DControlsViewport(fg3d: ForceGraph3DInstance): void {
     controls.handleResize?.();
 }
 
-// ---------------------------------------------------------------------------
-// Camera helpers
-// ---------------------------------------------------------------------------
+// ── camera helpers ──────────────────────────────────────────
 
 /** Fits the whole graph into the 3D view. */
 export function recenter3D(fg: ForceGraphInstance, durationMs: number): void {
@@ -954,9 +944,7 @@ export function focusNode3D(fg: ForceGraphInstance, node: FGNode, durationMs: nu
     );
 }
 
-// ---------------------------------------------------------------------------
-// Render-mode transition: axis-aligned top-down camera
-// ---------------------------------------------------------------------------
+// ── render-mode transition: axis-aligned top-down camera ────
 
 // the 2D canvas renderer draws with +x to the right and +y DOWN the screen,
 // whereas three.js' default up is +y. to make the 3D view project the xy-plane

@@ -1,6 +1,4 @@
-// ---------------------------------------------------------------------------
-// Render mode (2D vs 3D)
-// ---------------------------------------------------------------------------
+// ── render mode (2D vs 3D) ──────────────────────────────────
 // Tracks whether the graph is rendered with the 2D canvas force-graph or the
 // 3D (Three.js/WebGL) variant. The choice is persisted so it survives reloads.
 // This module only owns the persisted value; graph-ui.ts owns the actual

@@ -35,9 +35,7 @@ import {
 // starting value of the path-width slider in the results section
 export const DEFAULT_PATH_EDGE_WIDTH_MULTIPLIER = 1.5;
 
-// ---------------------------------------------------------------------------
-// algorithm descriptors
-// ---------------------------------------------------------------------------
+// ── algorithm descriptors ───────────────────────────────────
 
 export interface ParamSpec {
     id: string;
@@ -217,9 +215,7 @@ export function getAlgorithm(id: AnalyticsAlgorithmId): AlgorithmDescriptor | un
     return ALGORITHMS.find(a => a.id === id);
 }
 
-// ---------------------------------------------------------------------------
-// result models exposed to the panel
-// ---------------------------------------------------------------------------
+// ── result models exposed to the panel ──────────────────────
 
 export interface StatsResultModel {
     kind: 'stats';
@@ -262,9 +258,7 @@ export type AnalyticsResultModel =
     | DegreeResultModel
     | CommunityResultModel;
 
-// ---------------------------------------------------------------------------
-// algorithm selection
-// ---------------------------------------------------------------------------
+// ── algorithm selection ─────────────────────────────────────
 
 /** Selects an algorithm, seeding default parameter values and clearing prior runs. */
 export function selectAlgorithm(id: AnalyticsAlgorithmId): void {
@@ -298,9 +292,7 @@ export function handleAnalyticsNodeClick(node: FGNode): void {
     emit(EVT_ANALYTICS_UPDATED, null);
 }
 
-// ---------------------------------------------------------------------------
-// running algorithms
-// ---------------------------------------------------------------------------
+// ── running algorithms ──────────────────────────────────────
 
 /**
  * Applies a persistent canvas decoration that emphasizes the given nodes/edges

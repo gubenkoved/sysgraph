@@ -3,9 +3,7 @@ import { on } from './event-bus.js';
 import { ForceGraphInstance } from './graph-ui.js';
 import { is3D } from './render-mode.js';
 
-// ---------------------------------------------------------------------------
-// Zoom Indicator
-// ---------------------------------------------------------------------------
+// ── zoom indicator ──────────────────────────────────────────
 // Floating bottom-left widget: [ - ]  100%  [ + ]
 // Tracks the live force-graph zoom level and exposes +/- buttons that
 // programmatically animate the camera. 2D only — hidden in 3D mode (the 3D

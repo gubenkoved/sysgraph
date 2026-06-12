@@ -289,9 +289,7 @@ export function showActionToast(
     return el;
 }
 
-// ---------------------------------------------------------------------------
-// Property value (de)serialization for key/value editors
-// ---------------------------------------------------------------------------
+// ── property value (de)serialization for key/value editors ──
 
 /** Serializes a property value for display in an input field. */
 export function valueToInput(value: unknown): string {

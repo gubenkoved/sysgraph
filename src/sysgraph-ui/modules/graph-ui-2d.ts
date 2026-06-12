@@ -38,9 +38,7 @@ import { getTheme } from './theme.js';
 // drawing primitives, the per-frame grid/rubber-band overlay and the d3 force
 // configuration specific to the planar simulation.
 
-// ---------------------------------------------------------------------------
-// Canvas drawing helpers
-// ---------------------------------------------------------------------------
+// ── canvas drawing helpers ──────────────────────────────────
 
 // dampen label growth above a zoom threshold so dense text stays legible;
 // below the threshold the label keeps its nominal size. this is intrinsically a
@@ -135,9 +133,7 @@ function drawText(
     ctx.restore();
 }
 
-// ---------------------------------------------------------------------------
-// Accessors & per-frame drawing (named callbacks wired into the builder below)
-// ---------------------------------------------------------------------------
+// ── accessors & per-frame drawing (named callbacks wired into the builder below) ─
 
 // dashed style for links flagged with properties.dashed
 function resolveLinkLineDash(link: FGLink): number[] | null {
@@ -340,9 +336,7 @@ function renderFramePre(
     drawGrid(fg, ctx, globalScale);
 }
 
-// ---------------------------------------------------------------------------
-// Builder
-// ---------------------------------------------------------------------------
+// ── builder ─────────────────────────────────────────────────
 
 /**
  * Builds the 2D canvas renderer mounted into `host`. Interaction callbacks come
@@ -392,9 +386,7 @@ export function build2DRenderer(
     return fg;
 }
 
-// ---------------------------------------------------------------------------
-// Camera helpers
-// ---------------------------------------------------------------------------
+// ── camera helpers ──────────────────────────────────────────
 
 /** Recenters the 2D camera on the origin at unit zoom. */
 export function recenter2D(fg: ForceGraphInstance, durationMs: number): void {

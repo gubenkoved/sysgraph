@@ -95,18 +95,18 @@ export const defaultEdgeWidth = 1;
 export const highlightAlphaMultipliers: number[] = [1.0, 1.0, 0.5, 0.1];
 
 const paletteHexes: string[] = [
-    // --- Blues & Cyans (dominant group)
+    // blues & cyans (dominant group)
     '#3498db', '#2980b9', '#1f618d', '#5dade2',
     '#1abc9c', '#16a085', '#00796b', '#009688',
     '#673ab7', '#8e44ad', '#4b0082',
-    // --- Greens
+    // greens
     '#27ae60', '#2ecc71', '#00c853',
-    // --- Warm accents (reduced reds)
+    // warm accents (reduced reds)
     '#e67e22', '#d35400',
     '#f1c40f', '#b7950b',
     '#e74c3c', '#c0392b',
     '#e91e63', '#c03978',
-    // --- Neutrals for balance
+    // neutrals for balance
     '#34495e', '#7f8c8d',
 ];
 

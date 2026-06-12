@@ -111,7 +111,7 @@ function getErrorMessage(err: unknown): string {
     return err instanceof Error ? err.message : String(err);
 }
 
-// --- d3 simulation parameters (data-driven) ---
+// ── d3 simulation parameters (data-driven) ──────────────────
 const d3RenderingSettingsFolder = tagFolder(pane.addFolder({ title: 'd3 forces settings', expanded: false }), 'forces');
 
 const d3Params: { key: keyof SettingsShape; label: string; min: number; max: number; step: number }[] = [
@@ -140,7 +140,7 @@ for (const p of d3Params) {
     });
 }
 
-// --- link distance (constant slider or per-link expression) ---
+// ── link distance (constant slider or per-link expression) ──
 const linkDistanceModeBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceMode', {
     label: 'link distance mode',
     view: 'list',
@@ -206,7 +206,7 @@ const fpsGraph = d3RenderingSettingsFolder.addBlade({
 
 setFrameHooks(() => fpsGraph.begin(), () => fpsGraph.end());
 
-// --- graph display settings ---
+// ── graph display settings ──────────────────────────────────
 const displayOptionsFolder = tagFolder(pane.addFolder({ title: 'display options', expanded: false }), 'display');
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showIsolated', { label: 'show isolated' }).on('change', () => {
@@ -229,7 +229,7 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
     emit(EVT_COLORS_UPDATED, null);
 });
 
-// --- label settings ---
+// ── label settings ──────────────────────────────────────────
 displayOptionsFolder.addBlade({ view: 'separator' });
 
 const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelMode', {
@@ -268,7 +268,7 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-// --- node sizing settings ---
+// ── node sizing settings ────────────────────────────────────
 displayOptionsFolder.addBlade({ view: 'separator' });
 
 const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingMode', {
@@ -443,18 +443,18 @@ actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
     }
 });
 
-// --- filter panes ---
+// ── filter panes ────────────────────────────────────────────
 let nodeFiltersFolder: FolderApi = tagFolder(pane.addFolder({ title: 'node filters', expanded: false }), 'filters');
 let edgeFiltersFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge filters', expanded: false }), 'filters');
 
-// --- color panes ---
+// ── color panes ─────────────────────────────────────────────
 let nodeColorsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'node colors', expanded: true }), 'colors');
 let edgeColorsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge colors', expanded: true }), 'colors');
 
-// --- edge width pane ---
+// ── edge width pane ─────────────────────────────────────────
 let edgeWidthsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge widths', expanded: false }), 'colors');
 
-// --- presets pane ---
+// ── presets pane ────────────────────────────────────────────
 let presetsFolder: FolderApi = tagFolder(pane.addFolder({ title: 'presets', expanded: true }), 'presets');
 
 function updateSelectedPresetKey(keys: string[]): void {
@@ -581,7 +581,7 @@ function rebuildPresetsFolder(): void {
     });
 }
 
-// --- settings file import/export ---
+// ── settings file import/export ─────────────────────────────
 // dedicated hidden input so it never clashes with the graph import input
 const settingsImportInput = document.createElement('input');
 settingsImportInput.type = 'file';
@@ -618,7 +618,7 @@ function exportSettingsToFile(): void {
 
 rebuildPresetsFolder();
 
-// --- graph display pane (embedded-display reconciliation + authoring) ---
+// ── graph display pane (embedded-display reconciliation + authoring) ─
 const graphDisplayFolder = tagFolder(pane.addFolder({ title: 'settings embedding', expanded: false, index: 0 }), 'embed');
 
 const graphDisplayUiState = {

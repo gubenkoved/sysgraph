@@ -448,8 +448,18 @@ Icons are from **Material Symbols Outlined**, loaded via Google Fonts CDN.
 - Start regular comments with a lower-case letter
 - Do not end a comment with a period/dot
 - Applies to inline (`//`, `#`) and line comments; keep them concise
-- Section-divider comments (e.g. `// --- foo ---`) and structured doc comments (JSDoc `/** ... */`, docstrings) are exempt and may use normal sentence capitalization/punctuation
+- Structured doc comments (JSDoc `/** ... */`, docstrings) are exempt from the casing/punctuation rules and may use normal sentence capitalization/punctuation
 - Explain the "why", not the obvious "what"
+
+#### Section dividers
+Section dividers use ONE unified style: a single-line, fixed-width Unicode box-drawing divider with the title inline. Do NOT use the old triple-line ASCII block (`// ----` / `// Title` / `// ----`) or inline ASCII (`// --- foo ---`) styles — those have been removed.
+- **TypeScript / JS:** `// ── section title ─────────────────────────────────────────`
+- **CSS:** `/* ── section title ───────────────────────────────────────── */`
+- **Python (if ever needed):** `# ── section title ─────────────────────────────────────────`
+- **Glyph:** `──` (two U+2500) before the title, then a single space, the title, a single space, then a run of U+2500 filling the rest
+- **Fixed width:** pad the trailing `─` run so the whole line is 63 columns (CSS counts its trailing ` */`). Titles longer than the column simply overflow with a single trailing `─`
+- **Title case:** sentence case — lower-case every word, EXCEPT acronyms/all-caps (`DOM`, `UI`, `AST`, `D3`, `FPS`), tokens containing digits (`2D`, `3D`), and proper nouns (`Dijkstra`, `Kruskal`, `Louvain`, `Dockview`, `Tweakpane`)
+- Reserve dividers for genuine module/file-level sections at column 0; inside functions or data literals, use a plain lower-case comment instead of a divider
 
 ### Python
 - Line length: 79 (ruff)

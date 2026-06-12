@@ -61,9 +61,7 @@ export {
 } from './graph-ui-appearance.js';
 export type { FGLink, FGNode } from './graph-ui-types.js';
 
-// ---------------------------------------------------------------------------
-// Double-click detection (force-graph has no native onNodeDblClick)
-// ---------------------------------------------------------------------------
+// ── double-click detection (force-graph has no native onNodeDblClick) ─
 
 const DOUBLE_CLICK_MS = 300;
 let lastClickedNodeId: string | null = null;
@@ -79,9 +77,7 @@ const TOUCH_SLOP_PX = 18;
 const SELF_LOOP_BASE_CURVATURE = 0.4;
 const SELF_LOOP_CURVATURE_STEP = 0.2;
 
-// ---------------------------------------------------------------------------
-// Edit-mode helpers (new-node placement & pointer tracking)
-// ---------------------------------------------------------------------------
+// ── edit-mode helpers (new-node placement & pointer tracking) ─
 
 /** Graph coordinates to assign to freshly created nodes on next merge. */
 const pendingNodePositions = new Map<string, { x: number; y: number }>();
@@ -108,9 +104,7 @@ graphContainerEl.addEventListener('mousemove', (event) => {
     pointerGraphPos.y = coords.y;
 });
 
-// ---------------------------------------------------------------------------
-// Renderer host
-// ---------------------------------------------------------------------------
+// ── renderer host ───────────────────────────────────────────
 
 // the active renderer mounts into a dedicated host inside #graph so switching
 // between the 2D and 3D renderers never disturbs the selection overlay canvas,
@@ -120,9 +114,7 @@ rendererHost.style.position = 'absolute';
 rendererHost.style.inset = '0';
 graphContainerEl.appendChild(rendererHost);
 
-// ---------------------------------------------------------------------------
-// Interaction handlers (wired into both renderers via RendererHandlers)
-// ---------------------------------------------------------------------------
+// ── interaction handlers (wired into both renderers via RendererHandlers) ─
 
 function handleNodeClick(node: FGNode, event?: MouseEvent): void {
     const now = Date.now();
@@ -228,9 +220,7 @@ const rendererHandlers: RendererHandlers = {
     onBackgroundClick: handleBackgroundClick,
 };
 
-// ---------------------------------------------------------------------------
-// Active renderer instance
-// ---------------------------------------------------------------------------
+// ── active renderer instance ────────────────────────────────
 
 // the active renderer; reassigned (an ES-module live binding) when the user
 // toggles render mode, which automatically propagates to every module that
@@ -249,9 +239,7 @@ registerPanel({
     element: document.getElementById('graphPanel') as HTMLElement,
 });
 
-// ---------------------------------------------------------------------------
-// Frame loop (drives the FPS indicator for both renderers)
-// ---------------------------------------------------------------------------
+// ── frame loop (drives the FPS indicator for both renderers) ─
 
 // a single always-on rAF loop drives the per-frame hooks (the FPS graph). rAF
 // is synced to the display's repaint, so this reflects the real frame rate —
@@ -279,9 +267,7 @@ function frameLoop(): void {
 requestAnimationFrame(frameLoop);
 
 
-// ---------------------------------------------------------------------------
-// Camera control
-// ---------------------------------------------------------------------------
+// ── camera control ──────────────────────────────────────────
 
 const RECENTER_VIEW_DURATION_MS = 400;
 
@@ -416,9 +402,7 @@ function transitionToThreeD(): void {
     });
 }
 
-// ---------------------------------------------------------------------------
-// Node double-click handler
-// ---------------------------------------------------------------------------
+// ── node double-click handler ───────────────────────────────
 
 function handleNodeDoubleClick(node: FGNode): void {
     if (state.adjacencyFilter) {
@@ -427,9 +411,7 @@ function handleNodeDoubleClick(node: FGNode): void {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Adjacency filter
-// ---------------------------------------------------------------------------
+// ── adjacency filter ────────────────────────────────────────
 
 function updateAdjacencyFilter(seedNodeIds: Iterable<string> | null, extendExisting = false): void {
     const graph = getGraph();
@@ -473,9 +455,7 @@ function updateAdjacencyFilter(seedNodeIds: Iterable<string> | null, extendExist
     }
 }
 
-// ---------------------------------------------------------------------------
-// Context menus (shared by right-click and touch long-press)
-// ---------------------------------------------------------------------------
+// ── context menus (shared by right-click and touch long-press) ─
 
 /** Builds and shows the node context menu at the given screen coordinates. */
 export function showNodeContextMenu(node: FGNode, clientX: number, clientY: number): void {
@@ -670,9 +650,7 @@ export function getNodeAtScreen(clientX: number, clientY: number): FGNode | null
     return closest;
 }
 
-// ---------------------------------------------------------------------------
-// Graph UI refresh
-// ---------------------------------------------------------------------------
+// ── graph UI refresh ────────────────────────────────────────
 
 /**
  * Builds the graph as currently rendered on the canvas by applying, in order:

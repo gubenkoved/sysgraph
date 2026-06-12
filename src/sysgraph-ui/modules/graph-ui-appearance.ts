@@ -20,9 +20,7 @@ import { getTheme } from './theme.js';
 // labels and the resolve* accessors — shared by the 2D canvas renderer and the
 // 3D WebGL renderer so both decorate nodes and links identically.
 
-// ---------------------------------------------------------------------------
-// Label & sizing helpers
-// ---------------------------------------------------------------------------
+// ── label & sizing helpers ──────────────────────────────────
 
 export function getNodeLabel(node: FGNode): string {
     switch (settings.nodeLabelMode) {
@@ -134,9 +132,7 @@ export function validateLinkDistanceExpression(expression: string): string | nul
     }
 }
 
-// ---------------------------------------------------------------------------
-// Color caches
-// ---------------------------------------------------------------------------
+// ── color caches ────────────────────────────────────────────
 
 const nodeCssColorCache = new Map<string, string>();
 const edgeCssColorCache = new Map<string, string>();
@@ -160,9 +156,7 @@ function getCachedEdgeCssColor(edgeType: string): string {
     return edgeCssColorCache.get(edgeType)!;
 }
 
-// ---------------------------------------------------------------------------
-// Search match color scale
-// ---------------------------------------------------------------------------
+// ── search match color scale ────────────────────────────────
 
 const searchMatchColorScale = new ColorScale([
     [SEARCH_COLOR_BEST, 0],
@@ -221,9 +215,7 @@ export function computeMatchColors(matchesMap: Map<string, { score: number }>): 
     return colors;
 }
 
-// ---------------------------------------------------------------------------
-// Per-element color / width helpers
-// ---------------------------------------------------------------------------
+// ── per-element color / width helpers ───────────────────────
 
 export function nodeColorFor(node: FGNode): string {
     return getCachedNodeCssColor(node.type);
@@ -249,9 +241,7 @@ export function linkTargetId(link: FGLink): string {
         : (link.target as string);
 }
 
-// ---------------------------------------------------------------------------
-// Color utilities
-// ---------------------------------------------------------------------------
+// ── color utilities ─────────────────────────────────────────
 
 export function colorAdjustAlpha(color: string, factor: number): string {
     const col = d3.color(color);
@@ -304,9 +294,7 @@ function adjustNodeColorForTheme(color: string): string {
     return raiseLightnessFloorInDark(color, NODE_DARK_MIN_LIGHTNESS);
 }
 
-// ---------------------------------------------------------------------------
-// Node pin helpers
-// ---------------------------------------------------------------------------
+// ── node pin helpers ────────────────────────────────────────
 
 export function pinNode(node: FGNode): void {
     node.fx = node.x;
@@ -328,9 +316,7 @@ export function isNodePinned(node: FGNode): boolean {
     return node.fx !== undefined || node.fy !== undefined;
 }
 
-// ---------------------------------------------------------------------------
-// Shared accessors (node/link appearance resolution)
-// ---------------------------------------------------------------------------
+// ── shared accessors (node/link appearance resolution) ──────
 
 export function nodeTooltip(n: FGNode): string {
     const label = getNodeLabel(n);

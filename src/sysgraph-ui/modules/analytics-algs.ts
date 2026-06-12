@@ -3,9 +3,7 @@ import type { Graph, GraphEdge } from './graph.js';
 /** Per-edge weight function used by weighted algorithms. */
 export type EdgeWeightFn = (edge: GraphEdge) => number;
 
-// ---------------------------------------------------------------------------
-// graph statistics
-// ---------------------------------------------------------------------------
+// ── graph statistics ────────────────────────────────────────
 
 export interface StatsResult {
     nodeCount: number;
@@ -97,9 +95,7 @@ function computeComponents(graph: Graph): {
     return { componentCount, largestComponentSize };
 }
 
-// ---------------------------------------------------------------------------
-// Dijkstra core (shared by shortest path and distance-from-source)
-// ---------------------------------------------------------------------------
+// ── Dijkstra core (shared by shortest path and distance-from-source) ─
 
 interface DijkstraResult {
     // lowest cumulative weight from the source to each settled node
@@ -168,9 +164,7 @@ function dijkstra(
     return { distances, prevEdge };
 }
 
-// ---------------------------------------------------------------------------
-// shortest path (Dijkstra, undirected)
-// ---------------------------------------------------------------------------
+// ── shortest path (Dijkstra, undirected) ────────────────────
 
 export interface ShortestPathResult {
     found: boolean;
@@ -234,9 +228,7 @@ export function shortestPath(
     };
 }
 
-// ---------------------------------------------------------------------------
-// distance from a single source (single-source Dijkstra)
-// ---------------------------------------------------------------------------
+// ── distance from a single source (single-source Dijkstra) ──
 
 export interface DistanceEntry {
     nodeId: string;
@@ -297,9 +289,7 @@ export function distanceFromSource(
     };
 }
 
-// ---------------------------------------------------------------------------
-// minimum spanning tree (Kruskal)
-// ---------------------------------------------------------------------------
+// ── minimum spanning tree (Kruskal) ─────────────────────────
 
 export interface MstResult {
     edgeIds: string[];
@@ -383,9 +373,7 @@ export function minimumSpanningTree(graph: Graph, weightFn: EdgeWeightFn): MstRe
     };
 }
 
-// ---------------------------------------------------------------------------
-// degree centrality
-// ---------------------------------------------------------------------------
+// ── degree centrality ───────────────────────────────────────
 
 export interface DegreeEntry {
     nodeId: string;

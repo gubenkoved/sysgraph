@@ -24,9 +24,7 @@
  * @module search-parser
  */
 
-// ---------------------------------------------------------------------------
-// Error type
-// ---------------------------------------------------------------------------
+// ── error type ──────────────────────────────────────────────
 
 /** Syntax error thrown when the search expression is malformed. */
 export class SearchSyntaxError extends Error {
@@ -36,9 +34,7 @@ export class SearchSyntaxError extends Error {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Token types
-// ---------------------------------------------------------------------------
+// ── token types ─────────────────────────────────────────────
 
 const TokenType = {
     LPAREN: 'LPAREN',
@@ -58,9 +54,7 @@ export interface Token {
 
 // for an LPAREN token, an optional field scopes the group's terms
 
-// ---------------------------------------------------------------------------
-// AST node types
-// ---------------------------------------------------------------------------
+// ── AST node types ──────────────────────────────────────────
 
 export interface TermNode {
     type: 'term';
@@ -80,9 +74,7 @@ export interface OrNode {
 
 export type AstNode = TermNode | AndNode | OrNode;
 
-// ---------------------------------------------------------------------------
-// Tokenizer
-// ---------------------------------------------------------------------------
+// ── tokenizer ───────────────────────────────────────────────
 
 const FIELD_RE = /^[a-zA-Z_][a-zA-Z0-9_.]*$/;
 export const INVERSE_PREFIX_RE = /^!/;
@@ -249,9 +241,7 @@ function readBareWord(input: string, start: number): { value: string; end: numbe
     return { value: input.slice(start, i), end: i };
 }
 
-// ---------------------------------------------------------------------------
-// Recursive-descent parser
-// ---------------------------------------------------------------------------
+// ── recursive-descent parser ────────────────────────────────
 
 /**
  * Parse a search expression string into an AST.

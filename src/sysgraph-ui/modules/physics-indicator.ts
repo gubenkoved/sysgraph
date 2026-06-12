@@ -4,9 +4,7 @@ import { ForceGraphInstance } from './graph-ui.js';
 import { settings } from './settings.js';
 import { getPhysicsOverride, setPhysicsOverride, state } from './state.js';
 
-// ---------------------------------------------------------------------------
-// Physics Toggle
-// ---------------------------------------------------------------------------
+// ── physics toggle ──────────────────────────────────────────
 // Toolbar button that pauses/resumes the force simulation. Clicking applies a
 // transient, runtime-only override (`state.physicsOverride`) of physics
 // enablement — it never mutates the persisted `settings.d3EnablePhysics`, so a

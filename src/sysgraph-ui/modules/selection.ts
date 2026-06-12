@@ -166,7 +166,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         graphCanvas().dispatchEvent(new WheelEvent(event.type, event));
     }, { passive: false });
 
-    // --- middle-click panning (works in ALL tool modes) ---
+    // middle-click panning (works in ALL tool modes)
     let middleDrag: { lastX: number; lastY: number } | null = null;
     let savedCursor: string | null = null;
 

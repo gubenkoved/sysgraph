@@ -3,7 +3,7 @@ import { closePanel, openPanel, registerPanel } from './layout.js';
 import { type EntityTemplate, state } from './state.js';
 import { inputToValue, valueToInput } from './util.js';
 
-// --- cached DOM elements ---
+// ── cached DOM elements ─────────────────────────────────────
 const body = document.getElementById('templatesPanelBody') as HTMLElement;
 
 function makeRow(labelText: string, input: HTMLElement): HTMLElement {

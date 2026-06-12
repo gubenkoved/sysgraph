@@ -6,7 +6,7 @@ import { closePanel, openPanel, registerPanel, unregisterPanel } from './layout.
 import { getGraph, setGraphDirty, state } from './state.js';
 import { inputToValue, valueToInput } from './util.js';
 
-// --- cached DOM elements (primary panel) ---
+// ── cached DOM elements (primary panel) ─────────────────────
 const body = document.getElementById('detailsPanelBody') as HTMLElement;
 
 /** Counter used to give each secondary details panel a unique id. */
@@ -38,9 +38,7 @@ function shortLabel(nodeOrLink: NodeOrLink): string {
     return label || nodeOrLink.type || nodeOrLink.id;
 }
 
-// ---------------------------------------------------------------------------
-// Editable form (edit mode)
-// ---------------------------------------------------------------------------
+// ── editable form (edit mode) ───────────────────────────────
 
 function makeRow(labelText: string, input: HTMLElement): HTMLElement {
     const row = document.createElement('div');
@@ -217,7 +215,7 @@ registerPanel({
     },
 });
 
-// --- secondary (shift-click) details panels ---
+// ── secondary (shift-click) details panels ──────────────────
 // open as additional tabs in the details group so they can be switched and
 // closed freely; dockview handles drag / resize / stacking
 
@@ -244,7 +242,7 @@ function createSecondaryPanel(nodeOrLink: NodeOrLink): void {
     openPanel(id);
 }
 
-// --- event bus wiring ---
+// ── event bus wiring ────────────────────────────────────────
 
 function handleClick(payload: { data: NodeOrLink; shiftKey: boolean }): void {
     if (payload.shiftKey) {

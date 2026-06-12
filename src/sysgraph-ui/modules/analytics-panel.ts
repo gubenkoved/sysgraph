@@ -19,7 +19,7 @@ import { getGraph, setAnalyticsParam, state } from './state.js';
 import { exitAnalyticsTool } from './toolbar.js';
 import { showError } from './util.js';
 
-// --- cached DOM elements ---
+// ── cached DOM elements ─────────────────────────────────────
 const body = document.getElementById('analyticsPanelBody') as HTMLElement;
 
 // register the analytics panel with the dock layout; onOpen (re)renders so a
@@ -45,9 +45,7 @@ export function closeAnalyticsPanel(): void {
 }
 
 
-// ---------------------------------------------------------------------------
-// small DOM helpers
-// ---------------------------------------------------------------------------
+// ── small DOM helpers ───────────────────────────────────────
 
 function el<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -77,9 +75,7 @@ function buildBlock(title: string, ...children: HTMLElement[]): HTMLElement {
     return block;
 }
 
-// ---------------------------------------------------------------------------
-// rendering
-// ---------------------------------------------------------------------------
+// ── rendering ───────────────────────────────────────────────
 
 function buildAlgorithmTabs(): HTMLElement {
     const tabs = el('div', 'analytics-tabs');
@@ -597,9 +593,7 @@ function render(): void {
     }
 }
 
-// ---------------------------------------------------------------------------
-// initialization
-// ---------------------------------------------------------------------------
+// ── initialization ──────────────────────────────────────────
 
 /** Wires the analytics panel event subscriptions. */
 export function initAnalyticsPanel(): void {

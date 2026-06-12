@@ -299,7 +299,7 @@ export function clearAnalyticsRun(): void {
     state.analytics.decoration = null;
 }
 
-// --- unsaved-changes tracking -------------------------------------------
+// ── unsaved-changes tracking ────────────────────────────────
 // tracks whether the current graph holds data that has not been exported
 // since it was last modified; used to warn the user before they close the
 // app and lose unexported work

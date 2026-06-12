@@ -1,7 +1,7 @@
 // biome-ignore lint/suspicious/noExplicitAny: intentional for generic event bus
 type AnyFn = (...args: any[]) => any;
 
-// --- pub/sub events (1:N, fire-and-forget) ---
+// ── pub/sub events (1:n, fire-and-forget) ───────────────────
 
 const events: Record<string, AnyFn[]> = {};
 
@@ -22,7 +22,7 @@ export function emit<T = unknown>(event: string, data: T): void {
     for (const h of handlers) h(data);
 }
 
-// --- command handlers (1:1, awaitable) ---
+// ── command handlers (1:1, awaitable) ───────────────────────
 
 const commandHandlers: Record<string, AnyFn> = {};
 

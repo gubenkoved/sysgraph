@@ -1,4 +1,4 @@
-/* ── Design Tokens ───────────────────────────────────────── */
+/* ── design tokens ──────────────────────────────────────── */
 
 :root {
   /* z-index scale */
@@ -96,7 +96,7 @@
   --tp-monitor-foreground-color: hsla(221, 25%, 30%, 0.60);
 }
 
-/* ── Dark theme ──────────────────────────────────────────── */
+/* ── dark theme ─────────────────────────────────────────── */
 
 :root[data-theme="dark"] {
   /* colors */
@@ -161,7 +161,7 @@
   --tp-monitor-foreground-color: hsla(220, 15%, 80%, 0.70);
 }
 
-/* ── Reset & Base ────────────────────────────────────────── */
+/* ── reset & base ───────────────────────────────────────── */
 
 html,
 body {
@@ -171,7 +171,7 @@ body {
   font-family: var(--font-family);
 }
 
-/* ── Toolbar (floating pill) ─────────────────────────────── */
+/* ── toolbar (floating pill) ────────────────────────────── */
 
 /* #toolbar is a transparent scroll VIEWPORT pinned across the graph panel
    (minus a minimal margin on each side); #toolbarInner is the visible pill.
@@ -345,7 +345,7 @@ body {
   background: rgba(220, 38, 38, 0.08);
 }
 
-/* ── Search (floating bar below the toolbar) ─────────────── */
+/* ── search (floating bar below the toolbar) ────────────── */
 
 #searchBar {
   position: absolute;
@@ -546,7 +546,7 @@ body {
   color: var(--text-muted);
 }
 
-/* ── Content & Graph ─────────────────────────────────────── */
+/* ── content & graph ────────────────────────────────────── */
 
 #content {
   position: fixed;
@@ -572,7 +572,7 @@ body {
   background: var(--bg-canvas);
 }
 
-/* ── Quick-start (empty-graph) panel ─────────────────────── */
+/* ── quick-start (empty-graph) panel ────────────────────── */
 
 .quick-start {
   position: absolute;
@@ -659,7 +659,7 @@ body {
   color: var(--accent-primary);
 }
 
-/* ── Modal dialog (share link) ───────────────────────────── */
+/* ── modal dialog (share link) ──────────────────────────── */
 
 .dialog-overlay {
   position: fixed;
@@ -823,14 +823,14 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Dock layout ─────────────────────────────────────────── */
+/* ── dock layout ────────────────────────────────────────── */
 
 #dock {
   width: 100%;
   height: 100%;
 }
 
-/* ── Dockview chrome (tabs + resize divider) ─────────────── */
+/* ── Dockview chrome (tabs + resize divider) ────────────── */
 
 /* map dockview's tab/divider sizing + colors onto our design tokens so the
    dock chrome matches the app: compact tab strips and a minimal hairline
@@ -864,7 +864,7 @@ body {
   flex-direction: column;
 }
 
-/* ── Detail / analytics panel bodies ─────────────────────── */
+/* ── detail / analytics panel bodies ────────────────────── */
 
 /* scrollable content area shared by the details and analytics dock panels */
 .panel-body {
@@ -940,7 +940,7 @@ body {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* ── Edit Form (edit mode details panel) ─────────────────── */
+/* ── edit form (edit mode details panel) ────────────────── */
 
 .edit-form {
   display: flex;
@@ -1051,7 +1051,7 @@ body {
   color: #fff;
 }
 
-/* ── Templates Panel ─────────────────────────────────────── */
+/* ── templates panel ────────────────────────────────────── */
 .templates-hint {
   margin: 0 0 var(--spacing-md);
   color: var(--text-muted);
@@ -1096,7 +1096,7 @@ body {
   color: var(--accent-primary);
 }
 
-/* ── Analytics Panel ─────────────────────────────────────── */
+/* ── analytics panel ────────────────────────────────────── */
 
 #analyticsPanelBody {
   display: flex;
@@ -1531,7 +1531,7 @@ body {
   font-style: italic;
 }
 
-/* ── Analytics heatmap legend ────────────────────────────── */
+/* ── analytics heatmap legend ───────────────────────────── */
 
 .analytics-legend {
   display: flex;
@@ -1554,7 +1554,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Analytics community legend ──────────────────────────── */
+/* ── analytics community legend ─────────────────────────── */
 
 .analytics-community-legend {
   display: flex;
@@ -1694,7 +1694,7 @@ body {
   text-align: center;
 }
 
-/* ── Analytics ranked node list ──────────────────────────── */
+/* ── analytics ranked node list ─────────────────────────── */
 
 .analytics-rank-list {
   display: flex;
@@ -1791,7 +1791,7 @@ body {
   text-align: center;
 }
 
-/* ── Context Menu ────────────────────────────────────────── */
+/* ── context menu ───────────────────────────────────────── */
 
 #contextMenu {
   display: none;
@@ -1924,7 +1924,7 @@ body {
   background: var(--border-medium);
 }
 
-/* ── Loading Overlay ─────────────────────────────────────── */
+/* ── loading overlay ────────────────────────────────────── */
 
 #loading-overlay {
   display: none;
@@ -1971,7 +1971,7 @@ body {
   }
 }
 
-/* ── Settings Pane (Tweakpane) ───────────────────────────── */
+/* ── settings pane (Tweakpane) ──────────────────────────── */
 
 .tp-rotv {
   /* biome-ignore lint/complexity/noImportantStyles: needed to override Tweakpane's built-in font */
@@ -2096,7 +2096,7 @@ body {
   color: hsla(221, 40%, 88%, 0.95);
 }
 
-/* ── Misc ────────────────────────────────────────────────── */
+/* ── misc ───────────────────────────────────────────────── */
 
 /* Shared frosted-glass chip styling for the bottom row controls
    (zoom indicator, status pill) so they look cohesive. */
@@ -2156,7 +2156,7 @@ body {
   color: var(--accent-primary);
 }
 
-/* ── Zoom Indicator ──────────────────────────────────────── */
+/* ── zoom indicator ─────────────────────────────────────── */
 
 #zoom-indicator {
   position: absolute;
@@ -2195,7 +2195,7 @@ body {
   background: var(--hover-overlay);
 }
 
-/* ── Physics Toggle ──────────────────────────────────────── */
+/* ── physics toggle ─────────────────────────────────────── */
 
 /* the physics pause/resume toggle lives in the toolbar settings group and is
    styled like its sibling md-icon-buttons. the wrapper is positioned so a
@@ -2270,7 +2270,7 @@ hr {
   margin: var(--spacing-sm) 0;
 }
 
-/* ── Mobile overrides ────────────────────────────────────── */
+/* ── mobile overrides ───────────────────────────────────── */
 /* Single breakpoint for all "mobile" tweaks. CSS media queries can't read
    custom properties, so this one block is the single source of truth for the
    mobile breakpoint — keep mobile-only rules here (mirrors the 600px check in
@@ -2333,7 +2333,7 @@ hr {
   }
 }
 
-/* ── Toast Stack ─────────────────────────────────────────── */
+/* ── toast stack ────────────────────────────────────────── */
 /* Shared fixed container that lays out all toasts (error, info, action) in a
    bottom-anchored column so multiple concurrent toasts stack vertically
    instead of overlapping at the same point. */
@@ -2355,7 +2355,7 @@ hr {
   pointer-events: auto;
 }
 
-/* ── Action Toast ────────────────────────────────────────── */
+/* ── action toast ───────────────────────────────────────── */
 /* Prominent, theme-aware notification with a primary action (e.g. the
    "graph defines display settings" prompt). Styling lives here so it tracks
    the active theme via design tokens. */
@@ -2466,7 +2466,7 @@ hr {
   color: var(--text-primary);
 }
 
-/* ── Action Toast (mobile) ───────────────────────────────── */
+/* ── action toast (mobile) ──────────────────────────────── */
 /* Placed after the base rules above so these overrides win on narrow screens
    (same specificity → later source order wins). The stack handles positioning;
    here we make the toast span the available width and stack its contents. */

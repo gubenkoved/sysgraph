@@ -40,12 +40,12 @@ import '@material/web/switch/switch.js';
 import '@material/web/textfield/outlined-text-field.js';
 import 'dockview-core/dist/styles/dockview.css';
 
-// --- cached DOM elements ---
+// ── cached DOM elements ─────────────────────────────────────
 const searchMatchCountEl = document.getElementById('searchMatchCount') as HTMLElement;
 const addToSelectionBtn = document.getElementById('addToSelection') as HTMLButtonElement;
 const loadingOverlay = document.getElementById('loading-overlay') as HTMLElement;
 
-// --- standalone-mode indicator ---
+// ── standalone-mode indicator ───────────────────────────────
 // in standalone builds, suffix the version with an accented "S" (e.g. v1.2.3S)
 // instead of rendering a separate badge; the S is colored so it stands out
 // from the faint version text
@@ -59,10 +59,10 @@ if (STANDALONE) {
     }
 }
 
-// --- theme (apply persisted choice before the UI renders) ---
+// ── theme (apply persisted choice before the UI renders) ────
 initTheme();
 
-// --- event wiring ---
+// ── event wiring ────────────────────────────────────────────
 on(EVT_GRAPH_UPDATED, async () => {
     updateDynamicGraphPanes();
     await refreshGraphUI();
@@ -157,7 +157,7 @@ on(EVT_THEME_CHANGED, () => {
 on(EVT_CURVATURE_UPDATED, autoAdjustCurvature);
 on(EVT_D3_PARAMS_CHANGED, applyD3Params);
 
-// --- command handlers ---
+// ── command handlers ────────────────────────────────────────
 registerHandler(CMD_EXPORT, () => {
     const graph = getGraph();
     return new Blob([serializeGraph(graph)], { type: 'application/json' });
@@ -236,10 +236,10 @@ registerHandler(CMD_RELOAD, async () => {
     }
 });
 
-// --- initialize the dock layout first so panels have a place to mount ---
+// ── initialize the dock layout first so panels have a place to mount ─
 initLayout();
 
-// --- initialize selection overlay, toolbar & zoom indicator ---
+// ── initialize selection overlay, toolbar & zoom indicator ──
 const { selectionCanvas, canvas } = initSelection();
 initToolbar(selectionCanvas, canvas);
 initAnalyticsPanel();
@@ -248,7 +248,7 @@ initZoomIndicator();
 initPhysicsIndicator();
 initLongPress();
 
-// --- guard against losing unexported graph data on close/reload ---
+// ── guard against losing unexported graph data on close/reload ─
 window.addEventListener('beforeunload', (event) => {
     if (isGraphDirty()) {
         event.preventDefault();
@@ -294,7 +294,7 @@ async function tryLoadSharedGraph(): Promise<boolean> {
     return true;
 }
 
-// --- initial load ---
+// ── initial load ────────────────────────────────────────────
 window.addEventListener('load', async () => {
     emit(EVT_D3_PARAMS_CHANGED, null);
 
