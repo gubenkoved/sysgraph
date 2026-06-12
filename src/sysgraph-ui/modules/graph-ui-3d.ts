@@ -4,6 +4,8 @@ import SpriteText from 'three-spritetext';
 import {
     D3_CHARGE_STRENGTH,
     D3_LINK_DISTANCE, D3_LINK_STRENGTH,
+    RENDER_REVEAL_AZIMUTH_DEG,
+    RENDER_REVEAL_ELEVATION_DEG,
     SEARCH_COLOR_BEST,
     SELECTION_RING_COLOR,
     SELECTION_RING_DASH_FILL,
@@ -949,5 +951,220 @@ export function focusNode3D(fg: ForceGraphInstance, node: FGNode, durationMs: nu
         { x: target.x + dx * k, y: target.y + dy * k, z: target.z + dz * k },
         target,
         durationMs,
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Render-mode transition: axis-aligned top-down camera
+// ---------------------------------------------------------------------------
+
+// the 2D canvas renderer draws with +x to the right and +y DOWN the screen,
+// whereas three.js' default up is +y. to make the 3D view project the xy-plane
+// exactly like the 2D canvas (so the renderer swap is seamless) the aligned
+// camera looks straight down the z axis with this y-down up vector
+const ALIGN_UP: Vec3 = { x: 0, y: -1, z: 0 };
+
+// minimal structural views of the THREE objects we touch (three ships no types
+// and is declared as an untyped module; its instances are `any` at runtime so
+// they satisfy these interfaces)
+interface ThreeVec3 {
+    x: number;
+    y: number;
+    z: number;
+    clone(): ThreeVec3;
+    set(x: number, y: number, z: number): ThreeVec3;
+    copy(v: ThreeVec3): ThreeVec3;
+    normalize(): ThreeVec3;
+    distanceTo(v: ThreeVec3): number;
+    lerpVectors(a: ThreeVec3, b: ThreeVec3, t: number): ThreeVec3;
+    applyQuaternion(q: unknown): ThreeVec3;
+    applyAxisAngle(axis: ThreeVec3, angle: number): ThreeVec3;
+}
+interface Camera3D {
+    position: ThreeVec3;
+    up: ThreeVec3;
+    fov: number;
+    lookAt(v: ThreeVec3): void;
+}
+interface Controls3D {
+    target: ThreeVec3;
+    enabled: boolean;
+    update?: () => void;
+}
+
+function cameraOf(fg: ForceGraphInstance): Camera3D {
+    return (fg as unknown as { camera(): Camera3D }).camera();
+}
+
+function controlsOf(fg: ForceGraphInstance): Controls3D {
+    return (fg as unknown as { controls(): Controls3D }).controls();
+}
+
+/** The active 3D perspective camera's vertical FOV (degrees) and the viewport height (px). */
+export function get3DCameraParams(fg: ForceGraphInstance): { fov: number; height: number } {
+    return { fov: cameraOf(fg).fov, height: (fg as unknown as ForceGraph3DInstance).height() };
+}
+
+/**
+ * Pixels-per-world-unit a top-down perspective camera at distance `D` yields,
+ * matching the 2D renderer's `zoom`. Derived from the perspective frustum: the
+ * world height visible at distance D is `2·D·tan(fov/2)`, mapped onto `height`
+ * pixels.
+ */
+export function world2DZoomFromDistance(distance: number, fovDeg: number, height: number): number {
+    const halfFov = (fovDeg * Math.PI) / 180 / 2;
+    return height / (2 * distance * Math.tan(halfFov));
+}
+
+/** Inverse of {@link world2DZoomFromDistance}: the camera distance for a given 2D zoom. */
+export function distanceFrom2DZoom(zoom: number, fovDeg: number, height: number): number {
+    const halfFov = (fovDeg * Math.PI) / 180 / 2;
+    return height / (2 * zoom * Math.tan(halfFov));
+}
+
+// a running camera tween (position + look-at target + up vector), cancellable
+// so a new transition supersedes an in-flight one
+let activeCameraTween: { cancel: () => void } | null = null;
+
+function cancelCameraTween(): void {
+    activeCameraTween?.cancel();
+    activeCameraTween = null;
+}
+
+function easeInOutCubic(t: number): number {
+    return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
+
+/**
+ * Smoothly drives the 3D camera to a target position, look-at and up vector
+ * over `durationMs`. Unlike the library's `cameraPosition`, this also animates
+ * the up vector (needed to roll into/out of the y-down aligned pose) and routes
+ * orientation through the controls' `target` + `lookAt`, so TrackballControls'
+ * own per-frame `update()` stays consistent. User input is suspended for the
+ * duration so the glide isn't fought.
+ */
+function animateCamera3D(
+    fg: ForceGraphInstance,
+    endPos: Vec3,
+    endTarget: Vec3,
+    endUp: Vec3,
+    durationMs: number,
+    onDone?: () => void,
+): void {
+    cancelCameraTween();
+    const camera = cameraOf(fg);
+    const controls = controlsOf(fg);
+
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const startUp = camera.up.clone().normalize();
+    const endUpVec = new THREE.Vector3(endUp.x, endUp.y, endUp.z).normalize();
+    // slerp the up vector via the rotation taking startUp→endUp; setFromUnitVectors
+    // picks a sane axis even for the degenerate 180° (opposite) case
+    const upRotation = new THREE.Quaternion().setFromUnitVectors(startUp, endUpVec);
+    const identity = new THREE.Quaternion();
+
+    const endPosVec = new THREE.Vector3(endPos.x, endPos.y, endPos.z);
+    const endTargetVec = new THREE.Vector3(endTarget.x, endTarget.y, endTarget.z);
+
+    controls.enabled = false;
+    const t0 = performance.now();
+    let rafId = 0;
+
+    const step = (): void => {
+        const raw = Math.min(1, (performance.now() - t0) / durationMs);
+        const e = easeInOutCubic(raw);
+        camera.position.lerpVectors(startPos, endPosVec, e);
+        controls.target.lerpVectors(startTarget, endTargetVec, e);
+        const upStep = new THREE.Quaternion().slerpQuaternions(identity, upRotation, e);
+        camera.up.copy(startUp).applyQuaternion(upStep).normalize();
+        camera.lookAt(controls.target);
+        if (raw < 1) {
+            rafId = requestAnimationFrame(step);
+        } else {
+            controls.enabled = true;
+            activeCameraTween = null;
+            onDone?.();
+        }
+    };
+    rafId = requestAnimationFrame(step);
+    activeCameraTween = {
+        cancel: () => {
+            cancelAnimationFrame(rafId);
+            controls.enabled = true;
+        },
+    };
+}
+
+/**
+ * Glides the 3D camera to a top-down, axis-aligned pose that projects the
+ * xy-plane like the 2D canvas, preserving the current pan center and zoom
+ * (camera distance). Returns the framing needed to hand off to the 2D renderer.
+ */
+export function alignTopDown3D(
+    fg: ForceGraphInstance,
+    durationMs: number,
+): { cx: number; cy: number; distance: number; fov: number; height: number } {
+    const camera = cameraOf(fg);
+    const controls = controlsOf(fg);
+    const cx = controls.target.x;
+    const cy = controls.target.y;
+    const distance = camera.position.distanceTo(controls.target) || FOCUS_FALLBACK_DISTANCE;
+
+    animateCamera3D(
+        fg,
+        { x: cx, y: cy, z: -distance },
+        { x: cx, y: cy, z: 0 },
+        ALIGN_UP,
+        durationMs,
+    );
+
+    return { cx, cy, distance, fov: camera.fov, height: (fg as unknown as ForceGraph3DInstance).height() };
+}
+
+/**
+ * Snaps the 3D camera (no animation) to the top-down aligned pose at the given
+ * pan center and distance — used to make the first 3D frame after a 2D→3D swap
+ * project identically to the 2D view it replaced.
+ */
+export function placeTopDown3D(fg: ForceGraphInstance, cx: number, cy: number, distance: number): void {
+    cancelCameraTween();
+    const camera = cameraOf(fg);
+    const controls = controlsOf(fg);
+    camera.up.set(ALIGN_UP.x, ALIGN_UP.y, ALIGN_UP.z);
+    camera.position.set(cx, cy, -distance);
+    controls.target.set(cx, cy, 0);
+    camera.lookAt(controls.target);
+    controls.update?.();
+}
+
+/**
+ * Orbits the camera from the aligned top-down pose out to a resting perspective
+ * view (a fixed elevation/azimuth tilt about the pan center), revealing depth
+ * after a 2D→3D switch. The pan center and distance (zoom) are preserved; only
+ * the viewing angle changes.
+ */
+export function revealPerspective3D(fg: ForceGraphInstance, durationMs: number, onDone?: () => void): void {
+    const camera = cameraOf(fg);
+    const controls = controlsOf(fg);
+    const cx = controls.target.x;
+    const cy = controls.target.y;
+    const distance = camera.position.distanceTo(controls.target) || FOCUS_FALLBACK_DISTANCE;
+
+    const elevation = (RENDER_REVEAL_ELEVATION_DEG * Math.PI) / 180;
+    const azimuth = (RENDER_REVEAL_AZIMUTH_DEG * Math.PI) / 180;
+    // tilt the straight-down offset off the z axis: elevation about x, azimuth
+    // about y, keeping its length (the zoom) constant
+    const offset = new THREE.Vector3(0, 0, -distance)
+        .applyAxisAngle(new THREE.Vector3(1, 0, 0), elevation)
+        .applyAxisAngle(new THREE.Vector3(0, 1, 0), azimuth);
+
+    animateCamera3D(
+        fg,
+        { x: cx + offset.x, y: cy + offset.y, z: offset.z },
+        { x: cx, y: cy, z: 0 },
+        ALIGN_UP,
+        durationMs,
+        onDone,
     );
 }

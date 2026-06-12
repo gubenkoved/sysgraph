@@ -408,3 +408,16 @@ export function focusNode2D(fg: ForceGraphInstance, node: FGNode, durationMs: nu
         fg.centerAt(node.x, node.y, durationMs);
     }
 }
+
+/** Current 2D view: pan center (world coords) and zoom (pixels per world unit). */
+export function getView2D(fg: ForceGraphInstance): { cx: number; cy: number; k: number } {
+    const center = (fg.centerAt as unknown as () => { x: number; y: number })();
+    const k = (fg.zoom as unknown as () => number)();
+    return { cx: center.x, cy: center.y, k };
+}
+
+/** Snaps the 2D view to the given center and zoom (no animation). */
+export function setView2D(fg: ForceGraphInstance, cx: number, cy: number, k: number): void {
+    fg.centerAt(cx, cy, 0);
+    fg.zoom(k, 0);
+}

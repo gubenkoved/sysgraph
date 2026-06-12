@@ -7,6 +7,7 @@ import {
     EVT_NODE_CLICKED, EVT_RENDER_MODE_CHANGED,
     nodeRadius,
     PANEL_GRAPH,
+    RENDER_TRANSITION_MS,
 } from './constants.js';
 import type { ContextMenuItem } from './context-menu.js';
 import { showContextMenu } from './context-menu.js';
@@ -22,8 +23,8 @@ import { emit } from './event-bus.js';
 import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
-import { build2DRenderer, focusNode2D, recenter2D } from './graph-ui-2d.js';
-import { build3DRenderer, focusNode3D, pulseSearchMatches3D, recenter3D, refreshColors3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D } from './graph-ui-3d.js';
+import { build2DRenderer, focusNode2D, getView2D, recenter2D, setView2D } from './graph-ui-2d.js';
+import { alignTopDown3D, build3DRenderer, distanceFrom2DZoom, focusNode3D, get3DCameraParams, placeTopDown3D, pulseSearchMatches3D, recenter3D, refreshColors3D, revealPerspective3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D, world2DZoomFromDistance } from './graph-ui-3d.js';
 import {
     clearColorCaches,
     getNodeVal,
@@ -322,7 +323,32 @@ export function centerOnNode(nodeId: string, durationMs = 500): void {
  */
 export function setRenderMode(mode: RenderMode): void {
     if (mode === getRenderMode()) return;
+    // ignore re-entry while a transition is mid-flight so the camera glide and
+    // renderer swap aren't interleaved
+    if (transitioning) return;
 
+    // a seamless aligned transition needs an existing 2D layout to project; with
+    // no positioned nodes (empty/freshly loaded graph) just swap and recenter
+    const nodes = ForceGraphInstance.graphData().nodes as FGNode[];
+    const hasLayout = nodes.length > 0 && nodes.some(n => n.x != null && n.y != null);
+    if (!hasLayout) {
+        swapRenderer(mode);
+        requestRecenterView();
+        return;
+    }
+
+    if (mode === '3d') transitionToThreeD();
+    else transitionToTwoD();
+}
+
+// guards against overlapping transitions (camera glide + deferred swap)
+let transitioning = false;
+
+/**
+ * Rebuilds the active renderer for the given mode, preserving graph data. Does
+ * not touch the camera — callers position it (seamlessly, or via recenter).
+ */
+function swapRenderer(mode: RenderMode): void {
     const data = ForceGraphInstance.graphData();
     const prev = ForceGraphInstance as unknown as { _destructor?: () => void };
 
@@ -340,9 +366,54 @@ export function setRenderMode(mode: RenderMode): void {
     ForceGraphInstance.graphData(data);
     applyD3Params();
     void refreshGraphUI();
-    requestRecenterView();
 
     emit(EVT_RENDER_MODE_CHANGED, mode);
+}
+
+/**
+ * 3D→2D: glide the 3D camera straight overhead (axis-aligned, preserving zoom),
+ * then swap to the 2D renderer and snap its view so the projection matches
+ * exactly — no visible jump at the swap.
+ */
+function transitionToTwoD(): void {
+    transitioning = true;
+    const info = alignTopDown3D(ForceGraphInstance, RENDER_TRANSITION_MS);
+    window.setTimeout(() => {
+        swapRenderer('2d');
+        const zoom = world2DZoomFromDistance(info.distance, info.fov, info.height);
+        setView2D(ForceGraphInstance, info.cx, info.cy, zoom);
+        transitioning = false;
+    }, RENDER_TRANSITION_MS);
+}
+
+/**
+ * 2D→3D: build the 3D renderer and place its camera top-down so the first frame
+ * projects identically to the 2D view (nodes flattened to z=0), then orbit out
+ * to a resting perspective pose to reveal depth.
+ */
+function transitionToThreeD(): void {
+    transitioning = true;
+    const view = getView2D(ForceGraphInstance);
+    const height = ForceGraphInstance.height();
+
+    // flatten depth so the first 3D frame matches the 2D plane; the force engine
+    // (if physics is on) then spreads the nodes in z during the reveal
+    for (const node of ForceGraphInstance.graphData().nodes as (FGNode & { z?: number })[]) {
+        node.z = 0;
+    }
+
+    swapRenderer('3d');
+
+    const { fov } = get3DCameraParams(ForceGraphInstance);
+    const distance = distanceFrom2DZoom(view.k, fov, height);
+    placeTopDown3D(ForceGraphInstance, view.cx, view.cy, distance);
+
+    // reveal on the next frame so the aligned frame paints first
+    requestAnimationFrame(() => {
+        revealPerspective3D(ForceGraphInstance, RENDER_TRANSITION_MS, () => {
+            transitioning = false;
+        });
+    });
 }
 
 // ---------------------------------------------------------------------------

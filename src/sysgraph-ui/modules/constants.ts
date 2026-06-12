@@ -167,3 +167,16 @@ export const D3_COLLISION_ITERATIONS = 4;
 // how long the force engine keeps ticking before it stops (ms); lifted to
 // Infinity while a positive alpha target keeps the layout in motion
 export const D3_COOLDOWN_TIME_MS = 10000;
+
+// ── Render-mode transition (2D ↔ 3D) ────────────────────────
+// switching renderers animates the 3D camera into an axis-aligned top-down
+// pose that projects the xy-plane exactly like the 2D canvas, so the swap is
+// seamless: 3D→2D glides overhead then swaps; 2D→3D starts aligned then orbits
+// out to reveal depth. this is the glide duration (ms)
+export const RENDER_TRANSITION_MS = 1000;
+
+// resting 3D pose the camera reveals to after a 2D→3D switch, as a tilt away
+// from straight-down (degrees): elevation lifts the camera off the plane and
+// azimuth swings it sideways so depth becomes legible
+export const RENDER_REVEAL_ELEVATION_DEG = 35;
+export const RENDER_REVEAL_AZIMUTH_DEG = 25;
