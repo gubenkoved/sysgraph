@@ -34,7 +34,7 @@ function render(): void {
     // simulation settles we revert to the play affordance so a single click
     // reheats it (rather than first pausing an already-idle engine)
     const active = enabled && running;
-    iconEl.textContent = active ? 'motion_blur' : 'motion_photos_paused';
+    iconEl.textContent = active ? 'motion_photos_paused' : 'motion_blur';
     toggleBtn.title = active
         ? 'Physics running — click to pause'
         : 'Physics paused — click to start';
