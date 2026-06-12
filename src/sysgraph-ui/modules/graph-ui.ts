@@ -488,16 +488,71 @@ export function showLinkContextMenu(link: FGLink, clientX: number, clientY: numb
 
 /** Builds and shows the background context menu at the given screen coordinates. */
 export function showBackgroundContextMenu(clientX: number, clientY: number): void {
+    const items: ContextMenuItem[] = [];
+
+    items.push({
+        label: 'Pin all',
+        icon: 'push_pin',
+        action: () => {
+            for (const node of ForceGraphInstance.graphData().nodes as FGNode[]) {
+                pinNode(node);
+            }
+        },
+    });
+    items.push({
+        label: 'Unpin all',
+        icon: 'keep_off',
+        action: () => {
+            for (const node of ForceGraphInstance.graphData().nodes as FGNode[]) {
+                unpinNode(node);
+            }
+        },
+    });
+
+    items.push({ divider: true });
+
+    items.push({
+        label: 'Recenter view',
+        icon: 'filter_center_focus',
+        action: () => requestRecenterView(),
+    });
+
+    items.push({ divider: true });
+
+    const selectedCount = state.selection.selectedNodeIds.size;
+    items.push({
+        label: 'Select all',
+        icon: 'select_all',
+        action: () => {
+            for (const id of state.graph.nodesMap.keys()) {
+                state.selection.selectedNodeIds.add(id);
+            }
+            updateGraphInfo();
+        },
+    });
+    items.push({
+        label: 'Unselect all',
+        icon: 'deselect',
+        disabled: selectedCount === 0,
+        action: () => {
+            state.selection.selectedNodeIds.clear();
+            updateGraphInfo();
+        },
+    });
+
     if (state.adjacencyFilter) {
-        showContextMenu(clientX, clientY, [{
+        items.push({ divider: true });
+        items.push({
             label: 'Reset adjacency filter',
             icon: 'filter_alt_off',
             action: () => {
                 setAdjacencyFilter(null);
                 void refreshGraphUI();
             },
-        }]);
+        });
     }
+
+    showContextMenu(clientX, clientY, items);
 }
 
 /**

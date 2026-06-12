@@ -42,6 +42,12 @@ export function initLongPress(): void {
     let lastTouchStart = 0;
     // whether the finger has moved beyond the pan threshold this gesture
     let moved = false;
+    // whether this gesture actually opened a menu — if so we must suppress the
+    // compatibility mouse events (esp. the synthetic `click`) the browser fires
+    // on touchend, otherwise the global click listener in context-menu.ts would
+    // immediately hide the menu we just opened (and a click could even land on
+    // the menu that appears under the finger)
+    let openedThisGesture = false;
     // timestamp of the last menu open, used to dedup the timer and the native
     // contextmenu event (which both fire for one gesture). a timestamp — not a
     // per-gesture boolean — because on Android the touch listeners may not fire
@@ -64,6 +70,7 @@ export function initLongPress(): void {
         if (now - lastOpenTime < OPEN_DEDUP_MS) return;
         if (moved) return;
         lastOpenTime = now;
+        openedThisGesture = true;
         openContextMenu(clientX, clientY);
     };
 
@@ -84,6 +91,7 @@ export function initLongPress(): void {
             startY = touch.clientY;
             lastTouchStart = performance.now();
             moved = false;
+            openedThisGesture = false;
 
             clearTimer();
             // fallback trigger for engines that suppress the native contextmenu
@@ -111,7 +119,20 @@ export function initLongPress(): void {
         { passive: true, capture: true },
     );
 
-    graphContainer.addEventListener('touchend', clearTimer, { passive: true, capture: true });
+    graphContainer.addEventListener(
+        'touchend',
+        (event) => {
+            // if this gesture opened a menu, stop the browser from synthesizing
+            // the compatibility mouse events (the `click` would otherwise hide
+            // the menu via the global listener in context-menu.ts). must be
+            // non-passive for preventDefault to take effect
+            if (openedThisGesture && event.cancelable) {
+                event.preventDefault();
+            }
+            clearTimer();
+        },
+        { passive: false, capture: true },
+    );
     graphContainer.addEventListener('touchcancel', clearTimer, { passive: true, capture: true });
 
     // primary trigger. registered in the capture phase so we run before the
