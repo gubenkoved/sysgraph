@@ -472,11 +472,6 @@ export function showNodeContextMenu(node: FGNode, clientX: number, clientY: numb
                 startEdgeFrom(node.id);
             },
         });
-        items.push({
-            label: 'Delete node',
-            icon: 'delete',
-            action: () => deleteNode(node.id),
-        });
         items.push({ divider: true });
     }
 
@@ -528,15 +523,23 @@ export function showNodeContextMenu(node: FGNode, clientX: number, clientY: numb
         });
     }
 
+    items.push({ divider: true });
+    items.push({
+        label: 'Delete node',
+        icon: 'delete',
+        danger: true,
+        action: () => deleteNode(node.id),
+    });
+
     showContextMenu(clientX, clientY, items);
 }
 
 /** Builds and shows the link context menu at the given screen coordinates. */
 export function showLinkContextMenu(link: FGLink, clientX: number, clientY: number): void {
-    if (!state.edit.active) return;
     showContextMenu(clientX, clientY, [{
         label: 'Delete edge',
         icon: 'delete',
+        danger: true,
         action: () => deleteEdge(link.id),
     }]);
 }
