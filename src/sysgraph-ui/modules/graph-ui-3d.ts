@@ -194,6 +194,17 @@ export function refreshColors3D(fg: ForceGraphInstance): void {
     fg3d.nodeColor(resolveNodeColor3D).linkColor(resolveLinkColor3D);
 }
 
+/**
+ * Re-applies the 3D link-width accessor. Re-setting linkWidth makes
+ * three-forcegraph clear and recreate the link objects, rebuilding each
+ * cylinder at the current width — unlike refreshColors3D, which only updates
+ * materials. Used when an edge-width setting changes.
+ */
+export function refreshLinkWidths3D(fg: ForceGraphInstance): void {
+    const fg3d = fg as unknown as ForceGraph3DInstance;
+    fg3d.linkWidth(resolveLinkWidth);
+}
+
 // node ids currently driven by the search pulse, so they can be reset to their
 // resting scale once they stop matching (or the search clears)
 let pulsedNodeIds = new Set<string>();

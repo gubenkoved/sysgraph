@@ -24,7 +24,7 @@ import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
 import { build2DRenderer, focusNode2D, getView2D, recenter2D, setView2D } from './graph-ui-2d.js';
-import { alignTopDown3D, build3DRenderer, distanceFrom2DZoom, focusNode3D, get3DCameraParams, placeTopDown3D, pulseSearchMatches3D, recenter3D, refreshColors3D, revealPerspective3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D, world2DZoomFromDistance } from './graph-ui-3d.js';
+import { alignTopDown3D, build3DRenderer, distanceFrom2DZoom, focusNode3D, get3DCameraParams, placeTopDown3D, pulseSearchMatches3D, recenter3D, refreshColors3D, refreshLinkWidths3D, revealPerspective3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D, world2DZoomFromDistance } from './graph-ui-3d.js';
 import {
     clearColorCaches,
     getNodeVal,
@@ -732,6 +732,19 @@ export function refreshGraphColors(): void {
         // flushing/rebuilding the node label sprites (see refreshColors3D). this
         // keeps search-as-you-type responsive on large 3D graphs
         refreshColors3D(ForceGraphInstance);
+        return;
+    }
+    if (typeof (ForceGraphInstance as unknown as Record<string, unknown>).refresh === 'function') {
+        ForceGraphInstance.refresh();
+    }
+}
+
+// re-applies edge widths after an edge-width setting changes. in 2D the canvas
+// re-reads the width accessor on its next repaint, so a refresh() suffices; in
+// 3D the link geometry must be explicitly rebuilt (see refreshLinkWidths3D)
+export function refreshGraphLinkWidths(): void {
+    if (is3D()) {
+        refreshLinkWidths3D(ForceGraphInstance);
         return;
     }
     if (typeof (ForceGraphInstance as unknown as Record<string, unknown>).refresh === 'function') {

@@ -6,6 +6,7 @@ export const EVT_SEARCH_CHANGED = 'search-expression-changed';
 export const EVT_SELECTION_CHANGED = 'selection-changed';
 export const EVT_SETTINGS_UPDATED = 'graph-ui-settings-updated';
 export const EVT_COLORS_UPDATED = 'graph-ui-colors-updated';
+export const EVT_WIDTHS_UPDATED = 'graph-ui-widths-updated';
 export const EVT_CURVATURE_UPDATED = 'graph-ui-links-curvature-updated';
 export const EVT_D3_PARAMS_CHANGED = 'd3-simulation-parameters-changed';
 export const EVT_SEARCH_CYCLE = 'search-cycle';
@@ -22,7 +23,9 @@ export const EVT_RENDER_MODE_CHANGED = 'render-mode-changed';
 export const PANEL_GRAPH = 'graph';
 export const PANEL_DETAILS = 'details';
 export const PANEL_ANALYTICS = 'analytics';
-export const PANEL_SETTINGS = 'settings';export const PANEL_TEMPLATES = 'templates';
+export const PANEL_SETTINGS = 'settings';
+export const PANEL_TEMPLATES = 'templates';
+
 // ── command names ───────────────────────────────────────────
 export const CMD_RELOAD = 'reload-graph';
 export const CMD_EXPORT = 'export-graph';

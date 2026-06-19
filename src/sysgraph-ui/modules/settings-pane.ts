@@ -5,6 +5,7 @@ import { Pane } from 'tweakpane';
 import {
     EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
     EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
+    EVT_WIDTHS_UPDATED,
     PANEL_SETTINGS,
 } from './constants.js';
 import { emit } from './event-bus.js';
@@ -229,7 +230,7 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
 });
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'globalEdgeWidthMultiplier', { label: 'edge width mult', min: 0.1, max: 5, step: 0.1 }).on('change', () => {
-    emit(EVT_COLORS_UPDATED, null);
+    emit(EVT_WIDTHS_UPDATED, null);
 });
 
 // ── label settings ──────────────────────────────────────────
@@ -334,6 +335,7 @@ function refreshAfterSettingsChange(): void {
     emit(EVT_D3_PARAMS_CHANGED, null);
     emit(EVT_SETTINGS_UPDATED, null);
     emit(EVT_COLORS_UPDATED, null);
+    emit(EVT_WIDTHS_UPDATED, null);
 }
 
 /**
@@ -798,6 +800,8 @@ export function updateDynamicGraphPanes(): void {
         }
         edgeWidthsFolder.addBinding(edgeWidths as unknown as Record<string, unknown>, key, {
             min: 0.5, max: 5, step: 0.5,
+        }).on('change', () => {
+            emit(EVT_WIDTHS_UPDATED, null);
         });
     }
 

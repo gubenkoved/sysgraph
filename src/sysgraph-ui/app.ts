@@ -2,7 +2,7 @@ import { initAnalyticsPanel } from './modules/analytics-panel.js';
 import { type LoadedGraphData, loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
-import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, rebuildGraphObjects, refreshGraphColors, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
+import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, rebuildGraphObjects, refreshGraphColors, refreshGraphLinkWidths, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
 import { initLayout } from './modules/layout.js';
 import { initLongPress } from './modules/long-press.js';
 import { initPhysicsIndicator } from './modules/physics-indicator.js';
@@ -27,6 +27,7 @@ import {CMD_EXPORT, CMD_IMPORT,
     EVT_GRAPH_UPDATED,
     EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
     EVT_THEME_CHANGED,
+    EVT_WIDTHS_UPDATED,
     STANDALONE,
 } from './modules/constants.js';
 import '@material/web/button/filled-tonal-button.js';
@@ -146,6 +147,10 @@ on(EVT_SETTINGS_UPDATED, async () => {
 
 on(EVT_COLORS_UPDATED, () => {
     refreshGraphColors();
+});
+
+on(EVT_WIDTHS_UPDATED, () => {
+    refreshGraphLinkWidths();
 });
 
 on(EVT_THEME_CHANGED, () => {
