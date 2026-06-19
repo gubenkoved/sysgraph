@@ -132,6 +132,106 @@ export function validateLinkDistanceExpression(expression: string): string | nul
     }
 }
 
+/**
+ * Compiles a node-filter expression into a predicate deciding whether a node
+ * stays on the canvas. The expression is evaluated with the node's keys
+ * (id/type/properties), each property as a bare identifier, the computed
+ * `degree`, and the label helpers in scope (mirroring the node-sizing scope), so
+ * a truthy result keeps the node. A compile failure yields a predicate that
+ * keeps every node (fail-open); a per-node runtime error excludes that node.
+ */
+export function makeNodeFilterFn(
+    expression: string,
+): (node: FGNode, degree: number) => boolean {
+    let compiled: ((...args: unknown[]) => unknown) | null = null;
+    try {
+        // helpers < properties < node so well-known node keys win
+        compiled = buildScopedExpression(
+            expression.trim(),
+            ['node', 'properties', 'degree', 'helpers'],
+            ['helpers', 'properties', 'node'],
+        );
+    } catch {
+        compiled = null;
+    }
+
+    return (node: FGNode, degree: number): boolean => {
+        if (!compiled) return true;
+        try {
+            return Boolean(compiled(node, node.properties ?? {}, degree, labelHelpers));
+        } catch {
+            return false;
+        }
+    };
+}
+
+/**
+ * Validates a node-filter expression by attempting to compile it. Returns an
+ * error message when the expression is syntactically invalid, otherwise null.
+ */
+export function validateNodeFilterExpression(expression: string): string | null {
+    try {
+        buildScopedExpression(
+            expression.trim(),
+            ['node', 'properties', 'degree', 'helpers'],
+            ['helpers', 'properties', 'node'],
+        );
+        return null;
+    } catch (err) {
+        return err instanceof Error ? err.message : 'invalid expression';
+    }
+}
+
+/**
+ * Compiles an edge-filter expression into a predicate deciding whether an edge
+ * stays on the canvas. The expression is evaluated with the edge's keys
+ * (id/type/source_id/target_id/properties), each property as a bare identifier,
+ * and the label helpers in scope, so a truthy result keeps the edge. A compile
+ * failure yields a predicate that keeps every edge (fail-open); a per-edge
+ * runtime error excludes that edge.
+ */
+export function makeEdgeFilterFn(
+    expression: string,
+): (edge: FGLink) => boolean {
+    let compiled: ((...args: unknown[]) => unknown) | null = null;
+    try {
+        // helpers < properties < edge so well-known edge keys win
+        compiled = buildScopedExpression(
+            expression.trim(),
+            ['edge', 'properties', 'helpers'],
+            ['helpers', 'properties', 'edge'],
+        );
+    } catch {
+        compiled = null;
+    }
+
+    return (edge: FGLink): boolean => {
+        if (!compiled) return true;
+        try {
+            return Boolean(compiled(edge, edge.properties ?? {}, labelHelpers));
+        } catch {
+            return false;
+        }
+    };
+}
+
+/**
+ * Validates an edge-filter expression by attempting to compile it. Returns an
+ * error message when the expression is syntactically invalid, otherwise null.
+ */
+export function validateEdgeFilterExpression(expression: string): string | null {
+    try {
+        buildScopedExpression(
+            expression.trim(),
+            ['edge', 'properties', 'helpers'],
+            ['helpers', 'properties', 'edge'],
+        );
+        return null;
+    } catch (err) {
+        return err instanceof Error ? err.message : 'invalid expression';
+    }
+}
+
 // ── color caches ────────────────────────────────────────────
 
 const nodeCssColorCache = new Map<string, string>();

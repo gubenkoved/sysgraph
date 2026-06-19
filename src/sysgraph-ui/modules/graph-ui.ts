@@ -31,7 +31,9 @@ import {
     isNodePinned,
     linkSourceId,
     linkTargetId,
+    makeEdgeFilterFn,
     makeLinkDistanceFn,
+    makeNodeFilterFn,
     pinNode,
     unpinNode,
 } from './graph-ui-appearance.js';
@@ -654,9 +656,10 @@ export function getNodeAtScreen(clientX: number, clientY: number): FGNode | null
 
 /**
  * Builds the graph as currently rendered on the canvas by applying, in order:
- * node/edge type filters, the adjacency focus filter and the hide-isolated
- * toggle. This is the single source of truth for "what is visible", shared by
- * rendering and analytics so they can never diverge.
+ * node/edge type filters, the adjacency focus filter, the node/edge filter
+ * expressions and the hide-isolated toggle. This is the single source of truth
+ * for "what is visible", shared by rendering and analytics so they can never
+ * diverge.
  */
 export function getVisibleGraph(): Graph {
     const typeFiltered = filterGraph(
@@ -672,6 +675,21 @@ export function getVisibleGraph(): Graph {
         const visible = state.adjacencyFilter.visibleNodeIds;
         nodes = nodes.filter(n => visible.has(n.id));
         edges = edges.filter(e => visible.has(e.source_id) && visible.has(e.target_id));
+    }
+
+    if (settings.nodeFilterExpression.trim()) {
+        // evaluate the user predicate in node scope (degree computed on the
+        // graph as filtered so far), then drop edges whose endpoints are gone
+        const filterFn = makeNodeFilterFn(settings.nodeFilterExpression);
+        const degrees = computeNodeDegrees(new Graph(nodes, edges));
+        nodes = nodes.filter(n => filterFn(n as FGNode, degrees.get(n.id) ?? 0));
+        const kept = new Set(nodes.map(n => n.id));
+        edges = edges.filter(e => kept.has(e.source_id) && kept.has(e.target_id));
+    }
+
+    if (settings.edgeFilterExpression.trim()) {
+        const filterFn = makeEdgeFilterFn(settings.edgeFilterExpression);
+        edges = edges.filter(e => filterFn(e as FGLink));
     }
 
     if (!settings.showIsolated) {

@@ -16,8 +16,11 @@ import {
     getGraphDisplayMode,
     setGraphDisplayMode,
 } from './graph-display.js';
-import { ForceGraphInstance, pinNode, unpinNode } from './graph-ui.js';
-import { validateLinkDistanceExpression } from './graph-ui-appearance.js';
+import {
+    validateEdgeFilterExpression,
+    validateLinkDistanceExpression,
+    validateNodeFilterExpression,
+} from './graph-ui-appearance.js';
 import { registerPanel } from './layout.js';
 import { setFrameHooks } from './render-hooks.js';
 import type { SettingsShape } from './settings.js';
@@ -317,6 +320,7 @@ function syncStaticSettingsPane(): void {
     updateSizingVisibility();
     updateLinkDistanceVisibility();
     updateLinkDistanceValidity();
+    updateFilterExpressionValidity();
     pane.refresh();
 }
 
@@ -427,23 +431,42 @@ export function maybeApplyGraphDisplay(display: GraphDisplay | undefined): void 
     );
 }
 
-const actionsFolder = tagFolder(pane.addFolder({ title: 'actions', expanded: true }), 'actions');
-
-actionsFolder.addButton({ title: 'pin all' }).on('click', () => {
-    const graphData = ForceGraphInstance.graphData();
-    for (const node of graphData.nodes) {
-        pinNode(node);
-    }
-});
-
-actionsFolder.addButton({ title: 'unpin all' }).on('click', () => {
-    const graphData = ForceGraphInstance.graphData();
-    for (const node of graphData.nodes) {
-        unpinNode(node);
-    }
-});
-
 // ── filter panes ────────────────────────────────────────────
+const filterExpressionsFolder = tagFolder(pane.addFolder({ title: 'filter expressions', expanded: false }), 'filters');
+
+const nodeFilterExpressionBinding = filterExpressionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeFilterExpression', {
+    label: 'nodes filter',
+});
+attachExpressionHelp(nodeFilterExpressionBinding);
+
+const edgeFilterExpressionBinding = filterExpressionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'edgeFilterExpression', {
+    label: 'edges filter',
+});
+attachExpressionHelp(edgeFilterExpressionBinding);
+
+function updateFilterExpressionValidity(): void {
+    const nodeError = settings.nodeFilterExpression.trim()
+        ? validateNodeFilterExpression(settings.nodeFilterExpression)
+        : null;
+    nodeFilterExpressionBinding.element.classList.toggle('sg-binding-invalid', nodeError !== null);
+
+    const edgeError = settings.edgeFilterExpression.trim()
+        ? validateEdgeFilterExpression(settings.edgeFilterExpression)
+        : null;
+    edgeFilterExpressionBinding.element.classList.toggle('sg-binding-invalid', edgeError !== null);
+}
+updateFilterExpressionValidity();
+
+nodeFilterExpressionBinding.on('change', () => {
+    updateFilterExpressionValidity();
+    emit(EVT_FILTERS_UPDATED, null);
+});
+
+edgeFilterExpressionBinding.on('change', () => {
+    updateFilterExpressionValidity();
+    emit(EVT_FILTERS_UPDATED, null);
+});
+
 let nodeFiltersFolder: FolderApi = tagFolder(pane.addFolder({ title: 'node filters', expanded: false }), 'filters');
 let edgeFiltersFolder: FolderApi = tagFolder(pane.addFolder({ title: 'edge filters', expanded: false }), 'filters');
 

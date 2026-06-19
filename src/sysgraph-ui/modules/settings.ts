@@ -35,6 +35,8 @@ export interface SettingsShape {
     nodeSizingMode: string;
     nodeSizingConstant: number;
     nodeSizingExpression: string;
+    nodeFilterExpression: string;
+    edgeFilterExpression: string;
     nodeColors: ColorMap;
     edgeColors: ColorMap;
     edgeWidths: EdgeWidthMap;
@@ -72,6 +74,9 @@ export function createDefaultSettings(): SettingsShape {
         nodeSizingMode: 'degree',
         nodeSizingConstant: 3,
         nodeSizingExpression: 'Math.sqrt(Math.max(1, degree))',
+
+        nodeFilterExpression: '',
+        edgeFilterExpression: '',
 
         nodeColors: {},
         edgeColors: {},
