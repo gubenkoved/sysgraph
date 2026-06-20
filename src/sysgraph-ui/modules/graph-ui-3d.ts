@@ -26,6 +26,7 @@ import {
     resolveLinkColor,
     resolveLinkCurvature,
     resolveLinkWidth,
+    resolveNodeAppearance,
     resolveNodeColor,
 } from './graph-ui-appearance.js';
 import type { FGLink, FGNode, ForceGraph3DInstance, ForceGraphInstance, RendererHandlers } from './graph-ui-types.js';
@@ -119,13 +120,17 @@ function buildNodeLabelSprite(node: FGNode): SpriteText | undefined {
     // THREE.Sprite members (material, center) aren't visible to TS; they exist
     // at runtime
     const spriteObj = sprite as unknown as {
-        material: { depthWrite: boolean };
+        material: { depthWrite: boolean; transparent: boolean };
         center: { x: number; y: number };
     };
 
     // render the label on top of the scene geometry so the node sphere never
     // occludes it as the camera orbits (matches the official text-nodes example)
     spriteObj.material.depthWrite = false;
+    // allow the label to be dimmed via material.opacity (see applyLabelDimming3D),
+    // mirroring the 2D label dimming during hover-highlight/search; set once here
+    // so the per-recolor pass only mutates opacity (no needsUpdate churn)
+    spriteObj.material.transparent = true;
 
     // offset the label below the node via the sprite's normalized center anchor
     // rather than a world-space position offset. `center` lives in the sprite's
@@ -192,6 +197,45 @@ function resolveLinkColor3D(link: FGLink): string {
 export function refreshColors3D(fg: ForceGraphInstance): void {
     const fg3d = fg as unknown as ForceGraph3DInstance;
     fg3d.nodeColor(resolveNodeColor3D).linkColor(resolveLinkColor3D);
+    applyLabelDimming3D(fg);
+}
+
+/**
+ * Effective opacity for a node's label sprite, mirroring how much its sphere is
+ * dimmed. Reuses the shared resolveNodeAppearance alpha (hover-highlight BFS
+ * fade, search non-match fade, analytics decoration fade) so labels dim exactly
+ * like the 2D canvas labels, then applies the same extra search non-match fade
+ * the 3D spheres get (see resolveNodeColor3D) so label and sphere stay in step.
+ */
+function labelDimFactor3D(node: FGNode): number {
+    const { alphaMultiplier } = resolveNodeAppearance(node);
+    const decoration = state.analytics.active ? state.analytics.decoration : null;
+    const searchActive = state.search && !state.highlight && !decoration;
+    if (searchActive && !state.search?.matchesMap.has(node.id)) {
+        return alphaMultiplier * SEARCH_NON_MATCH_EXTRA_DIM_3D;
+    }
+    return alphaMultiplier;
+}
+
+/**
+ * Dims each node's label sprite to match its sphere. The 2D renderer redraws
+ * labels every frame with the node's alpha, so dimming is automatic; the 3D
+ * label sprites are persistent objects, so their material opacity is updated
+ * here on demand. Called from refreshColors3D, so it runs on every recolor
+ * trigger (hover, search-as-you-type, analytics decorations) and resets to full
+ * opacity when those clear.
+ */
+export function applyLabelDimming3D(fg: ForceGraphInstance): void {
+    const nodes = fg.graphData().nodes as FGNode[];
+    for (const node of nodes) {
+        const obj = (node as unknown as { __threeObj?: PulseObj }).__threeObj;
+        if (!obj) continue;
+        const factor = labelDimFactor3D(node);
+        for (const child of obj.children) {
+            if (!child.isSprite || !child.material) continue;
+            child.material.opacity = factor;
+        }
+    }
 }
 
 /**
@@ -214,6 +258,8 @@ let pulsedNodeIds = new Set<string>();
 interface PulseChild {
     isSprite?: boolean;
     scale: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
+    // the sprite material, used to dim the label opacity (see applyLabelDimming3D)
+    material?: { opacity: number };
     // base (resting) scale captured the first time we pulse this sprite, so the
     // label can be counter-scaled back to a constant on-screen size
     __pulseBaseScale?: { x: number; y: number; z: number };
@@ -814,6 +860,7 @@ export function build3DRenderer(host: HTMLElement, handlers: RendererHandlers): 
         .linkDirectionalArrowLength(resolveLinkArrowLength)
         .linkDirectionalArrowRelPos(0.55)
         .onNodeClick(handlers.onNodeClick)
+        .onNodeHover(handlers.onNodeHover)
         .onLinkClick(handlers.onLinkClick)
         .onNodeDrag(handlers.onNodeDrag)
         .onNodeDragEnd(handlers.onNodeDrag)

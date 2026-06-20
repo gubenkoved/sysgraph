@@ -161,9 +161,6 @@ function handleNodeDrag(node: FGNode): void {
 }
 
 function handleNodeHover(node: FGNode | null): void {
-    // the BFS dimming highlight is a per-frame canvas effect; the 3D renderer
-    // only re-evaluates colors on refresh, so skip it there to avoid stale state
-    if (is3D()) return;
     // keep a persistent analytics decoration in place; don't let hover override
     // the algorithm result highlight (only while it is shown)
     if (state.analytics.active && state.analytics.decoration) {
@@ -175,6 +172,13 @@ function handleNodeHover(node: FGNode | null): void {
         setHighlight({ nodeDistancesMap, edgeDistancesMap });
     } else {
         setHighlight(null);
+    }
+    // 2D re-reads the color accessors on every canvas frame, so the BFS dimming
+    // appears automatically; the 3D renderer only recolors on demand, so push
+    // the new highlight into it explicitly (cheap, color-only — mirrors the
+    // search-as-you-type recolor path)
+    if (is3D()) {
+        refreshGraphColors();
     }
 }
 
@@ -340,8 +344,9 @@ function swapRenderer(mode: RenderMode): void {
     const data = ForceGraphInstance.graphData();
     const prev = ForceGraphInstance as unknown as { _destructor?: () => void };
 
-    // neighbor highlight is a 2D-only hover effect; the 3D renderer has no
-    // hover-out path to clear it, so reset it on every mode switch
+    // a lingering hover highlight from the previous renderer would carry over
+    // (the swap rebuilds the instance, losing its hover-out event), so reset it
+    // on every mode switch to start clean
     setHighlight(null);
 
     persistRenderMode(mode);
