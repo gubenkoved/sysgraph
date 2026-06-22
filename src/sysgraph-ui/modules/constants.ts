@@ -99,6 +99,9 @@ export const LABEL_STICKY_ALPHA = 0.5;
 // slider so bigger text reserves proportionally more room
 export const LABEL_CELL_W_PX = 120;
 export const LABEL_CELL_H_PX = 30;
+// time (ms) to ease the hover-highlight dim in/out so the spotlight effect
+// glides instead of snapping when a hover starts/ends
+export const HIGHLIGHT_INERTIA_MS = 160;
 export const UI_FONT_FAMILY = "'Ubuntu', 'Roboto', 'Segoe UI', 'Arial', sans-serif";
 
 /**

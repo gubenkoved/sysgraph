@@ -3,6 +3,7 @@ import { ColorScale } from './color-scale.js';
 import {
     EDGE_DARK_MIN_LIGHTNESS,
     HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,
+    HIGHLIGHT_INERTIA_MS,
     MAX_NODE_VAL,
     NODE_DARK_MIN_LIGHTNESS,
     SCORE_EPSILON,
@@ -13,6 +14,7 @@ import { buildScopedExpression } from './expression.js';
 import { labelHelpers } from './graph-ui-helpers.js';
 import type { FGLink, FGNode } from './graph-ui-types.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
+import type { HighlightState } from './state.js';
 import { state } from './state.js';
 import { getTheme } from './theme.js';
 
@@ -430,6 +432,51 @@ export function unpinNode(node: FGNode): void {
     (node as FGNode & { fz?: number }).fz = undefined;
 }
 
+// ── hover-highlight inertia ─────────────────────────────────
+
+// the hover dim eases in/out via a single global strength rather than snapping.
+// `displayedHighlight` is the highlight currently driving the rendered dim; it
+// is retained through the fade-OUT (after state.highlight is cleared) so we keep
+// the per-node/edge distances needed to animate back to full brightness
+let displayedHighlight: HighlightState | null = null;
+let highlightStrength = 0; // 0 = no dim (full bright), 1 = full dim
+let lastHighlightTickMs = 0;
+
+/**
+ * Advances the hover-highlight dim toward its target (1 while a node is hovered,
+ * 0 otherwise), easing over HIGHLIGHT_INERTIA_MS. Call once per frame. Returns
+ * true while still animating, so the 3D renderer knows it must keep recoloring
+ * (2D redraws every frame regardless). The ramp only runs on enter-from-empty
+ * and exit-to-empty — moving between adjacent hovers keeps the strength pinned
+ * at 1, so rapid sweeps never trigger extra recolors.
+ */
+export function advanceHighlightInertia(): boolean {
+    const now = Date.now();
+    const dt = lastHighlightTickMs === 0 ? 16 : Math.min(100, Math.max(0, now - lastHighlightTickMs));
+    lastHighlightTickMs = now;
+
+    const target = state.highlight ? 1 : 0;
+    if (state.highlight) displayedHighlight = state.highlight;
+
+    const step = dt / HIGHLIGHT_INERTIA_MS;
+    if (highlightStrength < target) {
+        highlightStrength = Math.min(target, highlightStrength + step);
+    } else if (highlightStrength > target) {
+        highlightStrength = Math.max(target, highlightStrength - step);
+    }
+
+    const animating = highlightStrength !== target;
+    // once fully faded out, drop the retained highlight so later lookups stop
+    if (!animating && target === 0) displayedHighlight = null;
+    return animating;
+}
+
+// blends a target dim multiplier from "no dim" (1) toward `dimTarget` by the
+// eased highlight strength, so dimmed elements glide instead of snapping
+function blendHighlightDim(dimTarget: number): number {
+    return 1 + (dimTarget - 1) * highlightStrength;
+}
+
 export function isNodePinned(node: FGNode): boolean {
     return node.fx !== undefined || node.fy !== undefined;
 }
@@ -514,15 +561,15 @@ export function resolveLinkColor(l: FGLink): string {
         alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
     }
 
-    if (state.highlight) {
-        alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-        const edgeDistance = state.highlight.edgeDistancesMap.get(l.id);
+    if (displayedHighlight) {
+        let dimTarget = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+        const edgeDistance = displayedHighlight.edgeDistancesMap.get(l.id);
 
         if (edgeDistance !== undefined && edgeDistance < highlightAlphaMultipliers.length - 1) {
-            alphaMultiplier = highlightAlphaMultipliers[edgeDistance]!;
+            dimTarget = highlightAlphaMultipliers[edgeDistance]!;
         }
 
-        fillStyle = colorAdjustAlpha(fillStyle, alphaMultiplier);
+        fillStyle = colorAdjustAlpha(fillStyle, blendHighlightDim(dimTarget));
     }
 
     return fillStyle;
@@ -577,13 +624,14 @@ export function resolveNodeAppearance(node: FGNode): { fillStyle: string; alphaM
             alphaMultiplier = SEARCH_NOT_MATCHING_OPACITY;
         }
 
-        if (state.highlight) {
-            alphaMultiplier = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
-            const nodeDistance = state.highlight.nodeDistancesMap.get(node.id);
+        if (displayedHighlight) {
+            let dimTarget = highlightAlphaMultipliers[highlightAlphaMultipliers.length - 1]!;
+            const nodeDistance = displayedHighlight.nodeDistancesMap.get(node.id);
 
             if (nodeDistance !== undefined && nodeDistance < highlightAlphaMultipliers.length - 1) {
-                alphaMultiplier = highlightAlphaMultipliers[nodeDistance]!;
+                dimTarget = highlightAlphaMultipliers[nodeDistance]!;
             }
+            alphaMultiplier = blendHighlightDim(dimTarget);
         }
     }
 

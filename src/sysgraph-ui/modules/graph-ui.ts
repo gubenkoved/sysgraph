@@ -26,6 +26,7 @@ import { bfs } from './graph-algs.js';
 import { build2DRenderer, focusNode2D, getView2D, recenter2D, setView2D } from './graph-ui-2d.js';
 import { alignTopDown3D, build3DRenderer, distanceFrom2DZoom, focusNode3D, get3DCameraParams, placeTopDown3D, pulseSearchMatches3D, recenter3D, refreshColors3D, refreshLinkWidths3D, revealPerspective3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateLabelVisibility3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D, world2DZoomFromDistance } from './graph-ui-3d.js';
 import {
+    advanceHighlightInertia,
     clearColorCaches,
     getNodeVal,
     isNodePinned,
@@ -275,10 +276,14 @@ registerPanel({
 // graph has no per-frame render hook anyway)
 function frameLoop(): void {
     callFramePre();
+    // ease the hover-highlight dim in/out; 2D redraws every frame so it picks the
+    // new strength up for free, while 3D must be recolored while it is animating
+    const highlightAnimating = advanceHighlightInertia();
     // the 3D renderer has no per-frame draw callback, so the search-match pulse
     // (2D draws its pulsing ring every frame), the pinned-node spike marker, the
     // selection ring and the adjacency hidden-count badge are driven from here
     if (is3D()) {
+        if (highlightAnimating) refreshColors3D(ForceGraphInstance);
         pulseSearchMatches3D(ForceGraphInstance);
         updatePinIndicators3D(ForceGraphInstance);
         updateSelectionIndicators3D(ForceGraphInstance);
