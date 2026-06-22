@@ -24,7 +24,7 @@ import type { GraphEdge, GraphNode } from './graph.js';
 import { computeNodeDegrees, filterGraph, Graph } from './graph.js';
 import { bfs } from './graph-algs.js';
 import { build2DRenderer, focusNode2D, getView2D, recenter2D, setView2D } from './graph-ui-2d.js';
-import { alignTopDown3D, build3DRenderer, distanceFrom2DZoom, focusNode3D, get3DCameraParams, placeTopDown3D, pulseSearchMatches3D, recenter3D, refreshColors3D, refreshLinkWidths3D, revealPerspective3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D, world2DZoomFromDistance } from './graph-ui-3d.js';
+import { alignTopDown3D, build3DRenderer, distanceFrom2DZoom, focusNode3D, get3DCameraParams, placeTopDown3D, pulseSearchMatches3D, recenter3D, refreshColors3D, refreshLinkWidths3D, revealPerspective3D, updateAdjacencyCounts3D, updateAxisCross3D, updateHeatmapValues3D, updateLabelVisibility3D, updateOrbitCenter3D, updatePinIndicators3D, updateSelectionIndicators3D, world2DZoomFromDistance } from './graph-ui-3d.js';
 import {
     clearColorCaches,
     getNodeVal,
@@ -166,6 +166,15 @@ function handleNodeHover(node: FGNode | null): void {
     if (state.analytics.active && state.analytics.decoration) {
         return;
     }
+    // honor the display preference; when disabled, also clear any highlight that
+    // is still showing so toggling it off takes effect on the next pointer move
+    if (!settings.highlightOnHover) {
+        if (state.highlight) {
+            setHighlight(null);
+            if (is3D()) scheduleHoverRecolor3D();
+        }
+        return;
+    }
     if (node != null) {
         const graph = getGraph();
         const { nodeDistancesMap, edgeDistancesMap } = bfs(graph, node.id, 2);
@@ -175,11 +184,22 @@ function handleNodeHover(node: FGNode | null): void {
     }
     // 2D re-reads the color accessors on every canvas frame, so the BFS dimming
     // appears automatically; the 3D renderer only recolors on demand, so push
-    // the new highlight into it explicitly (cheap, color-only — mirrors the
-    // search-as-you-type recolor path)
+    // the new highlight into it. coalesce to one recolor per frame so sweeping
+    // the pointer across many nodes can't stack up full-graph recolors
     if (is3D()) {
-        refreshGraphColors();
+        scheduleHoverRecolor3D();
     }
+}
+
+// coalesces 3D hover recolors into a single animation frame
+let hoverRecolorScheduled = false;
+function scheduleHoverRecolor3D(): void {
+    if (hoverRecolorScheduled) return;
+    hoverRecolorScheduled = true;
+    requestAnimationFrame(() => {
+        hoverRecolorScheduled = false;
+        refreshColors3D(ForceGraphInstance);
+    });
 }
 
 function handleNodeRightClick(node: FGNode, event: MouseEvent): void {
@@ -264,6 +284,7 @@ function frameLoop(): void {
         updateSelectionIndicators3D(ForceGraphInstance);
         updateAdjacencyCounts3D(ForceGraphInstance);
         updateHeatmapValues3D(ForceGraphInstance);
+        updateLabelVisibility3D(ForceGraphInstance);
         updateAxisCross3D();
         updateOrbitCenter3D(ForceGraphInstance);
     }

@@ -4,6 +4,9 @@ import SpriteText from 'three-spritetext';
 import {
     D3_CHARGE_STRENGTH,
     D3_LINK_DISTANCE, D3_LINK_STRENGTH,
+    LABEL_CELL_H_PX, LABEL_CELL_W_PX,
+    LABEL_CULL_MARGIN_PX,
+    LABEL_FADE_MS, LABEL_STICKY_ALPHA,
     RENDER_REVEAL_AZIMUTH_DEG,
     RENDER_REVEAL_ELEVATION_DEG,
     SEARCH_COLOR_BEST,
@@ -19,6 +22,7 @@ import {
     colorAdjustAlpha,
     edgeColorFor,
     getNodeLabel,
+    isLabelForced,
     isNodePinned,
     linkTooltip,
     nodeTooltip,
@@ -104,12 +108,17 @@ function buildNodeLabelSprite(node: FGNode): SpriteText | undefined {
 
     const dark = getTheme() === 'dark';
     const sprite = new SpriteText(text);
-    sprite.textHeight = LABEL_TEXT_HEIGHT_3D;
+    // honor the global text-scale slider (shared with the 2D renderer)
+    const textHeight = LABEL_TEXT_HEIGHT_3D * settings.labelScale;
+    sprite.textHeight = textHeight;
     // match the 2D canvas labels (Ubuntu first); fontFace feeds the canvas font
     // string directly, so a full family fallback list is fine
     sprite.fontFace = UI_FONT_FAMILY;
     sprite.fontWeight = 'bold';
-    sprite.color = dark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.85)';
+    // keep the ink fully opaque (dimming/fading happens via material.opacity) so
+    // the halo cannot bleed through translucent glyphs and thin the text — same
+    // fix as the 2D labels
+    sprite.color = dark ? 'rgba(255,255,255,1)' : 'rgba(0,0,0,1)';
     if (settings.nodeLabelOutline) {
         // contrasting halo, mirroring the 2D label outline
         sprite.strokeWidth = 2;
@@ -122,6 +131,7 @@ function buildNodeLabelSprite(node: FGNode): SpriteText | undefined {
     const spriteObj = sprite as unknown as {
         material: { depthWrite: boolean; transparent: boolean };
         center: { x: number; y: number };
+        __isNodeLabel: boolean;
     };
 
     // render the label on top of the scene geometry so the node sphere never
@@ -131,6 +141,9 @@ function buildNodeLabelSprite(node: FGNode): SpriteText | undefined {
     // mirroring the 2D label dimming during hover-highlight/search; set once here
     // so the per-recolor pass only mutates opacity (no needsUpdate churn)
     spriteObj.material.transparent = true;
+    // tag the primary label sprite so the declutter pass can fade only it,
+    // leaving the adjacency "+N" and analytics value sprites untouched
+    spriteObj.__isNodeLabel = true;
 
     // offset the label below the node via the sprite's normalized center anchor
     // rather than a world-space position offset. `center` lives in the sprite's
@@ -142,8 +155,8 @@ function buildNodeLabelSprite(node: FGNode): SpriteText | undefined {
     // it further down — so add (radius + gap)/spriteHeight to clear the sphere
     const radius = Math.cbrt(Math.max(node.val ?? 1, 1)) * 6;
     const lineCount = text.split('\n').length;
-    const spriteHeight = lineCount * LABEL_TEXT_HEIGHT_3D;
-    const gap = LABEL_TEXT_HEIGHT_3D / 2;
+    const spriteHeight = lineCount * textHeight;
+    const gap = textHeight / 2;
     spriteObj.center.x = 0.5;
     spriteObj.center.y = 1 + (radius + gap) / spriteHeight;
     return sprite;
@@ -227,14 +240,142 @@ function labelDimFactor3D(node: FGNode): number {
  */
 export function applyLabelDimming3D(fg: ForceGraphInstance): void {
     const nodes = fg.graphData().nodes as FGNode[];
+    // when a declutter mode is active the per-frame updateLabelVisibility3D pass
+    // owns the primary label's opacity (dim × fade), so skip those here to avoid
+    // briefly un-hiding a faded-out label on recolor
+    const declutter = settings.labelDensity !== 'all';
     for (const node of nodes) {
         const obj = (node as unknown as { __threeObj?: PulseObj }).__threeObj;
         if (!obj) continue;
         const factor = labelDimFactor3D(node);
         for (const child of obj.children) {
             if (!child.isSprite || !child.material) continue;
+            if (declutter && (child as { __isNodeLabel?: boolean }).__isNodeLabel) continue;
             child.material.opacity = factor;
         }
+    }
+}
+
+// ── label declutter (3D, post-frame) ────────────────────────
+
+// minimal shape of the primary label sprite we toggle/fade
+interface LabelSprite {
+    __isNodeLabel?: boolean;
+    isSprite?: boolean;
+    visible: boolean;
+    material: { opacity: number };
+}
+
+// finds a node's tagged primary label sprite (skips +N / value sprites)
+function labelSpriteOf(node: FGNode): LabelSprite | null {
+    const obj = (node as unknown as { __threeObj?: { children: LabelSprite[] } }).__threeObj;
+    if (!obj) return null;
+    for (const child of obj.children) {
+        if (child.__isNodeLabel) return child;
+    }
+    return null;
+}
+
+// per-node fade alpha for 3D label decluttering, mirroring the 2D smoothing;
+// persists across frames so visibility eases in/out instead of popping
+const labelFade3D = new Map<string, number>();
+let lastLabelFrame3DMs = 0;
+// reusable projection scratch vector (three is untyped here, so this is `any`)
+const labelProjectVec = new THREE.Vector3();
+
+// eases a label sprite's fade toward `target` (0/1) by `step`, applying the
+// resulting opacity (dim × fade). returns the new alpha; prunes the map entry
+// and hides the sprite once fully faded out
+function easeLabelFade3D(
+    node: FGNode, sprite: LabelSprite, target: number, step: number,
+): number {
+    const prev = labelFade3D.get(node.id) ?? 0;
+    const alpha = target > prev ? Math.min(target, prev + step) : Math.max(target, prev - step);
+    if (alpha <= 0.001) {
+        labelFade3D.delete(node.id);
+        sprite.material.opacity = 0;
+        sprite.visible = false;
+        return 0;
+    }
+    labelFade3D.set(node.id, alpha);
+    sprite.material.opacity = labelDimFactor3D(node) * alpha;
+    sprite.visible = true;
+    return alpha;
+}
+
+/**
+ * Per-frame 3D label declutter (the analogue of the 2D post-render label pass).
+ * 'all' is handled by applyLabelDimming3D plus a rebuild on mode change, so this
+ * only runs for 'focus' (show just the forced set) and 'auto' (screen-space grid
+ * thinning — only the most important label survives per cell). Visibility is
+ * smoothed via per-node fade alphas with hysteresis (already-shown labels keep
+ * their cell), so labels never flicker as the camera orbits. Driven by the shared
+ * rAF loop in graph-ui.
+ */
+export function updateLabelVisibility3D(fg: ForceGraphInstance): void {
+    const mode = settings.labelDensity;
+    if (mode === 'all' || settings.nodeLabelMode === 'none') {
+        if (labelFade3D.size > 0) labelFade3D.clear();
+        return;
+    }
+
+    const nodes = fg.graphData().nodes as FGNode[];
+    const cam = cameraOf(fg);
+    const sizeApi = fg as unknown as { width(): number; height(): number };
+    const w = sizeApi.width();
+    const h = sizeApi.height();
+    const margin = LABEL_CULL_MARGIN_PX;
+
+    const now = Date.now();
+    const dt = lastLabelFrame3DMs === 0 ? 16 : Math.min(100, Math.max(0, now - lastLabelFrame3DMs));
+    lastLabelFrame3DMs = now;
+    const step = dt / LABEL_FADE_MS;
+
+    interface Candidate { node: FGNode; sprite: LabelSprite; forced: boolean; importance: number; sx: number; sy: number }
+    const candidates: Candidate[] = [];
+    for (const node of nodes) {
+        const sprite = labelSpriteOf(node);
+        if (!sprite) continue;
+        if (node.x == null || node.y == null) continue;
+
+        // project the node center to screen px; cull behind-camera/off-screen
+        const z = (node as unknown as { z?: number }).z ?? 0;
+        labelProjectVec.set(node.x, node.y, z);
+        labelProjectVec.project(cam);
+        const offDepth = labelProjectVec.z > 1 || labelProjectVec.z < -1;
+        const sx = (labelProjectVec.x * 0.5 + 0.5) * w;
+        const sy = (-labelProjectVec.y * 0.5 + 0.5) * h;
+        const offScreen = sx < -margin || sx > w + margin || sy < -margin || sy > h + margin;
+        const forced = isLabelForced(node);
+        if (offDepth || offScreen || (mode === 'focus' && !forced)) {
+            easeLabelFade3D(node, sprite, 0, step);
+            continue;
+        }
+        candidates.push({ node, sprite, forced, importance: node.val ?? 1, sx, sy });
+    }
+
+    // hysteresis: forced first, then already-shown labels, then importance desc
+    candidates.sort((a, b) => {
+        if (a.forced !== b.forced) return a.forced ? -1 : 1;
+        const aShown = (labelFade3D.get(a.node.id) ?? 0) >= LABEL_STICKY_ALPHA;
+        const bShown = (labelFade3D.get(b.node.id) ?? 0) >= LABEL_STICKY_ALPHA;
+        if (aShown !== bShown) return aShown ? -1 : 1;
+        return b.importance - a.importance;
+    });
+
+    const cellW = LABEL_CELL_W_PX * settings.labelScale;
+    const cellH = LABEL_CELL_H_PX * settings.labelScale;
+    // 'auto' thins by screen-grid cell; 'focus' shows every remaining candidate
+    const occupied = mode === 'auto' ? new Set<string>() : null;
+
+    for (const cand of candidates) {
+        const cellKey = occupied
+            ? `${Math.floor(cand.sx / cellW)}:${Math.floor(cand.sy / cellH)}`
+            : '';
+        const want = cand.forced || !occupied || !occupied.has(cellKey);
+        const alpha = easeLabelFade3D(cand.node, cand.sprite, want ? 1 : 0, step);
+        // reserve the cell while substantially visible so others avoid it
+        if (occupied && alpha >= LABEL_STICKY_ALPHA) occupied.add(cellKey);
     }
 }
 

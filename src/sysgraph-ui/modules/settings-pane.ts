@@ -17,6 +17,7 @@ import {
     getGraphDisplayMode,
     setGraphDisplayMode,
 } from './graph-display.js';
+import { refreshGraphColors } from './graph-ui.js';
 import {
     validateEdgeFilterExpression,
     validateLinkDistanceExpression,
@@ -45,7 +46,7 @@ import {
     saveSettingsPreset,
     snapshotCurrentSettings,
 } from './settings-presets.js';
-import { clearPhysicsOverride, getGraph, setGraphDirty } from './state.js';
+import { clearPhysicsOverride, getGraph, setGraphDirty, setHighlight } from './state.js';
 import { showActionToast, showError, showInfoToast } from './util.js';
 
 function getRequiredElement(id: string): HTMLElement {
@@ -219,6 +220,15 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showGrid', { label: 'show grid' }).on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
+});
+
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'highlightOnHover', { label: 'highlight on hover' }).on('change', () => {
+    // disabling mid-hover should clear any active dim immediately (2D updates on
+    // its next frame; 3D needs an explicit recolor)
+    if (!settings.highlightOnHover) {
+        setHighlight(null);
+        refreshGraphColors();
+    }
 });
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { label: 'link curvature', min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {

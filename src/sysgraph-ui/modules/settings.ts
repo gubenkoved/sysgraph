@@ -34,6 +34,7 @@ export interface SettingsShape {
     nodeLabelOutline: boolean;
     labelDensity: string;
     labelScale: number;
+    highlightOnHover: boolean;
     nodeSizingMode: string;
     nodeSizingConstant: number;
     nodeSizingExpression: string;
@@ -77,6 +78,8 @@ export function createDefaultSettings(): SettingsShape {
         labelDensity: 'auto',
         // global multiplier applied to all label text sizes
         labelScale: 1,
+        // dim a hovered node's non-neighbours to spotlight its local graph
+        highlightOnHover: true,
 
         nodeSizingMode: 'degree',
         nodeSizingConstant: 3,

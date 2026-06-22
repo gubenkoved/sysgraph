@@ -93,6 +93,12 @@ export const LABEL_FADE_MS = 180;
 // a label counts as "currently shown" (and so keeps its slot via hysteresis)
 // once its fade alpha is above this; below it, it no longer reserves space
 export const LABEL_STICKY_ALPHA = 0.5;
+// 3D label declutter: screen-space grid cell size (px). in 'auto' mode only the
+// single most-important label whose projected position falls in a given cell is
+// shown, thinning dense clusters; both dimensions scale with the text-scale
+// slider so bigger text reserves proportionally more room
+export const LABEL_CELL_W_PX = 120;
+export const LABEL_CELL_H_PX = 30;
 export const UI_FONT_FAMILY = "'Ubuntu', 'Roboto', 'Segoe UI', 'Arial', sans-serif";
 
 /**

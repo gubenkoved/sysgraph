@@ -20,6 +20,7 @@ import {
     colorAdjustAlpha,
     edgeColorFor,
     getNodeLabel,
+    isLabelForced,
     isNodePinned,
     linkTooltip,
     nodeOutlineColor,
@@ -239,18 +240,6 @@ interface LabelBox {
 
 function rectsOverlap(a: LabelBox, b: LabelBox): boolean {
     return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
-}
-
-// labels that must always show regardless of declutter mode: hovered node and
-// its immediate neighbours, selected nodes, search matches, pinned nodes and the
-// edit rubber-band source. these win collisions and bypass importance culling
-function isLabelForced(node: FGNode): boolean {
-    if (state.selection.selectedNodeIds.has(node.id)) return true;
-    if (state.search?.matchesMap.has(node.id)) return true;
-    if (state.edit.active && state.edit.pendingEdgeSourceId === node.id) return true;
-    if (isNodePinned(node)) return true;
-    const dist = state.highlight?.nodeDistancesMap.get(node.id);
-    return dist != null && dist <= 1;
 }
 
 // estimate the world-space bounding box a label would occupy (anchored to the

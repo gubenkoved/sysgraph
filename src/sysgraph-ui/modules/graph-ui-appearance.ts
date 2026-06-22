@@ -237,9 +237,16 @@ export function validateEdgeFilterExpression(expression: string): string | null 
 const nodeCssColorCache = new Map<string, string>();
 const edgeCssColorCache = new Map<string, string>();
 
+// memoizes colorAdjustAlpha results. the (base color, alpha) inputs form a
+// small bounded set (a handful of palette colors × a few dim/fade factors), so
+// caching removes the per-node/per-link d3.color parsing that dominated the
+// hover/search recolor passes on large graphs
+const adjustAlphaCache = new Map<string, string>();
+
 export function clearColorCaches(): void {
     nodeCssColorCache.clear();
     edgeCssColorCache.clear();
+    adjustAlphaCache.clear();
 }
 
 function getCachedNodeCssColor(nodeType: string): string {
@@ -344,10 +351,21 @@ export function linkTargetId(link: FGLink): string {
 // ── color utilities ─────────────────────────────────────────
 
 export function colorAdjustAlpha(color: string, factor: number): string {
+    // rounding the factor keeps the cache key set bounded (continuous fade
+    // alphas would otherwise never hit); 3 decimals is visually lossless
+    const key = `${color}|${factor.toFixed(3)}`;
+    const cached = adjustAlphaCache.get(key);
+    if (cached !== undefined) return cached;
     const col = d3.color(color);
-    if (!col) return color;
-    col.opacity *= factor;
-    return col.toString();
+    let result = color;
+    if (col) {
+        col.opacity *= factor;
+        result = col.toString();
+    }
+    // hard cap so a pathological input set can't grow the map without bound
+    if (adjustAlphaCache.size > 8192) adjustAlphaCache.clear();
+    adjustAlphaCache.set(key, result);
+    return result;
 }
 
 function darkerColor(color: string): string {
@@ -414,6 +432,19 @@ export function unpinNode(node: FGNode): void {
 
 export function isNodePinned(node: FGNode): boolean {
     return node.fx !== undefined || node.fy !== undefined;
+}
+
+// labels that must always show regardless of declutter mode (both renderers):
+// the hovered node and its immediate neighbours, selected nodes, search
+// matches, pinned nodes and the edit rubber-band source. these win collisions
+// and bypass importance/density culling
+export function isLabelForced(node: FGNode): boolean {
+    if (state.selection.selectedNodeIds.has(node.id)) return true;
+    if (state.search?.matchesMap.has(node.id)) return true;
+    if (state.edit.active && state.edit.pendingEdgeSourceId === node.id) return true;
+    if (isNodePinned(node)) return true;
+    const dist = state.highlight?.nodeDistancesMap.get(node.id);
+    return dist != null && dist <= 1;
 }
 
 // ── shared accessors (node/link appearance resolution) ──────
