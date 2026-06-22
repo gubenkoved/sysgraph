@@ -71,13 +71,28 @@ export const MIN_NODE_RADIUS = 4;
 export const MIN_POINTER_AREA_RADIUS = 8;
 export const NODE_RADIUS_MULTIPLIER = 3;
 export const MAX_NODE_VAL = 10;
-export const NODE_LABEL_FONT_SIZE = 12;
+// target on-screen label size in CSS px. labels are rendered at a roughly
+// constant screen size (world font = this / globalScale) so zooming in spreads
+// nodes apart without inflating the text — that is what lets the decluttering
+// pass progressively reveal more labels as you zoom
+export const NODE_LABEL_SCREEN_PX = 12;
 export const NODE_LABEL_OFFSET = 4;
-// dampen on-screen label growth above this zoom level (globalScale; 2 = 200%)
-// so dense labels stay distinguishable when zoomed in
-export const NODE_LABEL_ZOOM_THRESHOLD = 2;
-// 0 = no dampening (linear growth), 1 = fully pinned size; 0.5 -> sqrt growth
-export const NODE_LABEL_ZOOM_DAMP = 0.5;
+// clamp the derived world-space font so labels never collapse to nothing when
+// zoomed far out, nor balloon when zoomed far in
+export const NODE_LABEL_MIN_WORLD = 1.5;
+export const NODE_LABEL_MAX_WORLD = 36;
+// padding (screen px) added around each label box when packing labels so
+// neighbours keep a small gutter instead of touching
+export const LABEL_BOX_PAD_PX = 3;
+// extra screen-px margin beyond the viewport when culling off-screen labels, so
+// labels near the edge do not pop in/out abruptly while panning
+export const LABEL_CULL_MARGIN_PX = 64;
+// time (ms) for a label to fade fully in/out when its visibility changes in
+// declutter mode — stateful smoothing that hides the per-frame collision churn
+export const LABEL_FADE_MS = 180;
+// a label counts as "currently shown" (and so keeps its slot via hysteresis)
+// once its fade alpha is above this; below it, it no longer reserves space
+export const LABEL_STICKY_ALPHA = 0.5;
 export const UI_FONT_FAMILY = "'Ubuntu', 'Roboto', 'Segoe UI', 'Arial', sans-serif";
 
 /**

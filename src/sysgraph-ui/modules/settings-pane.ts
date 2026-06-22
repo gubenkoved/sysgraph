@@ -272,6 +272,27 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'labelDensity', {
+    label: 'label density',
+    view: 'list',
+    options: [
+        { text: 'all', value: 'all' },
+        { text: 'auto (declutter)', value: 'auto' },
+        { text: 'focus', value: 'focus' },
+    ],
+}).on('change', () => {
+    emit(EVT_SETTINGS_UPDATED, null);
+});
+
+displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'labelScale', {
+    label: 'text scale',
+    min: 0.5,
+    max: 3,
+    step: 0.1,
+}).on('change', () => {
+    emit(EVT_SETTINGS_UPDATED, null);
+});
+
 // ── node sizing settings ────────────────────────────────────
 displayOptionsFolder.addBlade({ view: 'separator' });
 

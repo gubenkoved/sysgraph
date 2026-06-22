@@ -6,10 +6,12 @@ import {
     GRID_CENTER_COLOR, GRID_CENTER_COLOR_DARK, GRID_CENTER_COLOR_UNSTRESSED, GRID_CENTER_COLOR_UNSTRESSED_DARK, GRID_CENTER_CROSS_HALF, GRID_CROSS_HALF,
     GRID_LINE_COLOR, GRID_LINE_COLOR_DARK, GRID_LINE_COLOR_UNSTRESSED, GRID_LINE_COLOR_UNSTRESSED_DARK,
     GRID_SPACING,
+    LABEL_BOX_PAD_PX, LABEL_CULL_MARGIN_PX,
+    LABEL_FADE_MS, LABEL_STICKY_ALPHA,
     MAX_CROSSES_PER_AXIS, MAX_ZOOM_BOOST,
-    NODE_LABEL_FONT_SIZE,
+    NODE_LABEL_MAX_WORLD, NODE_LABEL_MIN_WORLD,
     NODE_LABEL_OFFSET,
-    NODE_LABEL_ZOOM_DAMP, NODE_LABEL_ZOOM_THRESHOLD,
+    NODE_LABEL_SCREEN_PX,
     nodePointerRadius, nodeRadius,
     SEARCH_COLOR_BEST, SEARCH_PULSE_BASE, SEARCH_PULSE_FREQ,
     UI_FONT_FAMILY,
@@ -40,16 +42,15 @@ import { getTheme } from './theme.js';
 
 // ── canvas drawing helpers ──────────────────────────────────
 
-// dampen label growth above a zoom threshold so dense text stays legible;
-// below the threshold the label keeps its nominal size. this is intrinsically a
-// 2D concept — it scales with the canvas globalScale (zoom); the 3D renderer
-// sizes labels in world units instead
+// derive the world-space font size that renders at a roughly constant on-screen
+// size regardless of zoom. the canvas is scaled by globalScale, so dividing the
+// target screen px by globalScale keeps labels ~constant on screen — zooming in
+// then spreads nodes apart without inflating text, which is what lets the
+// decluttering pass reveal progressively more labels. clamped so labels neither
+// vanish when zoomed far out nor balloon when zoomed far in
 function labelFontSize(globalScale: number): number {
-    if (globalScale <= NODE_LABEL_ZOOM_THRESHOLD) {
-        return NODE_LABEL_FONT_SIZE;
-    }
-    const damp = (NODE_LABEL_ZOOM_THRESHOLD / globalScale) ** NODE_LABEL_ZOOM_DAMP;
-    return NODE_LABEL_FONT_SIZE * damp;
+    const world = (NODE_LABEL_SCREEN_PX * settings.labelScale) / globalScale;
+    return Math.min(NODE_LABEL_MAX_WORLD, Math.max(NODE_LABEL_MIN_WORLD, world));
 }
 
 function drawCircle(
@@ -190,16 +191,9 @@ function drawNode(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: numb
         drawCircle(ctx, node.x!, node.y!, r + (SEARCH_PULSE_BASE + pulse) * zoomBoost, 2.5 * zoomBoost, 'rgb(33, 150, 243)');
     }
 
-    const label = getNodeLabel(node);
-    const labelDark = getTheme() === 'dark';
-    // contrasting halo: dark theme has light text -> dark outline, and vice versa
-    const labelOutline = settings.nodeLabelOutline
-        ? {
-            strokeStyle: colorAdjustAlpha(labelDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alphaMultiplier),
-            strokeWidth: 2.5,
-        }
-        : undefined;
-    drawText(ctx, label, node.x! + r + NODE_LABEL_OFFSET, node.y!, labelFontSize(globalScale), colorAdjustAlpha(labelDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', alphaMultiplier), 'middle', 'left', true, labelOutline);
+    // primary node labels are drawn in a separate post-render pass
+    // (drawNodeLabels) so they can be decluttered by importance and rendered on
+    // top of every node instead of being occluded by later-drawn neighbours
 
     // analytics heatmap raw value drawn under the node (e.g. distance)
     if (decoration?.kind === 'heatmap' && decoration.showValues) {
@@ -231,6 +225,192 @@ function drawNode(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: numb
                 strokeWidth: 1.0,
             },
         );
+    }
+}
+
+// ── label decluttering (post-render pass) ───────────────────
+
+interface LabelBox {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+}
+
+function rectsOverlap(a: LabelBox, b: LabelBox): boolean {
+    return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
+}
+
+// labels that must always show regardless of declutter mode: hovered node and
+// its immediate neighbours, selected nodes, search matches, pinned nodes and the
+// edit rubber-band source. these win collisions and bypass importance culling
+function isLabelForced(node: FGNode): boolean {
+    if (state.selection.selectedNodeIds.has(node.id)) return true;
+    if (state.search?.matchesMap.has(node.id)) return true;
+    if (state.edit.active && state.edit.pendingEdgeSourceId === node.id) return true;
+    if (isNodePinned(node)) return true;
+    const dist = state.highlight?.nodeDistancesMap.get(node.id);
+    return dist != null && dist <= 1;
+}
+
+// estimate the world-space bounding box a label would occupy (anchored to the
+// right of the node, vertically centred), mirroring drawText's layout
+function computeLabelBox(
+    node: FGNode, label: string, fontWorld: number, pad: number,
+    ctx: CanvasRenderingContext2D,
+): LabelBox | null {
+    const lines = label.split('\n').filter(l => l.length > 0);
+    if (lines.length === 0) return null;
+
+    let width = 0;
+    for (let i = 0; i < lines.length; i++) {
+        // first line is bold (see drawText), so measure it with the bold face
+        ctx.font = `${i === 0 ? 'bold ' : ''}${fontWorld}px ${UI_FONT_FAMILY}`;
+        width = Math.max(width, ctx.measureText(lines[i]!).width);
+    }
+
+    const lineHeight = fontWorld * 1.2;
+    const totalHeight = (lines.length - 1) * lineHeight + fontWorld;
+    const x0 = node.x! + nodeRadius(node) + NODE_LABEL_OFFSET;
+    return {
+        minX: x0 - pad,
+        maxX: x0 + width + pad,
+        minY: node.y! - totalHeight / 2 - pad,
+        maxY: node.y! + totalHeight / 2 + pad,
+    };
+}
+
+// draws one primary node label using the shared text/outline styling. `fade`
+// (0..1) is the smoothing alpha applied on top of the node's own alpha so
+// labels can crossfade instead of popping in/out
+function drawNodeLabel(
+    node: FGNode, label: string, fontWorld: number, fade: number, ctx: CanvasRenderingContext2D,
+): void {
+    const { alphaMultiplier } = resolveNodeAppearance(node);
+    const alpha = alphaMultiplier * fade;
+    const labelDark = getTheme() === 'dark';
+    // contrasting halo: dark theme has light text -> dark outline, and vice versa
+    const labelOutline = settings.nodeLabelOutline
+        ? {
+            strokeStyle: colorAdjustAlpha(labelDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', alpha),
+            // proportional to the font so the halo stays ~constant on screen
+            strokeWidth: fontWorld * 0.2,
+        }
+        : undefined;
+    drawText(
+        ctx, label, node.x! + nodeRadius(node) + NODE_LABEL_OFFSET, node.y!, fontWorld,
+        // keep the ink fully opaque (alpha only via dim/fade) so the halo cannot
+        // bleed through translucent glyphs and make the text look thinner/faded
+        colorAdjustAlpha(labelDark ? 'rgba(255,255,255,1)' : 'rgba(0,0,0,1)', alpha),
+        'middle', 'left', true, labelOutline,
+    );
+}
+
+// per-node fade alpha for label visibility smoothing (declutter mode only). a
+// label fades toward 1 while it wins a slot and toward 0 once it loses one, so
+// the per-frame collision churn never causes hard flicker
+const labelFadeAlphas = new Map<string, number>();
+let lastLabelFrameMs = 0;
+
+// post-render pass: paints primary node labels on top of every node. depending
+// on settings.labelDensity it either draws all labels ('all'), greedily packs
+// them by importance skipping overlaps ('auto'), or only labels the forced set
+// ('focus'). forced labels always draw and reserve their box so others avoid
+// them. in 'auto' the visibility is smoothed via per-node fade alphas with
+// hysteresis: already-shown labels are packed first so they keep their slot
+function drawNodeLabels(
+    fg: ForceGraphInstance, ctx: CanvasRenderingContext2D, globalScale: number,
+): void {
+    if (settings.nodeLabelMode === 'none') return;
+
+    const mode = settings.labelDensity;
+    const fontWorld = labelFontSize(globalScale);
+    const nodes = fg.graphData().nodes as FGNode[];
+
+    // viewport bounds (+ margin) so off-screen labels are not measured/drawn
+    const topLeft = fg.screen2GraphCoords(0, 0);
+    const bottomRight = fg.screen2GraphCoords(ctx.canvas.width, ctx.canvas.height);
+    const margin = LABEL_CULL_MARGIN_PX / globalScale;
+    const viewMinX = topLeft.x - margin;
+    const viewMaxX = bottomRight.x + margin;
+    const viewMinY = topLeft.y - margin;
+    const viewMaxY = bottomRight.y + margin;
+
+    interface Candidate { node: FGNode; label: string; forced: boolean; importance: number }
+    const candidates: Candidate[] = [];
+    for (const node of nodes) {
+        if (node.x == null || node.y == null) continue;
+        if (node.x < viewMinX || node.x > viewMaxX || node.y < viewMinY || node.y > viewMaxY) continue;
+        const forced = isLabelForced(node);
+        if (mode === 'focus' && !forced) continue;
+        const label = getNodeLabel(node);
+        if (!label) continue;
+        candidates.push({ node, label, forced, importance: nodeRadius(node) });
+    }
+
+    // non-declutter modes draw everything they kept, at full opacity, and need
+    // no smoothing state
+    if (mode !== 'auto') {
+        if (labelFadeAlphas.size > 0) labelFadeAlphas.clear();
+        ctx.save();
+        for (const cand of candidates) {
+            drawNodeLabel(cand.node, cand.label, fontWorld, 1, ctx);
+        }
+        ctx.restore();
+        return;
+    }
+
+    // hysteresis: forced first, then labels already shown (so they keep their
+    // slot across frames), then the rest — each group by importance descending
+    candidates.sort((a, b) => {
+        if (a.forced !== b.forced) return a.forced ? -1 : 1;
+        const aSticky = (labelFadeAlphas.get(a.node.id) ?? 0) >= LABEL_STICKY_ALPHA;
+        const bSticky = (labelFadeAlphas.get(b.node.id) ?? 0) >= LABEL_STICKY_ALPHA;
+        if (aSticky !== bSticky) return aSticky ? -1 : 1;
+        return b.importance - a.importance;
+    });
+
+    const pad = LABEL_BOX_PAD_PX / globalScale;
+    const placed: LabelBox[] = [];
+
+    // advance the fade clock; clamp dt so a long pause (tab hidden) does not
+    // make labels jump instantly
+    const now = Date.now();
+    const dt = lastLabelFrameMs === 0 ? 16 : Math.min(100, Math.max(0, now - lastLabelFrameMs));
+    lastLabelFrameMs = now;
+    const step = dt / LABEL_FADE_MS;
+
+    const seen = new Set<string>();
+    ctx.save();
+    for (const cand of candidates) {
+        seen.add(cand.node.id);
+        const box = computeLabelBox(cand.node, cand.label, fontWorld, pad, ctx);
+        if (!box) continue;
+
+        // a label wants to be visible if forced or it does not collide with an
+        // already-placed (visible/fading) label box
+        const wantVisible = cand.forced || !placed.some(b => rectsOverlap(box, b));
+
+        const prev = labelFadeAlphas.get(cand.node.id) ?? 0;
+        const target = wantVisible ? 1 : 0;
+        const alpha = target > prev
+            ? Math.min(target, prev + step)
+            : Math.max(target, prev - step);
+        labelFadeAlphas.set(cand.node.id, alpha);
+
+        // reserve space while still substantially visible so a fading-out label
+        // keeps blocking newcomers until it has mostly gone
+        if (alpha >= LABEL_STICKY_ALPHA) placed.push(box);
+
+        if (alpha > 0) drawNodeLabel(cand.node, cand.label, fontWorld, alpha, ctx);
+    }
+    ctx.restore();
+
+    // drop state for nodes no longer on-screen so the map cannot grow unbounded
+    if (seen.size !== labelFadeAlphas.size) {
+        for (const id of labelFadeAlphas.keys()) {
+            if (!seen.has(id)) labelFadeAlphas.delete(id);
+        }
     }
 }
 
@@ -377,6 +557,7 @@ export function build2DRenderer(
     .onBackgroundClick(handlers.onBackgroundClick)
     .autoPauseRedraw(false)
     .onRenderFramePre((ctx, globalScale) => renderFramePre(fg, pointerGraphPos, ctx, globalScale))
+    .onRenderFramePost((ctx, globalScale) => drawNodeLabels(fg, ctx, globalScale))
     .d3Force('charge', d3.forceManyBody().strength(D3_CHARGE_STRENGTH))
     .d3Force('link', d3.forceLink<FGNode, d3.SimulationLinkDatum<FGNode>>().distance(D3_LINK_DISTANCE).strength(D3_LINK_STRENGTH))
     .d3Force('collision', d3.forceCollide<FGNode>().radius(d => D3_COLLISION_BASE_RADIUS + (d.val ?? 1) * D3_COLLISION_RADIUS_PER_VAL).strength(D3_COLLISION_STRENGTH).iterations(D3_COLLISION_ITERATIONS))

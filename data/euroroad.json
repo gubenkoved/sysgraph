@@ -10,8 +10,7 @@
     "d3LinkStrength": 0.85,
     "d3VelocityDecay": 0.15,
     "d3CollisionMultiplier": 0.65,
-    "nodeSizingMode": "constant",
-    "nodeSizingConstant": 3,
+    "nodeSizingMode": "degree",
     "nodeLabelMode": "expression",
     "nodeLabelExpression": "properties.label",
     "nodeColors": {

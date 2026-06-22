@@ -32,6 +32,8 @@ export interface SettingsShape {
     nodeLabelMode: string;
     nodeLabelExpression: string;
     nodeLabelOutline: boolean;
+    labelDensity: string;
+    labelScale: number;
     nodeSizingMode: string;
     nodeSizingConstant: number;
     nodeSizingExpression: string;
@@ -70,6 +72,11 @@ export function createDefaultSettings(): SettingsShape {
         nodeLabelMode: 'expression',
         nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
         nodeLabelOutline: false,
+        // 'all' = every label; 'auto' = collision-aware decluttering;
+        // 'focus' = only hovered/selected/searched/pinned nodes are labelled
+        labelDensity: 'auto',
+        // global multiplier applied to all label text sizes
+        labelScale: 1,
 
         nodeSizingMode: 'degree',
         nodeSizingConstant: 3,
