@@ -255,6 +255,13 @@ def get_all_net_connections() -> dict[int, list[NetConnection]]:
     for pcon in psutil.net_connections(kind="inet"):
         if pcon.pid is None:
             continue
+        # known limitation: a socket fd inherited across fork/spawn is
+        # held by several processes (e.g. uvicorn/multiprocessing
+        # workers sharing a listening socket), but psutil attributes it
+        # to a single, arbitrary pid, so the socket may attach to a
+        # forked child instead of the parent that bound it. resolving
+        # every holder would require scanning /proc/[pid]/fd for the
+        # shared socket inode; left out for now to keep this simple
         result[pcon.pid].append(
             NetConnection(
                 pid=pcon.pid,
