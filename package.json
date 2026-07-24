@@ -13,6 +13,13 @@
     "lint:fix": "biome check --write --unsafe src/sysgraph-ui/"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.6",
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.4",
+    "@lezer/highlight": "^1.2.1",
     "@material/web": "^2.4.1",
     "@tweakpane/core": "^2.0.5",
     "@tweakpane/plugin-essentials": "^0.2.1",

@@ -133,7 +133,11 @@ sysgraph/
 │           ├── graph-ui-3d.ts    # 3D WebGL renderer (3d-force-graph): label sprites, pin spikes, search pulse, axis cross, orbit-center marker, selection ring
 │           ├── render-mode.ts    # 2D/3D render-mode persistence (localStorage)
 │           ├── expression.ts     # shared compiler for user expressions (label/sizing/link-distance/edge-weight); properties exposed as bare names, well-known keys always win
-│           ├── expression-help.ts # shared help-icon + popover explaining how expressions are evaluated
+│           ├── expression-scopes.ts # shared (params, spread) scope tuples for the six expression fields; imported by the real evaluators AND the editor so preview/autocomplete never drift
+│           ├── expression-fields.ts # registry describing each expression field (get/set/validate/scope/suggestions/samples/examples); drives the modal editor
+│           ├── expression-properties.ts # graph vocabulary discovery: node/edge types + property keys with inferred value kinds (number/string), driving graph-aware autocomplete, type chips, and contextual examples
+│           ├── expression-editor.ts # rich modal expression editor (CodeMirror 6): syntax highlight, autocomplete, click-to-insert chips, live preview, examples
+│           ├── expression-editor-theme.ts # CodeMirror light/dark themes + syntax highlight style (driven by --cm-* design tokens)
 │           ├── graph-ui-helpers.ts # Label-expression helpers (e.g. bytes_to_human)
 │           ├── graph-algs.ts     # BFS algorithm for highlights
 │           ├── graph-display.ts  # Persistence policy for graph-embedded `display` settings

@@ -66,6 +66,11 @@ export const STANDALONE = __STANDALONE__;
 // absorb sub-pixel rounding so the scroll affordance never flickers at rest
 export const TOOLBAR_SCROLL_EDGE_EPSILON_PX = 1;
 
+// ── expression editor ───────────────────────────────────────
+// how many sample entities the expression editor evaluates for its live
+// preview; the selection is preferred, then the first nodes/edges in the graph
+export const EXPR_PREVIEW_SAMPLE_LIMIT = 6;
+
 // ── node rendering ──────────────────────────────────────────
 export const MIN_NODE_RADIUS = 4;
 export const MIN_POINTER_AREA_RADIUS = 8;

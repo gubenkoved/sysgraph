@@ -11,6 +11,13 @@ import {
     SEARCH_NOT_MATCHING_OPACITY,
 } from './constants.js';
 import { buildScopedExpression } from './expression.js';
+import {
+    EDGE_FILTER_SCOPE,
+    LINK_DISTANCE_SCOPE,
+    NODE_FILTER_SCOPE,
+    NODE_LABEL_SCOPE,
+    NODE_SIZING_SCOPE,
+} from './expression-scopes.js';
 import { labelHelpers } from './graph-ui-helpers.js';
 import type { FGLink, FGNode } from './graph-ui-types.js';
 import { getEdgeCssColor, getEdgeWidth, getNodeCssColor, highlightAlphaMultipliers, settings } from './settings.js';
@@ -41,8 +48,8 @@ export function getNodeLabel(node: FGNode): string {
                 // the injected names win over everything
                 const fn = buildScopedExpression(
                     `String(${settings.nodeLabelExpression})`,
-                    ['node', 'properties', 'helpers'],
-                    ['helpers', 'properties', 'node'],
+                    NODE_LABEL_SCOPE.params,
+                    NODE_LABEL_SCOPE.spread,
                 );
                 return fn(node, node.properties ?? {}, labelHelpers) as string;
             } catch {
@@ -63,8 +70,8 @@ export function getNodeVal(node: FGNode, degree: number): number {
                 // properties < node so well-known node keys win
                 const fn = buildScopedExpression(
                     settings.nodeSizingExpression,
-                    ['node', 'properties', 'degree'],
-                    ['properties', 'node'],
+                    NODE_SIZING_SCOPE.params,
+                    NODE_SIZING_SCOPE.spread,
                 );
                 const val = (fn(node, node.properties ?? {}, degree) as number) || 1;
                 return Math.min(val, MAX_NODE_VAL);
@@ -93,8 +100,8 @@ export function makeLinkDistanceFn(
         // properties < edge so well-known edge keys (id/type/source/target) win
         compiled = buildScopedExpression(
             expression.trim(),
-            ['edge', 'properties', 'source', 'target'],
-            ['properties', 'edge'],
+            LINK_DISTANCE_SCOPE.params,
+            LINK_DISTANCE_SCOPE.spread,
         );
     } catch {
         compiled = null;
@@ -125,8 +132,8 @@ export function validateLinkDistanceExpression(expression: string): string | nul
     try {
         buildScopedExpression(
             expression.trim(),
-            ['edge', 'properties', 'source', 'target'],
-            ['properties', 'edge'],
+            LINK_DISTANCE_SCOPE.params,
+            LINK_DISTANCE_SCOPE.spread,
         );
         return null;
     } catch (err) {
@@ -150,8 +157,8 @@ export function makeNodeFilterFn(
         // helpers < properties < node so well-known node keys win
         compiled = buildScopedExpression(
             expression.trim(),
-            ['node', 'properties', 'degree', 'helpers'],
-            ['helpers', 'properties', 'node'],
+            NODE_FILTER_SCOPE.params,
+            NODE_FILTER_SCOPE.spread,
         );
     } catch {
         compiled = null;
@@ -175,8 +182,8 @@ export function validateNodeFilterExpression(expression: string): string | null 
     try {
         buildScopedExpression(
             expression.trim(),
-            ['node', 'properties', 'degree', 'helpers'],
-            ['helpers', 'properties', 'node'],
+            NODE_FILTER_SCOPE.params,
+            NODE_FILTER_SCOPE.spread,
         );
         return null;
     } catch (err) {
@@ -200,8 +207,8 @@ export function makeEdgeFilterFn(
         // helpers < properties < edge so well-known edge keys win
         compiled = buildScopedExpression(
             expression.trim(),
-            ['edge', 'properties', 'helpers'],
-            ['helpers', 'properties', 'edge'],
+            EDGE_FILTER_SCOPE.params,
+            EDGE_FILTER_SCOPE.spread,
         );
     } catch {
         compiled = null;
@@ -225,8 +232,8 @@ export function validateEdgeFilterExpression(expression: string): string | null 
     try {
         buildScopedExpression(
             expression.trim(),
-            ['edge', 'properties', 'helpers'],
-            ['helpers', 'properties', 'edge'],
+            EDGE_FILTER_SCOPE.params,
+            EDGE_FILTER_SCOPE.spread,
         );
         return null;
     } catch (err) {

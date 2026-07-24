@@ -9,7 +9,16 @@ import {
     PANEL_SETTINGS,
 } from './constants.js';
 import { emit } from './event-bus.js';
-import { createExpressionHelpTrigger } from './expression-help.js';
+import { createExpressionEditTrigger } from './expression-editor.js';
+import type { ExpressionField } from './expression-fields.js';
+import {
+    edgeFilterField,
+    linkDistanceField,
+    nodeFilterField,
+    nodeLabelField,
+    nodeSizingField,
+    setExpressionPaneRefresh,
+} from './expression-fields.js';
 import type { GraphDisplay } from './graph.js';
 import {
     GRAPH_DISPLAY_MODES,
@@ -57,11 +66,15 @@ function getRequiredElement(id: string): HTMLElement {
     return element;
 }
 
-// adds the shared expression-help icon to a tweakpane expression binding row;
-// it rides the binding's element so it auto-hides when the row is hidden
-function attachExpressionHelp(binding: { element: HTMLElement }): void {
+// adds the rich-editor launch icon to a tweakpane expression binding row; it
+// rides the binding's element so it auto-hides when the row is hidden. The
+// factory is resolved on click so the editor binds the current value + props
+function attachExpressionEditor(
+    binding: { element: HTMLElement },
+    makeField: () => ExpressionField,
+): void {
     binding.element.classList.add('sg-expr-binding');
-    binding.element.appendChild(createExpressionHelpTrigger());
+    binding.element.appendChild(createExpressionEditTrigger(makeField));
 }
 
 const settingsPaneElement = getRequiredElement('settingsPane');
@@ -88,6 +101,9 @@ registerPanel({
 export function syncSettingsPane(): void {
     pane.refresh();
 }
+
+// let the expression editor push committed values back into the pane's inputs
+setExpressionPaneRefresh(syncSettingsPane);
 
 // tags a folder's root element with a category class so it can be visually
 // color-coded via CSS (left accent stripe + tinted title bar)
@@ -165,7 +181,7 @@ const linkDistanceConstantBinding = d3RenderingSettingsFolder.addBinding(setting
 const linkDistanceExpressionBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceExpression', {
     label: 'link distance',
 });
-attachExpressionHelp(linkDistanceExpressionBinding);
+attachExpressionEditor(linkDistanceExpressionBinding, linkDistanceField);
 
 function updateLinkDistanceVisibility(): void {
     const isExpr = settings.d3LinkDistanceMode === 'expression';
@@ -260,7 +276,7 @@ const nodeLabelModeBinding = displayOptionsFolder.addBinding(settings as unknown
 const nodeLabelExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelExpression', {
     label: 'label expr',
 });
-attachExpressionHelp(nodeLabelExpressionBinding);
+attachExpressionEditor(nodeLabelExpressionBinding, nodeLabelField);
 
 function updateExpressionVisibility(): void {
     nodeLabelExpressionBinding.hidden = settings.nodeLabelMode !== 'expression';
@@ -326,7 +342,7 @@ const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings as un
 const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingExpression', {
     label: 'node size',
 });
-attachExpressionHelp(nodeSizingExpressionBinding);
+attachExpressionEditor(nodeSizingExpressionBinding, nodeSizingField);
 
 function updateSizingVisibility(): void {
     nodeSizingConstantBinding.hidden = settings.nodeSizingMode !== 'constant';
@@ -470,12 +486,12 @@ const filterExpressionsFolder = tagFolder(pane.addFolder({ title: 'filter expres
 const nodeFilterExpressionBinding = filterExpressionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeFilterExpression', {
     label: 'nodes filter',
 });
-attachExpressionHelp(nodeFilterExpressionBinding);
+attachExpressionEditor(nodeFilterExpressionBinding, nodeFilterField);
 
 const edgeFilterExpressionBinding = filterExpressionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'edgeFilterExpression', {
     label: 'edges filter',
 });
-attachExpressionHelp(edgeFilterExpressionBinding);
+attachExpressionEditor(edgeFilterExpressionBinding, edgeFilterField);
 
 function updateFilterExpressionValidity(): void {
     const nodeError = settings.nodeFilterExpression.trim()

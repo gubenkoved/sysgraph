@@ -1,5 +1,6 @@
 import type { EdgeWeightFn } from './analytics-algs.js';
 import { buildScopedExpression } from './expression.js';
+import { EDGE_WEIGHT_SCOPE } from './expression-scopes.js';
 import type { GraphEdge } from './graph.js';
 
 /**
@@ -21,7 +22,7 @@ export function makeEdgeWeightFn(expression: string): EdgeWeightFn {
     let compiled: ((...args: unknown[]) => unknown) | null = null;
     try {
         // properties < edge so well-known edge keys win over a same-named property
-        compiled = buildScopedExpression(expr, ['edge', 'properties'], ['properties', 'edge']);
+        compiled = buildScopedExpression(expr, EDGE_WEIGHT_SCOPE.params, EDGE_WEIGHT_SCOPE.spread);
     } catch {
         compiled = null;
     }
@@ -45,7 +46,7 @@ export function makeEdgeWeightFn(expression: string): EdgeWeightFn {
 export function validateEdgeWeightExpression(expression: string): string | null {
     const expr = expression.trim() || DEFAULT_EDGE_WEIGHT_EXPRESSION;
     try {
-        buildScopedExpression(expr, ['edge', 'properties'], ['properties', 'edge']);
+        buildScopedExpression(expr, EDGE_WEIGHT_SCOPE.params, EDGE_WEIGHT_SCOPE.spread);
         return null;
     } catch (err) {
         return err instanceof Error ? err.message : 'invalid expression';
