@@ -2,7 +2,7 @@ import { initAnalyticsPanel } from './modules/analytics-panel.js';
 import { type LoadedGraphData, loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
-import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, rebuildGraphObjects, refreshGraphColors, refreshGraphLinkWidths, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
+import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, getVisibleGraph, rebuildGraphObjects, refreshGraphColors, refreshGraphLinkWidths, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
 import { initLayout } from './modules/layout.js';
 import { initLongPress } from './modules/long-press.js';
 import { initPhysicsIndicator } from './modules/physics-indicator.js';
@@ -27,6 +27,7 @@ import {CMD_EXPORT, CMD_IMPORT,
     EVT_GRAPH_UPDATED,
     EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
     EVT_THEME_CHANGED,
+    EVT_VISIBLE_GRAPH_CHANGED,
     EVT_WIDTHS_UPDATED,
     STANDALONE,
 } from './modules/constants.js';
@@ -63,31 +64,19 @@ if (STANDALONE) {
 // ── theme (apply persisted choice before the UI renders) ────
 initTheme();
 
-// ── event wiring ────────────────────────────────────────────
-on(EVT_GRAPH_UPDATED, async () => {
-    updateDynamicGraphPanes();
-    await refreshGraphUI();
-    // reconcile the engine after the visible graph changed: it warms up for a
-    // non-empty graph and stays frozen for an empty one (e.g. after a clear),
-    // even when the display mode skipped re-emitting the d3-params event
-    applyD3Params();
-    updateGraphInfo();
-});
+// ── search ──────────────────────────────────────────────────
 
-on(EVT_CLEAR_CLICKED, async () => {
-    resetState();
-    emit(EVT_GRAPH_UPDATED, null);
-});
+// last expression typed in the search bar, kept so the matches can be
+// recomputed when the visible graph changes
+let currentSearchExpression = '';
 
-on(EVT_FILTERS_UPDATED, async () => {
-    await refreshGraphUI();
-});
-
-on(EVT_SEARCH_CHANGED, (expression: string) => {
-    if (expression?.trim()) {
+/** Runs the search over the currently visible graph and updates the UI. */
+function applySearch(expression: string): void {
+    if (expression.trim()) {
         try {
-            const graph = getGraph();
-            const matches = search(graph, expression);
+            // search only what is on screen, so matches can never point at
+            // nodes hidden by the filters
+            const matches = search(getVisibleGraph(), expression);
             const matchesMap = new Map(matches.map(x => [x.nodeId, x]));
             setSearch({
                 matchesMap,
@@ -122,6 +111,39 @@ on(EVT_SEARCH_CHANGED, (expression: string) => {
     // the 2D canvas redraws every frame so it would pick this up anyway, but the
     // 3D renderer only re-runs its nodeColor accessor on an explicit refresh
     refreshGraphColors();
+}
+
+// ── event wiring ────────────────────────────────────────────
+on(EVT_GRAPH_UPDATED, async () => {
+    updateDynamicGraphPanes();
+    await refreshGraphUI();
+    // reconcile the engine after the visible graph changed: it warms up for a
+    // non-empty graph and stays frozen for an empty one (e.g. after a clear),
+    // even when the display mode skipped re-emitting the d3-params event
+    applyD3Params();
+    updateGraphInfo();
+});
+
+on(EVT_CLEAR_CLICKED, async () => {
+    resetState();
+    emit(EVT_GRAPH_UPDATED, null);
+});
+
+on(EVT_FILTERS_UPDATED, async () => {
+    await refreshGraphUI();
+});
+
+on(EVT_SEARCH_CHANGED, (expression: string) => {
+    currentSearchExpression = expression ?? '';
+    applySearch(currentSearchExpression);
+});
+
+// filters (type, adjacency, expressions, hide-isolated) change what is visible,
+// so the matches must be recomputed against the new visible graph
+on(EVT_VISIBLE_GRAPH_CHANGED, () => {
+    if (currentSearchExpression.trim()) {
+        applySearch(currentSearchExpression);
+    }
 });
 
 on(EVT_SELECTION_CHANGED, () => updateGraphInfo());

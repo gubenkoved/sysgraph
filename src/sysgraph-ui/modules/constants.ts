@@ -2,6 +2,9 @@
 export const EVT_GRAPH_UPDATED = 'graph-updated';
 export const EVT_CLEAR_CLICKED = 'clear-button-clicked';
 export const EVT_FILTERS_UPDATED = 'graph-filters-updated';
+// fired after a refresh whose visible node set actually changed (any filter
+// path, including the adjacency filter which bypasses EVT_FILTERS_UPDATED)
+export const EVT_VISIBLE_GRAPH_CHANGED = 'visible-graph-changed';
 export const EVT_SEARCH_CHANGED = 'search-expression-changed';
 export const EVT_SELECTION_CHANGED = 'selection-changed';
 export const EVT_SETTINGS_UPDATED = 'graph-ui-settings-updated';

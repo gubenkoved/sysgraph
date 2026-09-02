@@ -5,6 +5,7 @@ import {
     D3_COOLDOWN_TIME_MS,
     EVT_BACKGROUND_CLICK, EVT_LINK_CLICKED,
     EVT_NODE_CLICKED, EVT_RENDER_MODE_CHANGED,
+    EVT_VISIBLE_GRAPH_CHANGED,
     nodeRadius,
     PANEL_GRAPH,
     RENDER_TRANSITION_MS,
@@ -46,6 +47,7 @@ import { getRenderMode, is3D, persistRenderMode, type RenderMode } from './rende
 import { settings } from './settings.js';
 import { getGraph, setAdjacencyFilter, setEditSubTool, setHighlight, state } from './state.js';
 import { updateGraphInfo } from './toolbar.js';
+import { fnv1a } from './util.js';
 
 // graph-ui is the thin orchestrator/facade over the renderer modules: it owns
 // the active renderer instance, the interaction handlers, camera control, the
@@ -738,6 +740,10 @@ export function getVisibleGraph(): Graph {
     return new Graph(nodes, edges);
 }
 
+// cheap fingerprint of the visible node set, so consumers (e.g. search) only
+// recompute when visibility actually changed and not on every cosmetic refresh
+let lastVisibleSignature: string | null = null;
+
 export async function refreshGraphUI(): Promise<void> {
     clearColorCaches();
 
@@ -754,6 +760,12 @@ export async function refreshGraphUI(): Promise<void> {
 
     mergeGraphDataIntoForceGraph(nodes, edges);
     updateGraphInfo();
+
+    const signature = `${nodes.length}:${fnv1a(nodes.map(n => n.id).join('\u0000'))}`;
+    if (signature !== lastVisibleSignature) {
+        lastVisibleSignature = signature;
+        emit(EVT_VISIBLE_GRAPH_CHANGED, null);
+    }
 }
 
 export function refreshGraphColors(): void {
