@@ -1260,19 +1260,10 @@ body {
   --md-outlined-button-outline-color: var(--border-medium);
   flex: 0 0 auto;
   min-width: 0;
-  width: calc(var(--button-height) + var(--spacing-md));
+  width: calc(var(--button-height) + var(--spacing-lg) * 2);
   height: calc(var(--font-size-sm) + var(--spacing-md));
   padding: 0 var(--spacing-xs);
   background: var(--bg-pill);
-}
-
-.json-formatter-row .details-json-raw {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: var(--font-family-mono);
-  font-size: inherit;
-  color: var(--text-primary);
 }
 
 /* ── edit form (edit mode details panel) ────────────────── */

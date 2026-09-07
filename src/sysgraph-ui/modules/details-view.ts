@@ -24,8 +24,8 @@ function renderJsonTree(data: unknown, open: number, propertiesOnly = false): HT
                 return (parent as Record<string, unknown>)[key];
             }, data);
             const parsed = parseJsonContainerString(value);
-            if (parsed === null || typeof value !== 'string') continue;
-            decorateJsonString(row, value, parsed);
+            if (parsed === null) continue;
+            decorateJsonString(row, parsed);
         }
     };
 
@@ -34,8 +34,9 @@ function renderJsonTree(data: unknown, open: number, propertiesOnly = false): HT
     return tree;
 }
 
-function decorateJsonString(row: HTMLElement, original: string, parsed: unknown): void {
+function decorateJsonString(row: HTMLElement, parsed: unknown): void {
     const key = row.querySelector('.json-formatter-key');
+    const raw = row.querySelector<HTMLElement>('.json-formatter-string')!;
     const header = document.createElement('div');
     header.className = 'details-json-header';
     if (key) header.appendChild(key);
@@ -50,14 +51,12 @@ function decorateJsonString(row: HTMLElement, original: string, parsed: unknown)
     header.appendChild(toggle);
 
     const tree = renderJsonTree(parsed, 0);
-    const raw = document.createElement('pre');
-    raw.className = 'details-json-raw';
     raw.hidden = true;
 
     const updateToggle = (): void => {
-        const label = raw.hidden ? 'Show raw string' : 'Show as JSON tree';
-        toggle.textContent = raw.hidden ? 'Raw' : 'JSON';
-        toggle.title = label;
+        const label = raw.hidden ? 'As Raw' : 'As JSON';
+        toggle.textContent = label;
+        toggle.title = raw.hidden ? 'Show raw string' : 'Show as JSON tree';
         toggle.setAttribute('aria-label', label);
     };
     updateToggle();
@@ -65,7 +64,6 @@ function decorateJsonString(row: HTMLElement, original: string, parsed: unknown)
         event.stopPropagation();
         raw.hidden = !raw.hidden;
         tree.hidden = !raw.hidden;
-        if (!raw.hidden) raw.textContent = original;
         updateToggle();
     });
 
