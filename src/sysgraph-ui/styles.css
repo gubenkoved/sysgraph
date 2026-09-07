@@ -1180,6 +1180,12 @@ body {
   color: var(--text-secondary);
 }
 
+.details-json-tree.json-formatter-row .json-formatter-string,
+.details-json-tree.json-formatter-row .json-formatter-key {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* json-formatter-js ships a hardcoded light palette (dark keys/text) that is
    illegible on dark panels. Re-color its classes in dark mode using the
    library's own tuned dark palette. The extra [data-theme="dark"] qualifier
@@ -1229,6 +1235,44 @@ body {
 
 :root[data-theme="dark"] .json-formatter-row .json-formatter-date {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.details-json-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  overflow-wrap: anywhere;
+}
+
+.details-json-marker {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.details-json-toggle {
+  --md-outlined-button-container-height: calc(var(--font-size-sm) + var(--spacing-md));
+  --md-outlined-button-container-shape: var(--radius-sm);
+  --md-outlined-button-label-text-size: var(--font-size-xs);
+  --md-outlined-button-label-text-color: var(--text-secondary);
+  --md-outlined-button-outline-color: var(--border-medium);
+  flex: 0 0 auto;
+  min-width: 0;
+  width: calc(var(--button-height) + var(--spacing-md));
+  height: calc(var(--font-size-sm) + var(--spacing-md));
+  padding: 0 var(--spacing-xs);
+  background: var(--bg-pill);
+}
+
+.json-formatter-row .details-json-raw {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-family-mono);
+  font-size: inherit;
+  color: var(--text-primary);
 }
 
 /* ── edit form (edit mode details panel) ────────────────── */

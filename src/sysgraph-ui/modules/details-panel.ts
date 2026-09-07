@@ -1,5 +1,5 @@
-import JSONFormatter from 'json-formatter-js';
 import { EVT_GRAPH_UPDATED, EVT_LINK_CLICKED, EVT_NODE_CLICKED, PANEL_DETAILS } from './constants.js';
+import { renderDetailsJson } from './details-view.js';
 import { deleteEdge, deleteNode } from './edit-mode.js';
 import { emit, on } from './event-bus.js';
 import { closePanel, openPanel, registerPanel, unregisterPanel } from './layout.js';
@@ -190,8 +190,7 @@ function showDetails(nodeOrLink: NodeOrLink): void {
     if (state.edit.active) {
         body.appendChild(buildEditableForm(nodeOrLink));
     } else {
-        const formatter = new JSONFormatter(buildDetailsData(nodeOrLink), 2);
-        body.appendChild(formatter.render());
+        body.appendChild(renderDetailsJson(buildDetailsData(nodeOrLink)));
     }
     openPanel(PANEL_DETAILS);
 }
@@ -225,8 +224,7 @@ function createSecondaryPanel(nodeOrLink: NodeOrLink): void {
 
     const panelBody = document.createElement('div');
     panelBody.className = 'panel-body';
-    const formatter = new JSONFormatter(buildDetailsData(nodeOrLink), 2);
-    panelBody.appendChild(formatter.render());
+    panelBody.appendChild(renderDetailsJson(buildDetailsData(nodeOrLink)));
 
     registerPanel({
         id,

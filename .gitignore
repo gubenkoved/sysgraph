@@ -12,3 +12,4 @@ node_modules/
 src/sysgraph/dist/
 src/sysgraph-ui/public/
 .local/
+.tmp/
