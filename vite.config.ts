@@ -179,9 +179,9 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
 export default defineConfig({
   root: 'src/sysgraph-ui',
   publicDir: 'public',
-  // Base public path. Defaults to '/' for local/backend-served builds.
-  // For GitHub Pages set VITE_BASE (e.g. '/sysgraph/') at build time.
-  base: process.env['VITE_BASE'] || '/',
+  // relative base so the same build works at `/` and behind a reverse proxy
+  // under any path prefix (e.g. `/sysgraph/`); VITE_BASE still overrides it
+  base: process.env['VITE_BASE'] || './',
   // Standalone mode: when enabled the UI never talks to the backend
   // (no /api/graph fetch, no "reload sysgraph" action). The user can still
   // explore graphs by importing JSON. Enable via VITE_STANDALONE=true|1.

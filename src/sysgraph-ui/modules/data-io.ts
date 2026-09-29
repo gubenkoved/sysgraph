@@ -26,21 +26,23 @@ function extractDisplay(data: Record<string, unknown>): GraphDisplay | undefined
  * Fetches graph data from the backend API.
  */
 export async function loadDataFromApi(): Promise<LoadedGraphData> {
+    // relative so it resolves under whatever path prefix serves the page
+    const url = 'api/graph';
     let res: Response;
     try {
-        res = await fetch('/api/graph');
+        res = await fetch(url);
     } catch (err) {
-        throw new Error(`Network error fetching /api/graph: ${(err as Error).message}`);
+        throw new Error(`Network error fetching ${url}: ${(err as Error).message}`);
     }
 
     if (!res.ok)
-        throw new Error(`Failed to fetch /api/graph: HTTP ${res.status}`);
+        throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
 
     let response: Record<string, unknown>;
     try {
         response = await res.json() as Record<string, unknown>;
     } catch (err) {
-        throw new Error(`Invalid JSON from /api/graph: ${(err as Error).message}`);
+        throw new Error(`Invalid JSON from ${url}: ${(err as Error).message}`);
     }
 
     return normalizeGraphData(response);
