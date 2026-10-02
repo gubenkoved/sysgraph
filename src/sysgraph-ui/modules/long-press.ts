@@ -1,16 +1,14 @@
 // long-press gesture support for touch devices
 //
-// touch devices have no right-click, so the force-graph context menu
+// touch devices have no right-click, so the graph context menu
 // (node / link / background) would be unreachable. on a steady long press we
 // hit-test the graph ourselves and open the same context menu used by
 // desktop right-click.
 //
 // implementation notes:
-//  - on Android the touchstart/move/end listeners on #graph may not fire,
-//    because d3-zoom on the inner force-graph canvas stops propagation. so the
-//    primary trigger is the native `contextmenu` event (which still reaches
-//    #graph). a long-press timer is kept as a fallback for engines that
-//    suppress `contextmenu` under `touch-action: none`.
+//  - the native `contextmenu` event is the primary trigger. a long-press
+//    timer is kept as a fallback for browsers that suppress it under
+//    `touch-action: none`.
 //  - the `contextmenu` listener runs in the capture phase so it beats the
 //    global window listener in context-menu.ts (which would hide our menu).
 //  - because the touch listeners aren't guaranteed to fire, we dedup the two
@@ -51,7 +49,7 @@ export function initLongPress(): void {
     // timestamp of the last menu open, used to dedup the timer and the native
     // contextmenu event (which both fire for one gesture). a timestamp — not a
     // per-gesture boolean — because on Android the touch listeners may not fire
-    // (d3-zoom on the canvas swallows them), so there is no reliable per-gesture
+    // (some browsers swallow them), so there is no reliable per-gesture
     // reset; each genuine long-press is naturally seconds apart
     let lastOpenTime = 0;
 
@@ -75,8 +73,7 @@ export function initLongPress(): void {
     };
 
     // touch listeners are registered in the CAPTURE phase so they run before
-    // d3-zoom's handlers on the inner canvas can stop propagation — otherwise
-    // touchstart/move/end never reach us on Android and pan-detection breaks
+    // inner canvas handlers can stop propagation, preserving pan detection
     graphContainer.addEventListener(
         'touchstart',
         (event) => {
@@ -137,8 +134,8 @@ export function initLongPress(): void {
 
     // primary trigger. registered in the capture phase so we run before the
     // global window `contextmenu` listener (which would hide the menu) and
-    // before force-graph's own handler. we only intercept touch-originated
-    // context menus; desktop right-clicks fall through to force-graph.
+    // before the graph view's own handler. only touch-originated menus are
+    // intercepted; desktop right-clicks reach the WebGPU graph view.
     graphContainer.addEventListener(
         'contextmenu',
         (event) => {

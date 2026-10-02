@@ -3,12 +3,12 @@ import { emit } from './event-bus.js';
 import type { GraphEdge, GraphNode } from './graph.js';
 import { generateId } from './graph.js';
 import type { FGNode } from './graph-ui.js';
-import { ForceGraphInstance, setPendingNodePosition } from './graph-ui.js';
+import { GraphViewInstance, setPendingNodePosition } from './graph-ui.js';
 import { getGraph, setGraphDirty, setPendingEdgeSource, state } from './state.js';
 
 /** Re-emits a node click so its (editable) details form opens. */
 function selectNodeById(id: string): void {
-    const fgNode = (ForceGraphInstance.graphData().nodes as FGNode[]).find(n => n.id === id);
+    const fgNode = (GraphViewInstance.graphData().nodes as FGNode[]).find(n => n.id === id);
     if (fgNode) {
         emit(EVT_NODE_CLICKED, { data: fgNode, shiftKey: false });
     }

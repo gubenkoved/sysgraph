@@ -1,4 +1,15 @@
+import type { LabelRendering, LabelStyle } from '../engine/labels.js';
+import type { LayoutDirection, LayoutMode } from './automatic-layout.js';
 import { fnv1a } from './util.js';
+
+export function validLayoutMode(value: unknown): value is LayoutMode {
+    return value === 'force' || value === 'layered' || value === 'radial' ||
+        value === 'circular' || value === 'concentric' || value === 'grid';
+}
+
+export function validLayoutDirection(value: unknown): value is LayoutDirection {
+    return value === 'TB' || value === 'BT' || value === 'LR' || value === 'RL';
+}
 
 export interface RgbaColor {
     r: number;
@@ -11,31 +22,63 @@ export type ColorMap = Record<string, RgbaColor>;
 export type AuthoredColorMap = Record<string, string>;
 export type EdgeWidthMap = Record<string, number>;
 export type FilterMap = Record<string, boolean>;
+export type CameraProjection = 'perspective' | 'orthographic';
+export type NodeRenderStyle = 'simple' | 'solid';
+
+/** The visual grid is measured in the same world units as graph positions. */
+export function validGridStep(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 25 && value <= 500;
+}
+
+export function validSceneBrightness(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0.5 && value <= 2;
+}
+
+export function validLabelStyle(value: unknown): value is LabelStyle {
+    return value === 'plain' || value === 'outlined' || value === 'soft-background' || value === 'plate';
+}
+
+export function validLabelRendering(value: unknown): value is LabelRendering {
+    return value === 'glyphs' || value === 'glyphs-filtered' || value === 'whole' || value === 'whole-snapped';
+}
 
 export interface SettingsShape {
-    d3EnablePhysics: boolean;
-    d3Charge: number;
-    d3LinkDistance: number;
-    d3LinkDistanceMode: string;
-    d3LinkDistanceExpression: string;
-    d3LinkStrength: number;
-    d3CollisionMultiplier: number;
-    d3AlphaTarget: number;
-    d3VelocityDecay: number;
-    d3ForceXYStrength: number;
-    d3CenterForce: boolean;
-    showIsolated: boolean;
+    layoutMode: LayoutMode;
+    layoutSpacing: number;
+    layoutRankSpacing: number;
+    layoutDirection: LayoutDirection;
+    layoutRootId: string;
+    gpuEnablePhysics: boolean;
+    gpuLayoutRate: number;
+    gpuWarmupMs: number;
+    gpuLinkDistance: number;
+    gpuLinkDistanceMode: string;
+    gpuLinkDistanceExpression: string;
+    gpuCharge: number;
+    gpuLinkStrength: number;
+    gpuCollisionMultiplier: number;
+    gpuVelocityDecay: number;
+    gpuForceXYStrength: number;
+    gpuEdgeStyle: 'thin' | 'smooth';
+    gpuEdgeWidth: number;
+    gpuShowNodes: boolean;
+    gpuNodeOutline: number;
+    cameraProjection: CameraProjection;
+    nodeRenderStyle: NodeRenderStyle;
+    sceneBrightness: number;
     showGrid: boolean;
-    curvatureStep: number;
+    gridStep: number;
+    showIsolated: boolean;
     globalEdgeAlphaOffset: number;
     globalEdgeWidthMultiplier: number;
     nodeLabelMode: string;
     nodeLabelExpression: string;
-    nodeLabelOutline: boolean;
     labelDensity: string;
-    labelScale: number;
+    labelStyle: LabelStyle;
+    labelRendering: LabelRendering;
     highlightOnHover: boolean;
     nodeSizingMode: string;
+    nodeSizeScale: number;
     nodeSizingConstant: number;
     nodeSizingExpression: string;
     nodeFilterExpression: string;
@@ -49,39 +92,47 @@ export interface SettingsShape {
 
 export function createDefaultSettings(): SettingsShape {
     return {
-        d3EnablePhysics: true,
-        d3Charge: -400,
-        d3LinkDistance: 140,
-        d3LinkDistanceMode: 'constant',
-        d3LinkDistanceExpression:
-            'Number(properties.length) || Number(properties.weight) || 140',
-        d3LinkStrength: 0.8,
-        d3CollisionMultiplier: 1.0,
-        d3AlphaTarget: 0.0,
-        d3VelocityDecay: 0.80,
-        d3ForceXYStrength: 0.1,
-        d3CenterForce: true,
-
+        layoutMode: 'force',
+        layoutSpacing: 90,
+        layoutRankSpacing: 140,
+        layoutDirection: 'TB',
+        layoutRootId: '',
+        gpuEnablePhysics: true,
+        gpuLayoutRate: 60,
+        gpuWarmupMs: 900,
+        gpuLinkDistance: 140,
+        gpuLinkDistanceMode: 'constant',
+        gpuLinkDistanceExpression: 'Number(properties.length) || Number(properties.weight) || 140',
+        gpuCharge: -400,
+        gpuLinkStrength: 0.8,
+        gpuCollisionMultiplier: 1,
+        gpuVelocityDecay: 0.4,
+        gpuForceXYStrength: 0.1,
+        gpuEdgeStyle: 'smooth',
+        gpuEdgeWidth: 1.5,
+        gpuShowNodes: true,
+        gpuNodeOutline: 1.2,
+        cameraProjection: 'perspective',
+        nodeRenderStyle: 'solid',
+        sceneBrightness: 1.2,
+        showGrid: false,
+        gridStep: 100,
         showIsolated: true,
-        showGrid: true,
-
-        curvatureStep: 0.005,
 
         globalEdgeAlphaOffset: 0,
         globalEdgeWidthMultiplier: 1,
 
         nodeLabelMode: 'expression',
         nodeLabelExpression: 'type + "\\n" + (properties.name || properties.label || "")',
-        nodeLabelOutline: false,
-        // 'all' = every label; 'auto' = collision-aware decluttering;
-        // 'focus' = only hovered/selected/searched/pinned nodes are labelled
+        // 'auto' = collision-aware decluttering; 'focus' = hovered neighborhood.
         labelDensity: 'auto',
-        // global multiplier applied to all label text sizes
-        labelScale: 1,
+        labelStyle: 'outlined',
+        labelRendering: 'glyphs-filtered',
         // dim a hovered node's non-neighbours to spotlight its local graph
         highlightOnHover: true,
 
         nodeSizingMode: 'degree',
+        nodeSizeScale: 1,
         nodeSizingConstant: 3,
         nodeSizingExpression: 'Math.sqrt(Math.max(1, degree))',
 
@@ -97,8 +148,39 @@ export function createDefaultSettings(): SettingsShape {
     };
 }
 
-/** Application-wide settings for d3 simulation, display, and colours. */
-export const settings: SettingsShape = createDefaultSettings();
+const LIVE_SETTINGS_KEY = 'sysgraph:webgpu-display';
+
+function restoreSettings(): SettingsShape {
+    const defaults = createDefaultSettings();
+    try {
+        const value: unknown = JSON.parse(window.localStorage.getItem(LIVE_SETTINGS_KEY) ?? 'null');
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            for (const key of Object.keys(defaults) as (keyof SettingsShape)[]) {
+                if (!(key in value)) continue;
+                const candidate = (value as Record<string, unknown>)[key];
+                if (key === 'layoutMode' && !validLayoutMode(candidate)) continue;
+                if (key === 'layoutDirection' && !validLayoutDirection(candidate)) continue;
+                if (key === 'cameraProjection' && candidate !== 'perspective' && candidate !== 'orthographic') continue;
+                if (key === 'nodeRenderStyle' && candidate !== 'simple' && candidate !== 'solid') continue;
+                if (key === 'sceneBrightness' && !validSceneBrightness(candidate)) continue;
+                if (key === 'showGrid' && typeof candidate !== 'boolean') continue;
+                if (key === 'gridStep' && !validGridStep(candidate)) continue;
+                if (key === 'labelStyle' && !validLabelStyle(candidate)) continue;
+                if (key === 'labelRendering' && !validLabelRendering(candidate)) continue;
+                (defaults as unknown as Record<string, unknown>)[key] = candidate;
+            }
+        }
+    } catch { /* Storage is optional. */ }
+    return defaults;
+}
+
+/** Application-wide WebGPU display and layout settings. */
+export const settings: SettingsShape = restoreSettings();
+
+export function persistSettings(): void {
+    try { window.localStorage.setItem(LIVE_SETTINGS_KEY, JSON.stringify(settings)); }
+    catch { /* Storage is optional. */ }
+}
 
 /** Default link opacity. */
 export const defaultLinkOpacity = 0.5;

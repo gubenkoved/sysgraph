@@ -1,7 +1,8 @@
+import { screenNodeRadius } from '../engine/node-size.js';
 import { EVT_GRAPH_UPDATED, EVT_SELECTION_CHANGED, nodeRadius } from './constants.js';
 import { emit } from './event-bus.js';
 import { filterGraph } from './graph.js';
-import { ForceGraphInstance } from './graph-ui.js';
+import { GraphViewInstance } from './graph-ui.js';
 import { is3D } from './render-mode.js';
 import { getGraph, state, updateGraph } from './state.js';
 
@@ -44,7 +45,8 @@ function isNodeInRect(node: { x: number; y: number; val?: number }, rect: Rect):
     const minY = Math.min(rect.y1, rect.y2);
     const maxY = Math.max(rect.y1, rect.y2);
 
-    const r = nodeRadius(node);
+    const scale = GraphViewInstance.zoom();
+    const r = screenNodeRadius(nodeRadius(node), scale) / scale;
     return node.x + r > minX && node.x - r < maxX && node.y + r > minY && node.y - r < maxY;
 }
 
@@ -67,10 +69,6 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
     // prevent the browser from claiming touch gestures (scroll/pinch) on the
     // overlay so a one-finger drag can draw the selection rectangle instead
     selectionCanvas.style.touchAction = 'none';
-    // a fresh canvas defaults to 300x150; zero the backing store so the first
-    // resizeGraphViewport() call sees prevW/prevH == 0 and skips anchor
-    // preservation (otherwise it would center on a bogus 150,75 anchor and push
-    // the origin off to the bottom-right)
     selectionCanvas.width = 0;
     selectionCanvas.height = 0;
     graphContainer.appendChild(selectionCanvas);
@@ -79,38 +77,11 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         const rect = graphContainer.getBoundingClientRect();
         const newW = rect.width;
         const newH = rect.height;
-        const prevW = selectionCanvas.width;
-        const prevH = selectionCanvas.height;
-
-        // keep whatever graph content sat at the old viewport center anchored at
-        // the new center, so resizing the dock region (opening/closing/resizing
-        // panels) pans the view instead of letting the graph drift off-screen
-        let anchor: { x: number; y: number } | null = null;
-        if (!is3D() && prevW > 0 && prevH > 0 && (newW !== prevW || newH !== prevH)) {
-            anchor = ForceGraphInstance.screen2GraphCoords(prevW / 2, prevH / 2);
-        }
-
-        ForceGraphInstance.width(newW);
-        ForceGraphInstance.height(newH);
+        GraphViewInstance.width(newW);
+        GraphViewInstance.height(newH);
         selectionCanvas.width = newW;
         selectionCanvas.height = newH;
 
-        if (anchor) {
-            ForceGraphInstance.centerAt(anchor.x, anchor.y);
-        }
-
-        // resizing the canvas backing store clears it; force-graph would only
-        // repaint on its next animation frame, but ResizeObserver runs after
-        // force-graph's frame yet before the browser paints, so the cleared
-        // (white) canvas gets composited every frame while dragging the dock
-        // splitter -> repaint synchronously now to avoid the white flash. 2D
-        // only: this is a canvas-backing-store concern; the 3D WebGL renderer
-        // redraws continuously and pausing/resuming its loop here crashes its
-        // not-yet-ready layout tick and leaves the loop dead (freezing orbit
-        // controls), so never do it in 3D
-        if (!is3D() && newW > 0 && newH > 0) {
-            ForceGraphInstance.pauseAnimation().resumeAnimation();
-        }
     }
 
     resizeGraphViewport();
@@ -119,10 +90,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         resizeGraphViewport();
     });
 
-    // the graph lives inside a dock region whose size changes when panels open,
-    // close, resize or re-dock — observe the container directly so the canvas
-    // and force-graph viewport always match the real available area (keeps the
-    // graph centered instead of underlapping panels)
+    // The dock region changes size when panels open, close, or move.
     const resizeObserver = new ResizeObserver(() => {
         resizeGraphViewport();
     });
@@ -152,27 +120,24 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
         }
     }
 
-    // resolves the active renderer canvas at call time; it is rebuilt when the
-    // 2D/3D render mode is toggled, so it must not be cached
     function graphCanvas(): HTMLCanvasElement {
-        return document.querySelector('#graph canvas') as HTMLCanvasElement;
+        return GraphViewInstance.canvas;
     }
 
-    // forward wheel events to the force-graph canvas for zoom (2D only; in 3D
-    // the overlay is inert so wheel events reach the renderer directly)
+    // The selection overlay handles wheel input while rectangle mode is active.
     selectionCanvas.addEventListener('wheel', (event) => {
         if (is3D()) return;
         event.preventDefault();
         graphCanvas().dispatchEvent(new WheelEvent(event.type, event));
     }, { passive: false });
 
-    // middle-click panning (works in ALL tool modes)
+    // Middle-button panning is handled here only while the selection overlay
+    // covers the WebGPU canvas; the graph view handles it in other tool modes.
     let middleDrag: { lastX: number; lastY: number } | null = null;
     let savedCursor: string | null = null;
 
     graphContainer.addEventListener('mousedown', (event) => {
-        // let the 3D renderer's orbit controls handle middle-drag natively
-        if (is3D()) return;
+        if (is3D() || state.currentTool !== 'rect-select') return;
         if (event.button === 1) {
             event.preventDefault();
             event.stopPropagation();
@@ -189,9 +154,9 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
             const dy = event.clientY - middleDrag.lastY;
             middleDrag.lastX = event.clientX;
             middleDrag.lastY = event.clientY;
-            const k = ForceGraphInstance.zoom();
-            const center = ForceGraphInstance.centerAt();
-            ForceGraphInstance.centerAt(center.x - dx / k, center.y - dy / k);
+            const k = GraphViewInstance.zoom();
+            const center = GraphViewInstance.centerAt();
+            GraphViewInstance.centerAt(center.x - dx / k, center.y - dy / k);
         }
     });
 
@@ -206,7 +171,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
 
     // begins a rectangular selection at the given overlay-local coordinates
     function beginSelection(localX: number, localY: number): void {
-        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
+        const graphCoords = GraphViewInstance.screen2GraphCoords(localX, localY);
         state.selection.isSelecting = true;
         state.selection.selectionStart = graphCoords;
         state.selection.selectionEnd = graphCoords;
@@ -217,7 +182,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
 
     // updates the in-progress selection rectangle's far corner
     function updateSelection(localX: number, localY: number): void {
-        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
+        const graphCoords = GraphViewInstance.screen2GraphCoords(localX, localY);
         state.selection.selectionEnd = graphCoords;
         state.selection.selectionEndCanvas = { x: localX, y: localY };
         drawSelectionRectangle();
@@ -227,7 +192,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
     // updates the selected set. when `additive` is false the previous
     // selection is replaced, otherwise the matched nodes are added
     function finishSelection(localX: number, localY: number, additive: boolean): void {
-        const graphCoords = ForceGraphInstance.screen2GraphCoords(localX, localY);
+        const graphCoords = GraphViewInstance.screen2GraphCoords(localX, localY);
         state.selection.selectionEnd = graphCoords;
         state.selection.selectionEndCanvas = { x: localX, y: localY };
         state.selection.isSelecting = false;
@@ -243,7 +208,7 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
             state.selection.selectedNodeIds.clear();
         }
 
-        const nodes = ForceGraphInstance.graphData().nodes as Array<{ id: string; x: number; y: number; val?: number }>;
+        const nodes = GraphViewInstance.graphData().nodes as Array<{ id: string; x: number; y: number; val?: number }>;
         for (const node of nodes) {
             if (isNodeInRect(node, rect)) {
                 state.selection.selectedNodeIds.add(node.id);
@@ -280,6 +245,10 @@ export function initSelection(): { selectionCanvas: HTMLCanvasElement; canvas: H
             finishSelection(event.clientX - graphRect.left, event.clientY - graphRect.top, additive);
         }
     });
+
+    // Rectangle selection puts this canvas above the graph. Route right-clicks
+    // through the same node/link/background menu as the WebGPU canvas.
+    selectionCanvas.addEventListener('contextmenu', event => GraphViewInstance.openContextMenu(event));
 
     // touch event handlers (mobile); the overlay only receives these while the
     // rect-select tool is active (pointer-events toggled by the toolbar), so a

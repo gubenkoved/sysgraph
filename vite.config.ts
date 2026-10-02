@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -38,6 +38,8 @@ interface ExampleInfo {
   // optional badges driven by the example's own `metadata`
   badges?: BadgeMeta[];
 }
+
+let examplesCache: { signature: string; manifest: ExampleInfo[]; files: Map<string, string> } | null = null;
 
 /**
  * Extracts and lightly validates the examples-only `metadata` block from a
@@ -105,18 +107,26 @@ function titleFromFilename(name: string): string {
  */
 function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> } {
   const dataDir = resolve(__dirname, 'data');
+  let entries: string[];
+  try {
+    entries = readdirSync(dataDir).filter(entry => entry.endsWith('.json')).sort();
+  } catch {
+    return { manifest: [], files: new Map() };
+  }
+
+  // A large example can take noticeable time to parse. The dev server serves
+  // both the manifest and individual files through this function, so only
+  // reread them when their names, sizes, or modification times change.
+  const signature = entries.map(entry => {
+    const stats = statSync(resolve(dataDir, entry));
+    return `${entry}:${stats.size}:${stats.mtimeMs}`;
+  }).join('|');
+  if (examplesCache?.signature === signature) return examplesCache;
+
   const files = new Map<string, string>();
   const manifest: ExampleInfo[] = [];
 
-  let entries: string[];
-  try {
-    entries = readdirSync(dataDir);
-  } catch {
-    return { manifest, files };
-  }
-
   for (const entry of entries) {
-    if (!entry.endsWith('.json')) continue;
     let raw: string;
     try {
       raw = readFileSync(resolve(dataDir, entry), 'utf-8');
@@ -173,7 +183,8 @@ function readExamples(): { manifest: ExampleInfo[]; files: Map<string, string> }
     if (br !== undefined) return 1;
     return a.title.localeCompare(b.title);
   });
-  return { manifest, files };
+  examplesCache = { signature, manifest, files };
+  return examplesCache;
 }
 
 export default defineConfig({

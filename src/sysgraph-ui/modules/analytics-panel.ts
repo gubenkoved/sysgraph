@@ -1,7 +1,9 @@
 import {
     ALGORITHMS,
     type AnalyticsResultModel,
+    chooseAnalyticsNode,
     clearAnalytics,
+    focusAnalyticsPathNode,
     getAlgorithm,
     type ParamSpec,
     runAlgorithm,
@@ -10,13 +12,19 @@ import {
 } from './analytics.js';
 import type { Community } from './analytics-communities.js';
 import { validateEdgeWeightExpression } from './analytics-helpers.js';
-import { EVT_ANALYTICS_UPDATED, EVT_NODE_CLICKED, EVT_SELECTION_CHANGED, PANEL_ANALYTICS } from './constants.js';
+import { findNodeCandidates } from './analytics-node-search.js';
+import {
+    EVT_ANALYTICS_UPDATED, EVT_NODE_CLICKED, EVT_SELECTION_CHANGED,
+    EVT_VISIBLE_GRAPH_CHANGED, PANEL_ANALYTICS,
+} from './constants.js';
 import { emit, on } from './event-bus.js';
-import { createExpressionEditTrigger } from './expression-editor.js';
 import { analyticsExpressionField } from './expression-fields.js';
-import { analyticsHeatmapColorScale, centerOnNode, communityColor, refreshGraphColors } from './graph-ui.js';
+import type { Graph, GraphNode } from './graph.js';
+import { analyticsHeatmapColorScale, centerOnNode, communityColor, getVisibleGraph, refreshGraphColors } from './graph-ui.js';
 import { closePanel, openPanel, registerPanel } from './layout.js';
-import { getGraph, setAnalyticsParam, state } from './state.js';
+import { SettingsForm, type ValueBinding } from './settings-form.js';
+import { createSettingsTabScroller } from './settings-tab-scroll.js';
+import { getGraph, setAnalyticsAwaitingPick, setAnalyticsParam, state } from './state.js';
 import { exitAnalyticsTool } from './toolbar.js';
 import { showError } from './util.js';
 
@@ -34,7 +42,7 @@ registerPanel({
     // restore the panel if that tool is active, otherwise drop it
     restoreGuard: () => state.currentTool === 'analytics',
     onOpen: () => render(),
-    onClose: () => exitAnalyticsTool(),
+    onClose: () => { closePicker(); exitAnalyticsTool(); },
 });
 
 export function openAnalyticsPanel(): void {
@@ -68,180 +76,249 @@ function nodeLabel(nodeId: string): string {
     return label ? `${label}` : nodeId;
 }
 
-/** Wraps content in a titled, visually separated block. */
-function buildBlock(title: string, ...children: HTMLElement[]): HTMLElement {
-    const block = el('div', 'analytics-block');
-    block.appendChild(el('div', 'analytics-block-title', title));
-    for (const child of children) block.appendChild(child);
-    return block;
+// The navigation stays mounted while the active algorithm's controls change.
+// This keeps horizontal tab position stable in narrow dock panels.
+const navigation = el('nav', 'sg-settings-nav analytics-tabs');
+navigation.setAttribute('aria-label', 'Analytics algorithms');
+navigation.setAttribute('role', 'tablist');
+const tabScroller = createSettingsTabScroller(navigation, 'analytics algorithms');
+const content = el('div', 'analytics-content');
+content.id = 'analyticsContent';
+content.setAttribute('role', 'tabpanel');
+body.append(tabScroller.element, content);
+
+const sectionOpen = new Map<string, boolean>();
+let previousAlgorithm: string | null = null;
+let previousResult: AnalyticsResultModel | null = null;
+let activePickerRole: string | null = null;
+let pickerQuery = '';
+let pickerGraph: Graph | null = null;
+let refreshPicker: (() => void) | null = null;
+
+function closePicker(): void {
+    activePickerRole = null;
+    pickerGraph = null;
+    refreshPicker = null;
 }
 
-// ── rendering ───────────────────────────────────────────────
-
-function buildAlgorithmTabs(): HTMLElement {
-    const tabs = el('div', 'analytics-tabs');
-    for (const algo of ALGORITHMS) {
-        const btn = el('button', 'analytics-tab');
-        btn.classList.toggle('active', state.analytics.algorithmId === algo.id);
-        const icon = document.createElement('md-icon');
-        icon.textContent = algo.icon;
-        btn.appendChild(icon);
-        btn.appendChild(el('span', undefined, algo.label));
-        btn.title = algo.description;
-        btn.addEventListener('click', () => selectAlgorithm(algo.id));
-        tabs.appendChild(btn);
-    }
-    return tabs;
+function focusPickButton(role: string): void {
+    const field = [...content.querySelectorAll<HTMLElement>('.analytics-pick-field')]
+        .find(element => element.dataset.role === role);
+    field?.querySelector<HTMLButtonElement>('.analytics-pick-search')?.focus();
 }
 
-function buildParamRow(param: ParamSpec): HTMLElement {
-    // every param renders uniformly: label first, then the control
-    const row = el('div', 'analytics-field');
-    row.appendChild(el('label', 'analytics-field-label', param.label));
+for (const algo of ALGORITHMS) {
+    const button = el('button', `analytics-tab analytics-tab-${algo.id}`, algo.label);
+    button.type = 'button';
+    button.id = `analytics-tab-${algo.id}`;
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-controls', content.id);
+    button.dataset.appTooltip = algo.description;
+    button.addEventListener('click', () => selectAlgorithm(algo.id));
+    button.addEventListener('keydown', event => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const index = ALGORITHMS.findIndex(item => item.id === algo.id);
+        const next = ALGORITHMS[(index + (event.key === 'ArrowRight' ? 1 : -1) + ALGORITHMS.length) % ALGORITHMS.length];
+        if (next) {
+            selectAlgorithm(next.id);
+            document.getElementById(`analytics-tab-${next.id}`)?.focus();
+        }
+    });
+    navigation.appendChild(button);
+}
 
+function section(key: string, title: string, child: HTMLElement, defaultOpen = true): HTMLDetailsElement {
+    const details = el('details', 'sg-settings-section analytics-section') as HTMLDetailsElement;
+    const stateKey = `${state.analytics.algorithmId}:${key}`;
+    details.open = sectionOpen.get(stateKey) ?? defaultOpen;
+    details.append(el('summary', undefined, title), child);
+    details.addEventListener('toggle', () => sectionOpen.set(stateKey, details.open));
+    return details;
+}
+
+function sectionBody(...children: HTMLElement[]): HTMLElement {
+    const element = el('div', 'sg-settings-section-body analytics-section-body');
+    element.append(...children);
+    return element;
+}
+
+function paramBinding(param: ParamSpec): ValueBinding<string> {
+    return {
+        get: () => state.analytics.params[param.id] ?? param.defaultValue,
+        set: value => setAnalyticsParam(param.id, value),
+        onChange: () => param.onInput?.(state.analytics.params[param.id] ?? param.defaultValue),
+    };
+}
+
+function buildParamRow(param: ParamSpec, form: SettingsForm): void {
+    const stored = paramBinding(param);
+    const label = param.label.replace(/^./, first => first.toUpperCase());
     if (param.type === 'boolean') {
-        const sw = document.createElement('md-switch') as HTMLElement & {
-            selected: boolean;
-        };
-        const stored = state.analytics.params[param.id] ?? param.defaultValue;
-        sw.selected = stored === 'true';
-        sw.addEventListener('change', () => {
-            const value = sw.selected ? 'true' : 'false';
-            setAnalyticsParam(param.id, value);
-            param.onInput?.(value);
+        form.toggle(label, {
+            get: () => stored.get() === 'true',
+            set: value => stored.set(String(value)),
+            onChange: stored.onChange,
         });
-        row.appendChild(sw);
     } else if (param.type === 'slider') {
-        const control = el('div', 'analytics-slider');
-        const slider = el('input', 'analytics-slider-input');
-        slider.type = 'range';
-        if (param.min !== undefined) slider.min = String(param.min);
-        if (param.max !== undefined) slider.max = String(param.max);
-        if (param.step !== undefined) slider.step = String(param.step);
-        slider.value = state.analytics.params[param.id] ?? param.defaultValue;
-
-        const valueLabel = el('span', 'analytics-slider-value', slider.value);
-
-        // updates the filled-track percentage (consumed by the WebKit track css)
-        const syncFill = () => {
-            const min = Number(slider.min || '0');
-            const max = Number(slider.max || '100');
-            const span = max - min;
-            const pct = span > 0 ? ((Number(slider.value) - min) / span) * 100 : 0;
-            slider.style.setProperty('--fill', String(pct));
-        };
-        syncFill();
-
-        slider.addEventListener('input', () => {
-            valueLabel.textContent = slider.value;
-            syncFill();
-            setAnalyticsParam(param.id, slider.value);
-            param.onInput?.(slider.value);
-        });
-
-        control.appendChild(slider);
-        control.appendChild(valueLabel);
-        row.appendChild(control);
+        form.range(label, {
+            get: () => Number(stored.get()),
+            set: value => stored.set(String(value)),
+            onChange: stored.onChange,
+        }, param.min ?? 0, param.max ?? 100, param.step ?? 1);
     } else {
-        const input = el('input', 'edit-form-input');
-        if (param.type === 'expression') {
-            input.classList.add('analytics-code-input');
-            input.spellcheck = false;
-            input.autocapitalize = 'off';
-            input.autocomplete = 'off';
-            input.setAttribute('autocorrect', 'off');
-        }
-        input.value = state.analytics.params[param.id] ?? param.defaultValue;
-        if (param.placeholder) input.placeholder = param.placeholder;
-        input.addEventListener('change', () => {
-            if (param.type === 'expression') {
-                const error = validateEdgeWeightExpression(input.value);
-                input.classList.toggle('invalid', error !== null);
-            }
-            setAnalyticsParam(param.id, input.value);
-            param.onInput?.(input.value);
-        });
-        row.appendChild(input);
-        if (param.type === 'expression') {
-            row.appendChild(
-                createExpressionEditTrigger(() =>
-                    analyticsExpressionField(param.id, param.label, param.defaultValue),
-                ),
-            );
-        }
+        form.expression(label, stored,
+            () => analyticsExpressionField(param.id, param.label, param.defaultValue),
+            validateEdgeWeightExpression);
     }
-    return row;
+}
+
+function nodeDisplayName(node: GraphNode): string {
+    const label = node.properties?.label ?? node.properties?.name;
+    return label == null || String(label) === '' ? node.id : String(label);
+}
+
+function pickerResults(role: string, list: HTMLElement, status: HTMLElement): void {
+    const { nodes, total, error } = findNodeCandidates(pickerGraph ?? getVisibleGraph(), pickerQuery);
+    list.replaceChildren();
+    if (error) {
+        status.textContent = error;
+        status.classList.add('is-error');
+        return;
+    }
+    status.classList.remove('is-error');
+    const count = pickerQuery.trim() ? `${total} ${total === 1 ? 'match' : 'matches'}` :
+        `${total} visible ${total === 1 ? 'node' : 'nodes'}`;
+    status.textContent = total === 0 ? 'No matching visible nodes' :
+        total > nodes.length ? `${count} · showing ${nodes.length}; refine the search` : count;
+    for (const node of nodes) {
+        const option = el('button', 'analytics-node-option');
+        option.type = 'button';
+        const current = state.analytics.pickedNodeIds[role] === node.id;
+        option.classList.toggle('is-current', current);
+        if (current) option.setAttribute('aria-current', 'true');
+        option.append(el('span', 'analytics-node-option-name', nodeDisplayName(node)),
+            el('span', 'analytics-node-option-meta', `${node.type} · ${node.id}`));
+        option.addEventListener('click', () => {
+            closePicker();
+            chooseAnalyticsNode(role, node.id);
+            focusPickButton(role);
+        });
+        list.appendChild(option);
+    }
+}
+
+function buildPickerSearch(role: string): HTMLElement {
+    const chooser = el('div', 'analytics-node-chooser');
+    chooser.id = `analytics-picker-${role}`;
+    const input = el('input', 'sg-setting-text analytics-node-search');
+    input.type = 'search';
+    input.setAttribute('aria-label', `Search ${role} nodes`);
+    input.placeholder = 'Filter visible nodes…';
+    input.value = pickerQuery;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    const status = el('div', 'analytics-node-status');
+    status.setAttribute('aria-live', 'polite');
+    const list = el('div', 'analytics-node-list');
+    list.setAttribute('role', 'group');
+    list.setAttribute('aria-label', `Matching ${role} nodes`);
+    refreshPicker = () => pickerResults(role, list, status);
+    input.addEventListener('input', () => {
+        pickerQuery = input.value;
+        refreshPicker?.();
+    });
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closePicker();
+            render();
+            focusPickButton(role);
+        } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            list.querySelector<HTMLButtonElement>('button')?.focus();
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            list.querySelector<HTMLButtonElement>('button')?.click();
+        }
+    });
+    list.addEventListener('keydown', event => {
+        if (!(event.target instanceof HTMLButtonElement)) return;
+        if (event.key === 'Escape') {
+            input.focus();
+        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const options = [...list.querySelectorAll<HTMLButtonElement>('button')];
+            const next = options[options.indexOf(event.target) + (event.key === 'ArrowDown' ? 1 : -1)];
+            (next ?? input).focus();
+        }
+    });
+    chooser.append(input, status, list);
+    refreshPicker();
+    return chooser;
 }
 
 function buildPickRow(pick: { role: string; label: string }): HTMLElement {
-    const row = el('div', 'analytics-field');
-    row.appendChild(el('label', 'analytics-field-label', pick.label));
-
+    const field = el('div', 'analytics-pick-field');
+    field.dataset.role = pick.role;
+    field.appendChild(el('div', 'sg-setting-label', pick.label.replace(/^./, first => first.toUpperCase())));
+    const row = el('div', 'analytics-pick-row');
     const pickedId = state.analytics.pickedNodeIds[pick.role];
     const awaiting = state.analytics.awaitingPickRole === pick.role;
+    const searching = activePickerRole === pick.role;
 
-    const btn = el('button', 'analytics-pick-btn');
-    btn.classList.toggle('awaiting', awaiting);
-    btn.classList.toggle('picked', !awaiting && !!pickedId);
-    btn.classList.toggle('empty', !awaiting && !pickedId);
+    const searchButton = el('button', 'analytics-pick-button analytics-pick-search');
+    searchButton.type = 'button';
+    searchButton.classList.toggle('is-selected', Boolean(pickedId));
+    searchButton.setAttribute('aria-expanded', String(searching));
+    searchButton.setAttribute('aria-label', `${pick.label}: ${pickedId ? nodeLabel(pickedId) : 'search for a node'}`);
+    searchButton.dataset.appTooltip = pickedId ?? 'Filter visible nodes by name, ID, type, or search expression';
+    if (searching) searchButton.setAttribute('aria-controls', `analytics-picker-${pick.role}`);
+    searchButton.append(el('span', 'analytics-pick-value', pickedId ? nodeLabel(pickedId) : 'Search for a node'),
+        el('span', 'analytics-pick-hint', 'Search'));
+    searchButton.addEventListener('click', () => {
+        closePicker();
+        activePickerRole = searching ? null : pick.role;
+        pickerQuery = '';
+        pickerGraph = activePickerRole ? getVisibleGraph() : null;
+        setAnalyticsAwaitingPick(null);
+        render();
+        if (activePickerRole) content.querySelector<HTMLInputElement>('.analytics-node-search')?.focus();
+    });
+    row.appendChild(searchButton);
 
-    const icon = document.createElement('md-icon');
-    icon.className = 'analytics-pick-icon';
-    btn.appendChild(icon);
-    const text = el('span', 'analytics-pick-text');
-    if (awaiting) {
-        icon.textContent = 'ads_click';
-        text.textContent = 'click a node…';
-    } else if (pickedId) {
-        icon.textContent = 'my_location';
-        text.textContent = nodeLabel(pickedId);
-        btn.title = pickedId;
-    } else {
-        icon.textContent = 'touch_app';
-        text.textContent = 'pick node';
-    }
-    btn.appendChild(text);
-    btn.addEventListener('click', () => startPick(pick.role));
-    row.appendChild(btn);
-    return row;
-}
-
-/** Combined inputs block: node picks first, then scalar parameters. */
-function buildInputsSection(algoId: string): HTMLElement | null {
-    const algo = getAlgorithm(algoId as never);
-    if (!algo || (algo.params.length === 0 && algo.picks.length === 0)) {
-        return null;
-    }
-
-    const section = el('div', 'analytics-section');
-    for (const pick of algo.picks) section.appendChild(buildPickRow(pick));
-    for (const param of algo.params) section.appendChild(buildParamRow(param));
-    return section;
+    const graphButton = el('button', 'analytics-pick-button analytics-pick-graph', awaiting ? 'Picking…' : 'Graph');
+    graphButton.type = 'button';
+    graphButton.classList.toggle('is-awaiting', awaiting);
+    graphButton.setAttribute('aria-pressed', String(awaiting));
+    graphButton.setAttribute('aria-label', `${pick.label}: ${awaiting ? 'cancel graph pick' : 'pick from graph'}`);
+    graphButton.dataset.appTooltip = 'Choose by clicking a node in the 2D or 3D graph';
+    graphButton.addEventListener('click', () => {
+        closePicker();
+        startPick(pick.role);
+    });
+    row.appendChild(graphButton);
+    field.appendChild(row);
+    if (awaiting) field.appendChild(el('div', 'analytics-pick-instruction', 'Click a node in the graph. Click Graph again to cancel.'));
+    if (searching) field.appendChild(buildPickerSearch(pick.role));
+    return field;
 }
 
 function buildRunSection(): HTMLElement {
-    const section = el('div', 'analytics-section');
     const row = el('div', 'analytics-run-row');
-
-    const runBtn = document.createElement('md-filled-tonal-button') as HTMLElement;
-    runBtn.className = 'analytics-run';
-    runBtn.textContent = 'Run';
-    runBtn.addEventListener('click', () => {
+    const runButton = el('button', 'analytics-action analytics-run', 'Run analysis');
+    runButton.type = 'button';
+    runButton.addEventListener('click', () => {
         const error = runAlgorithm();
         if (error) showError(error, { id: 'analytics-run' });
     });
-    row.appendChild(runBtn);
-
-    // reset picks, result and decoration for the current algorithm (keeps the
-    // selected algorithm and its parameters)
-    const resetBtn = document.createElement('md-text-button') as HTMLElement;
-    resetBtn.className = 'analytics-reset';
-    resetBtn.textContent = 'Reset';
-    resetBtn.addEventListener('click', () => clearAnalytics());
-    row.appendChild(resetBtn);
-
-    section.appendChild(row);
-    return section;
+    const resetButton = el('button', 'analytics-action analytics-reset', 'Reset');
+    resetButton.type = 'button';
+    resetButton.addEventListener('click', () => {
+        closePicker();
+        clearAnalytics();
+    });
+    row.append(runButton, resetButton);
+    return row;
 }
 
 function statRow(label: string, value: string): HTMLElement {
@@ -253,133 +330,131 @@ function statRow(label: string, value: string): HTMLElement {
 
 /** Builds a clickable node row that centers the camera on the node. */
 function buildPathNodeRow(nodeId: string, index: number, distance: number): HTMLElement {
-    const row = el('div', 'analytics-path-row');
+    const row = el('button', 'analytics-path-row');
+    row.type = 'button';
+    row.dataset.appTooltip = `Center on ${nodeLabel(nodeId)}`;
     row.appendChild(el('span', 'analytics-path-index', String(index)));
 
-    const btn = el('button', 'analytics-path-node');
-    btn.title = `Center on ${nodeId}`;
+    const content = el('span', 'analytics-path-node');
+    const decoration = state.analytics.decoration;
+    const active = decoration?.kind === 'subset' && decoration.focusedNodeId === nodeId;
+    row.classList.toggle('active', active);
+    if (active) row.setAttribute('aria-current', 'step');
     const icon = document.createElement('md-icon');
     icon.textContent = 'my_location';
-    btn.appendChild(icon);
-    btn.appendChild(el('span', 'analytics-path-node-label', nodeLabel(nodeId)));
-    btn.addEventListener('click', () => centerOnNode(nodeId));
-    row.appendChild(btn);
+    content.appendChild(icon);
+    content.appendChild(el('span', 'analytics-path-node-label', nodeLabel(nodeId)));
+    row.addEventListener('click', () => {
+        centerOnNode(nodeId);
+        focusAnalyticsPathNode(nodeId);
+    });
+    row.appendChild(content);
 
     row.appendChild(el('span', 'analytics-path-dist', distance.toFixed(2)));
     return row;
 }
 
-/**
- * Renders the result tweakers declared by an algorithm (live controls shown in
- * the results section after a run), reusing the shared param row builder.
- */
-function buildResultTweakers(result: AnalyticsResultModel): HTMLElement | null {
-    const algo = getAlgorithm(result.kind as never);
-    const tweakers = algo?.resultTweakers ?? [];
-    if (tweakers.length === 0) return null;
-    const wrap = el('div', 'analytics-tweakers');
-    for (const tweaker of tweakers) wrap.appendChild(buildParamRow(tweaker));
-    return wrap;
+/** Live result controls use the same full-width controls as inputs. */
+function buildResultTweakers(result: AnalyticsResultModel): HTMLElement[] {
+    const tweakers = getAlgorithm(result.kind)?.resultTweakers ?? [];
+    if (tweakers.length === 0) return [];
+    const body = sectionBody();
+    const form = new SettingsForm(body);
+    for (const tweaker of tweakers) buildParamRow(tweaker, form);
+    return Array.from(body.children) as HTMLElement[];
 }
 
-function buildResultsSection(result: AnalyticsResultModel): HTMLElement {
-    const section = el('div', 'analytics-section analytics-results');
-
+function buildResultsSections(result: AnalyticsResultModel): { summary: HTMLElement[]; detail: HTMLElement[] } {
+    const sections: { summary: HTMLElement[]; detail: HTMLElement[] } = { summary: [], detail: [] };
     if (result.kind === 'stats') {
         const s = result.stats;
-        section.appendChild(statRow('nodes', String(s.nodeCount)));
-        section.appendChild(statRow('edges', String(s.edgeCount)));
-        section.appendChild(statRow('isolated nodes', String(s.isolatedCount)));
-        section.appendChild(statRow('components', String(s.componentCount)));
-        section.appendChild(statRow('largest component', String(s.largestComponentSize)));
-        section.appendChild(statRow('degree (min/avg/max)', `${s.degreeMin} / ${s.degreeAvg.toFixed(2)} / ${s.degreeMax}`));
-
+        sections.summary.push(section('result-overview', 'Overview', sectionBody(
+            statRow('Nodes', String(s.nodeCount)),
+            statRow('Edges', String(s.edgeCount)),
+            statRow('Isolated nodes', String(s.isolatedCount)),
+            statRow('Components', String(s.componentCount)),
+            statRow('Largest component', String(s.largestComponentSize)),
+            statRow('Degree min / avg / max', `${s.degreeMin} / ${s.degreeAvg.toFixed(2)} / ${s.degreeMax}`),
+        )));
         if (s.nodeTypeCounts.length > 0) {
-            section.appendChild(el('div', 'analytics-subtitle', 'node types'));
-            for (const [type, count] of s.nodeTypeCounts) {
-                section.appendChild(statRow(type, String(count)));
-            }
+            sections.summary.push(section('result-node-types', 'Node types', sectionBody(
+                ...s.nodeTypeCounts.map(([type, count]) => statRow(type, String(count))),
+            ), false));
         }
         if (s.edgeTypeCounts.length > 0) {
-            section.appendChild(el('div', 'analytics-subtitle', 'edge types'));
-            for (const [type, count] of s.edgeTypeCounts) {
-                section.appendChild(statRow(type, String(count)));
-            }
+            sections.detail.push(section('result-edge-types', 'Edge types', sectionBody(
+                ...s.edgeTypeCounts.map(([type, count]) => statRow(type, String(count))),
+            ), false));
         }
     } else if (result.kind === 'shortest-path') {
         if (result.result.found) {
-            section.appendChild(statRow('total weight', result.result.totalWeight.toFixed(4)));
-            section.appendChild(statRow('hops', String(result.result.edgeIds.length)));
-
+            sections.summary.push(section('result-overview', 'Overview', sectionBody(
+                statRow('Total weight', result.result.totalWeight.toFixed(4)),
+                statRow('Hops', String(result.result.edgeIds.length)),
+            )));
             const list = el('div', 'analytics-path-list');
             const header = el('div', 'analytics-path-head');
-            header.appendChild(el('span', 'analytics-path-index', '#'));
-            header.appendChild(el('span', 'analytics-path-node-label', 'node'));
-            header.appendChild(el('span', 'analytics-path-dist', 'dist'));
+            header.append(el('span', 'analytics-path-index', '#'),
+                el('span', 'analytics-path-node-label', 'Node'),
+                el('span', 'analytics-path-dist', 'Distance'));
             list.appendChild(header);
-
-            result.result.nodeIds.forEach((nodeId, i) => {
-                const distance = result.result.nodeDistances[i] ?? 0;
-                list.appendChild(buildPathNodeRow(nodeId, i, distance));
+            result.result.nodeIds.forEach((nodeId, index) => {
+                list.appendChild(buildPathNodeRow(nodeId, index, result.result.nodeDistances[index] ?? 0));
             });
-            section.appendChild(list);
+            sections.detail.push(section('result-path', 'Path', sectionBody(list)));
             const tweakers = buildResultTweakers(result);
-            if (tweakers) section.appendChild(tweakers);
+            if (tweakers.length > 0) sections.summary.push(section('result-display', 'Display', sectionBody(...tweakers)));
         } else {
-            section.appendChild(el('div', 'analytics-empty', 'No path found between the selected nodes.'));
+            sections.summary.push(section('result-overview', 'Result', sectionBody(
+                el('div', 'analytics-empty', 'No path found between the selected nodes.'),
+            )));
         }
     } else if (result.kind === 'mst') {
-        section.appendChild(statRow('tree edges', String(result.result.edgeIds.length)));
-        section.appendChild(statRow('total weight', result.result.totalWeight.toFixed(4)));
-        section.appendChild(statRow('components', String(result.result.components)));
+        sections.summary.push(section('result-overview', 'Overview', sectionBody(
+            statRow('Tree edges', String(result.result.edgeIds.length)),
+            statRow('Total weight', result.result.totalWeight.toFixed(4)),
+            statRow('Components', String(result.result.components)),
+        )));
     } else if (result.kind === 'degree') {
         const r = result.result;
-        section.appendChild(statRow('nodes ranked', String(r.entries.length)));
-        section.appendChild(statRow('degree (min/max)', `${r.minDegree} / ${r.maxDegree}`));
-
-        section.appendChild(buildHeatmapLegend(r.minDegree, r.maxDegree));
-
-        const degreeTweakers = buildResultTweakers(result);
-        if (degreeTweakers) section.appendChild(degreeTweakers);
-
-        const directed = r.respectDirection;
-        section.appendChild(
-            buildRankList(
-                r.entries.map(e => ({
-                    nodeId: e.nodeId,
-                    primary: String(e.degree),
-                    secondary: directed ? `in ${e.inDegree} · out ${e.outDegree}` : undefined,
-                })),
-            ),
-        );
+        sections.summary.push(section('result-overview', 'Overview', sectionBody(
+            statRow('Nodes ranked', String(r.entries.length)),
+            statRow('Degree min / max', `${r.minDegree} / ${r.maxDegree}`),
+        )));
+        sections.detail.push(section('result-ranked', 'Ranked nodes', sectionBody(buildRankList(
+            r.entries.map(entry => ({
+                nodeId: entry.nodeId,
+                primary: String(entry.degree),
+                secondary: r.respectDirection ? `in ${entry.inDegree} · out ${entry.outDegree}` : undefined,
+            })),
+        ))));
+        sections.summary.push(section('result-display', 'Display', sectionBody(
+            buildHeatmapLegend(r.minDegree, r.maxDegree),
+            ...buildResultTweakers(result),
+        )));
     } else if (result.kind === 'distance') {
         const r = result.result;
-        section.appendChild(statRow('source', nodeLabel(r.sourceId)));
-        section.appendChild(statRow('reachable nodes', String(r.reachableCount)));
-        section.appendChild(statRow('max distance', formatDistance(r.maxDistance)));
-
-        // near is hot (distance 0), far is cold (max distance)
-        section.appendChild(buildHeatmapLegend(0, r.maxDistance, { reversed: true }));
-
-        const distanceTweakers = buildResultTweakers(result);
-        if (distanceTweakers) section.appendChild(distanceTweakers);
-
-        section.appendChild(
-            buildRankList(
-                r.entries.map(e => ({
-                    nodeId: e.nodeId,
-                    primary: formatDistance(e.distance),
-                })),
-            ),
-        );
+        sections.summary.push(section('result-overview', 'Overview', sectionBody(
+            statRow('Source', nodeLabel(r.sourceId)),
+            statRow('Reachable nodes', String(r.reachableCount)),
+            statRow('Max distance', formatDistance(r.maxDistance)),
+        )));
+        sections.detail.push(section('result-ranked', 'Ranked nodes', sectionBody(buildRankList(
+            r.entries.map(entry => ({ nodeId: entry.nodeId, primary: formatDistance(entry.distance) })),
+        ))));
+        sections.summary.push(section('result-display', 'Display', sectionBody(
+            buildHeatmapLegend(0, r.maxDistance, { reversed: true }),
+            ...buildResultTweakers(result),
+        )));
     } else if (result.kind === 'community') {
         const r = result.result;
-        section.appendChild(statRow('communities', String(r.communityCount)));
-        section.appendChild(statRow('modularity', r.modularity.toFixed(4)));
-        section.appendChild(buildCommunityLegend(r.communities));
+        sections.summary.push(section('result-overview', 'Overview', sectionBody(
+            statRow('Communities', String(r.communityCount)),
+            statRow('Modularity', r.modularity.toFixed(4)),
+        )));
+        sections.detail.push(section('result-communities', 'Communities', sectionBody(buildCommunityLegend(r.communities))));
     }
-
-    return section;
+    return sections;
 }
 
 // maximum number of ranked rows rendered to keep the panel responsive
@@ -488,7 +563,8 @@ function buildCommunityLegend(communities: Community[]): HTMLElement {
         if (isFocused) {
             focusBtn.classList.add('is-active');
         }
-        focusBtn.title = isFocused ? 'stop highlighting this community' : 'highlight this community';
+        focusBtn.dataset.appTooltip = isFocused ? 'Stop highlighting this community' : 'Highlight this community';
+        focusBtn.setAttribute('aria-label', isFocused ? 'Stop highlighting this community' : 'Highlight this community');
         const focusIcon = document.createElement('md-icon');
         focusIcon.textContent = isFocused ? 'visibility' : 'visibility_off';
         focusBtn.appendChild(focusIcon);
@@ -498,7 +574,8 @@ function buildCommunityLegend(communities: Community[]): HTMLElement {
         // subtle add-to-selection control
         const addBtn = el('button', 'analytics-community-add');
         addBtn.type = 'button';
-        addBtn.title = 'add community to selection';
+        addBtn.dataset.appTooltip = 'Add community to selection';
+        addBtn.setAttribute('aria-label', 'Add community to selection');
         const addIcon = document.createElement('md-icon');
         addIcon.textContent = 'add_circle';
         addBtn.appendChild(addIcon);
@@ -544,7 +621,7 @@ function buildRankList(rows: RankRow[]): HTMLElement {
         item.appendChild(el('span', 'analytics-rank-index', String(i + 1)));
 
         const btn = el('button', 'analytics-rank-node');
-        btn.title = `Center on ${row.nodeId}`;
+        btn.dataset.appTooltip = `Center on ${row.nodeId}`;
         const icon = document.createElement('md-icon');
         icon.textContent = 'my_location';
         btn.appendChild(icon);
@@ -571,31 +648,68 @@ function buildRankList(rows: RankRow[]): HTMLElement {
 }
 
 function render(): void {
-    body.innerHTML = '';
-
     const algoId = state.analytics.algorithmId;
+    body.dataset.algorithm = algoId ?? '';
     const algo = algoId ? getAlgorithm(algoId) : undefined;
-
-    const algoChildren: HTMLElement[] = [buildAlgorithmTabs()];
-    if (algo) {
-        algoChildren.push(el('div', 'analytics-description', algo.description));
+    const result = state.analytics.result as AnalyticsResultModel | null;
+    const algorithmChanged = previousAlgorithm !== algoId;
+    if (algorithmChanged) {
+        previousAlgorithm = algoId;
+        closePicker();
     }
-    body.appendChild(buildBlock('algorithm', ...algoChildren));
+    if (result && result !== previousResult) {
+        for (const key of ['result-overview', 'result-path', 'result-ranked', 'result-display', 'result-communities']) {
+            sectionOpen.set(`${algoId}:${key}`, true);
+        }
+    }
+    previousResult = result;
 
-    if (!algoId) {
-        body.appendChild(el('div', 'analytics-empty', 'Select an algorithm above.'));
+    for (const button of navigation.querySelectorAll<HTMLButtonElement>('[role="tab"]')) {
+        const selected = button.id === `analytics-tab-${algoId}`;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+        if (selected) {
+            content.setAttribute('aria-labelledby', button.id);
+            tabScroller.reveal(button);
+        }
+    }
+
+    const scrollTop = algorithmChanged ? 0 : content.scrollTop;
+    content.replaceChildren();
+    if (!algo) {
+        content.appendChild(el('div', 'analytics-empty', 'Select an algorithm above.'));
         return;
     }
+    content.appendChild(el('p', 'analytics-description', algo.description));
 
-    const params = buildInputsSection(algoId);
-    if (params) body.appendChild(buildBlock('parameters', params));
-
-    body.appendChild(buildRunSection());
-
-    const result = state.analytics.result as AnalyticsResultModel | null;
-    if (result) {
-        body.appendChild(buildBlock('results', buildResultsSection(result)));
+    const grid = el('div', 'analytics-grid');
+    if (algo.picks.length > 0) {
+        grid.appendChild(section('nodes', 'Nodes', sectionBody(...algo.picks.map(buildPickRow))));
     }
+    if (algo.params.length > 0) {
+        const optionsBody = sectionBody();
+        const form = new SettingsForm(optionsBody);
+        for (const param of algo.params) buildParamRow(param, form);
+        grid.appendChild(section('options', 'Options', optionsBody));
+    }
+    if (grid.childElementCount > 0) content.appendChild(grid);
+    content.appendChild(buildRunSection());
+
+    if (result) {
+        content.appendChild(el('div', 'analytics-results-label', 'Results'));
+        const resultGrid = el('div', 'analytics-grid analytics-result-grid');
+        const { summary, detail } = buildResultsSections(result);
+        const summaryColumn = el('div', 'analytics-result-column');
+        summaryColumn.append(...summary);
+        resultGrid.appendChild(summaryColumn);
+        if (detail.length > 0) {
+            const detailColumn = el('div', 'analytics-result-column');
+            detailColumn.append(...detail);
+            resultGrid.appendChild(detailColumn);
+        }
+        content.appendChild(resultGrid);
+    }
+    content.scrollTop = scrollTop;
 }
 
 // ── initialization ──────────────────────────────────────────
@@ -603,6 +717,14 @@ function render(): void {
 /** Wires the analytics panel event subscriptions. */
 export function initAnalyticsPanel(): void {
     on(EVT_ANALYTICS_UPDATED, render);
+    on(EVT_VISIBLE_GRAPH_CHANGED, () => {
+        if (activePickerRole) {
+            pickerGraph = getVisibleGraph();
+            refreshPicker?.();
+        } else if (state.analytics.active) {
+            render();
+        }
+    });
     // clicking a node toggles its community focus when a community result is shown
     on<{ data: { id: string } }>(EVT_NODE_CLICKED, ({ data }) => {
         const decoration = state.analytics.decoration;

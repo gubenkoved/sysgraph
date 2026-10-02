@@ -46,10 +46,9 @@ npm_config_cache=/tmp/.npm node:22-slim sh -c "..."`). Updating
 ┌──────────────────────────────────────────────────────────┐
 │  Browser (SPA)                                           │
 │  Built by Vite from src/sysgraph-ui/ → src/sysgraph/dist/  │
-│  Libraries (npm): force-graph (2D), 3d-force-graph +     │
-│    three + three-spritetext (3D), d3@7, tweakpane (+core, │
-│    plugin-essentials), fuse.js, @material/web,           │
-│    json-formatter-js                                     │
+│  WebGPU renderer + force layout (2D and perspective 3D) │
+│  Libraries: d3@7, tweakpane, fuse.js, @material/web,    │
+│    dockview-core, json-formatter-js                      │
 │  Icons & fonts: Material Symbols, Roboto, Ubuntu (CDN)   │
 └──────────────┬───────────────────────────────────────────┘
                │  HTTP (fetch)
@@ -121,16 +120,16 @@ sysgraph/
 │       ├── styles.css           # All styling + design tokens (CSS custom properties)
 │       ├── globals.d.ts         # Ambient declarations (e.g. __STANDALONE__)
 │       ├── app.ts               # Frontend entry point
+│       ├── engine/              # WebGPU renderer, GPU layout, labels, camera helpers
 │       └── modules/
 │           ├── state.ts          # Centralized app state (incl. unsaved-changes flag)
 │           ├── event-bus.ts      # Pub-sub event system + 1:1 command handlers
 │           ├── constants.ts      # Event/command/panel names, render constants, STANDALONE flag
 │           ├── graph.ts          # Frontend Graph class (adjacency index)
-│           ├── graph-ui.ts       # renderer orchestrator/facade (active instance, handlers, camera, refresh pipeline, frame loop)
-│           ├── graph-ui-types.ts # shared renderer types (FGNode, FGLink, instance types, RendererHandlers)
-│           ├── graph-ui-appearance.ts # renderer-agnostic appearance (colors, scales, resolve* accessors, pin helpers)
-│           ├── graph-ui-2d.ts    # 2D canvas renderer (force-graph): node/link draw, grid, planar d3 forces
-│           ├── graph-ui-3d.ts    # 3D WebGL renderer (3d-force-graph): label sprites, pin spikes, search pulse, axis cross, orbit-center marker, selection ring
+│           ├── graph-ui.ts       # graph facade, handlers, filters, context menus, refresh pipeline
+│           ├── webgpu-graph-view.ts # shared 2D/3D camera, interaction, data bridge
+│           ├── graph-ui-types.ts # graph node/link and handler types
+│           ├── graph-ui-appearance.ts # colors, scales, resolve* accessors, pin helpers
 │           ├── render-mode.ts    # 2D/3D render-mode persistence (localStorage)
 │           ├── expression.ts     # shared compiler for user expressions (label/sizing/link-distance/edge-weight); properties exposed as bare names, well-known keys always win
 │           ├── expression-scopes.ts # shared (params, spread) scope tuples for the six expression fields; imported by the real evaluators AND the editor so preview/autocomplete never drift
@@ -142,7 +141,7 @@ sysgraph/
 │           ├── graph-algs.ts     # BFS algorithm for highlights
 │           ├── graph-display.ts  # Persistence policy for graph-embedded `display` settings
 │           ├── layout.ts         # dockview dock-layout: panel registry, persistence, placement memory, stable-size enforcement
-│           ├── render-hooks.ts   # Pre/post per-frame render hooks (FPS graph; also drives 3D per-frame effects)
+│           ├── render-hooks.ts   # Pre/post frame hooks for UI metrics
 │           ├── data-io.ts        # API fetch, JSON serialization/parsing, examples manifest
 │           ├── share.ts          # share graph as a "data URL" (gzip + base64url in the URL hash)
 │           ├── search.ts         # Search via Fuse.js (uses search-parser)
@@ -151,7 +150,7 @@ sysgraph/
 │           ├── edit-mode.ts      # Graph editing (add/delete nodes & edges)
 │           ├── details-panel.ts  # Node/edge details panel + editable form
 │           ├── toolbar.ts        # Toolbar buttons & keyboard shortcuts
-│           ├── settings-pane.ts  # Tweakpane settings UI (filters, colors, forces)
+│           ├── settings-pane.ts  # Tweakpane settings UI (filters, colors, GPU layout)
 │           ├── settings.ts       # Default settings, color palettes
 │           ├── settings-presets.ts # Predefined + user settings presets (localStorage)
 │           ├── analytics.ts      # Analytics tool orchestration + result state
@@ -165,7 +164,7 @@ sysgraph/
 │           ├── color-scale.ts    # Color interpolation for search heatmap
 │           ├── theme.ts          # Light/dark theme toggle (persisted)
 │           ├── zoom-indicator.ts # Floating zoom widget (-/+ and live %)
-│           ├── physics-indicator.ts # Floating physics run indicator + play/pause toggle
+│           ├── physics-indicator.ts # Toolbar physics toggle and fast-forward control
 │           └── util.ts           # FNV-1a hash + toast error helpers
 ```
 
@@ -323,11 +322,7 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 - Dev server proxies `/api` to `http://localhost:8000` (the FastAPI backend)
 
 **npm dependencies** (`package.json`):
-- `force-graph` — Canvas-based force-directed graph (2D renderer)
-- `3d-force-graph` — WebGL/Three.js force-directed graph (3D renderer)
-- `three` — 3D engine used by the 3D renderer for scene objects (pin spikes, axis cross, orbit-center marker); ships no types, declared as an untyped module in `globals.d.ts`
-- `three-spritetext` — camera-facing text sprites for 3D node labels & badges
-- `d3@7` — Physics simulation, color utilities
+- `d3@7` — One-time CPU layout seeding for examples and small graphs, plus color utilities; live force layout runs on WebGPU
 - `dockview-core` — Dockable panel layout (settings/analytics/details panels around the graph)
 - `@material/web` — Material Design 3 web components (buttons, icons, text fields)
 - `tweakpane@4` (+ `@tweakpane/core`, `@tweakpane/plugin-essentials`) — Settings panel UI
@@ -340,7 +335,7 @@ The frontend uses **Vite** as the build tool. Source lives in `src/sysgraph-ui/`
 
 **State Management:** `state.ts` holds centralized mutable state:
 - `state.graph` — Current `Graph` instance
-- `state.currentTool` — Active tool: `"pointer"` | `"rect-select"` | `"search"`
+- `state.currentTool` — Active tool: `"pointer"` | `"rect-select"` | `"search"` | `"edit"` | `"analytics"`
 - `state.edit` — Edit-mode state (`active`, `subTool`: `"modify"` | `"connect"`, `pendingEdgeSourceId`)
 - `state.selection` — Rectangle selection coordinates, selected node IDs
 - `state.highlight` — BFS distance maps for hover highlighting
@@ -354,7 +349,7 @@ Key events:
 - `"node-clicked"`, `"link-clicked"`, `"background-click"` — UI interactions
 - `"search-expression-changed"`, `"search-cycle"` — Search input updates / next-prev match cycling
 - `"selection-changed"` — Selection set changed
-- `"d3-simulation-parameters-changed"` — Force simulation parameter updates
+- `"gpu-layout-parameters-changed"` — GPU force layout parameter updates
 - `"graph-ui-settings-updated"`, `"graph-ui-colors-updated"`, `"graph-ui-links-curvature-updated"` — Settings/colors/curvature changes
 - `"clear-button-clicked"` — Reset state
 - `"graph-updated"` — Emitted after loading a new graph (e.g., from API, file import, or example)
@@ -363,16 +358,16 @@ Key events:
 
 Key commands (1:1 handlers): `"reload-graph"`, `"export-graph"`, `"import-graph"`, `"load-example"`.
 
-**Rendering — 2D & 3D renderers.** Graph rendering is split into a renderer-agnostic core plus two renderer backends, orchestrated by a thin facade:
+**Rendering — shared WebGPU engine.** The same renderer draws 2D and perspective 3D views:
 
-- **`graph-ui.ts` (orchestrator/facade)** — owns the active renderer instance, the interaction handlers (`RendererHandlers`), camera dispatch, the adjacency filter, context menus, the graph-data refresh pipeline, and a single always-on rAF frame loop. `setRenderMode()` swaps the active renderer; most modules import the live-binding `ForceGraphInstance` from here. The swap is a **seamless aligned transition** (`RENDER_TRANSITION_MS`): 3D→2D first glides the 3D camera to an axis-aligned top-down pose (preserving pan/zoom), then swaps to 2D and snaps `centerAt`/`zoom` to the matching projection; 2D→3D builds the 3D renderer, flattens nodes to `z=0`, places the camera top-down so the first frame matches the 2D view, then orbits out to a resting perspective pose to reveal depth. The framing math (`world2DZoomFromDistance`/`distanceFrom2DZoom`) converts between 2D zoom and 3D camera distance via the perspective FOV; an empty/unpositioned graph falls back to the old instant swap + recenter, and a `transitioning` guard ignores re-entry mid-glide.
-- **`graph-ui-appearance.ts`** — renderer-agnostic appearance: color caches/scales, palettes, search match-color computation, tooltips, pin helpers, and the shared `resolve*` accessors (`resolveNodeAppearance`/`resolveNodeColor`, `resolveLink*`) so both renderers decorate nodes/links identically.
-- **`graph-ui-2d.ts`** — 2D canvas renderer (`force-graph`): per-node/link canvas draw callbacks, the reference grid + center cross, the planar d3 forces, and `labelFontSize` (a 2D zoom concept). Custom canvas drawing for nodes (circles, labels, selection rings, pulsing search rings), BFS hover dimming, adjacency `+N` badges, auto-curvature for parallel edges. `getView2D`/`setView2D` read/snap the pan center + zoom for the seamless render-mode transition.
-- **`graph-ui-3d.ts`** — 3D WebGL renderer (`3d-force-graph` + `three`): persistent label sprites (`three-spritetext`), the search match recolor + per-frame pulse, the pinned-node spike marker, the adjacency `+N` badge sprite, the origin axis cross, the orbit-center marker (a small cross at the camera's rotation pivot that fades in while navigating, shown independently of `showGrid`), and the selection ring (a billboarded, spinning dashed ring around selected nodes, mirroring the animated 2D selection ring). The 3D renderer has no per-frame canvas hook, so per-frame effects (pulse, pin/badge sync, axis-cross visibility, orbit-center fade, selection-ring facing/spin) are driven from the orchestrator's rAF loop. `refreshColors3D()` re-applies only the color accessors (cheap, no sprite rebuild) for search-as-you-type. The render-mode transition helpers (`alignTopDown3D`, `placeTopDown3D`, `revealPerspective3D`) drive a cancellable camera tween (`animateCamera3D`) that also slerps the camera `up` vector into/out of the y-down aligned pose so the 3D projection matches the 2D canvas's +x-right / +y-down convention.
-- **`graph-ui-types.ts`** — shared types (`FGNode`, `FGLink`, the two instance types, `RendererHandlers`).
-- **`render-mode.ts`** — persists the 2D/3D choice in `localStorage` (`sysgraph:render-mode`); `is3D()` is the shared predicate.
+- **`graph-ui.ts`** owns graph interaction handlers, context menus, visible-graph refresh, filtering, and the single `GraphViewInstance` facade used by other modules. Its `setRenderMode()` changes the camera mode of the existing WebGPU view.
+- **`webgpu-graph-view.ts`** bridges graph objects and settings to GPU buffers. It owns the camera, pointer interactions, node pinning, layout warmup, search emphasis, and its render loop.
+- **`engine/renderer.ts`** contains the WebGPU render pipelines for nodes, edges, and glyph-atlas labels. **`engine/force-layout.ts`** runs live force simulation on the GPU; **`engine/labels.ts`** selects non-overlapping labels; **`engine/camera-axis.ts`** draws the 3D orientation guide and pivot cross.
+- **`initial-layout.ts`** uses D3 only for one-time CPU layout seeding. **`automatic-layout.ts`** computes the non-force layout choices.
+- **`graph-ui-appearance.ts`** resolves colors, widths, arrows, search colors, and pin appearance before they are uploaded to the shared renderer. **`graph-ui-types.ts`** defines graph node/link and handler types.
+- **`render-mode.ts`** persists the 2D/3D choice in `localStorage`; `is3D()` is the shared predicate.
 
-The 2D and 3D renderers share most of the `force-graph` accessor API; 2D-only tools (rectangle-select, edit) fall back to the pointer in 3D, and `body.mode-3d` hides their chrome. Configurable d3 forces (charge, link distance/strength, collision, center, velocity decay) are tuned via the orchestrator's `applyD3Params()`.
+Rectangle selection and editing remain 2D-only, so their toolbar controls are hidden in 3D. GPU force settings are applied through `EVT_GPU_PARAMS_CHANGED` and `GraphViewInstance.updateLayoutOptions()`; saved D3 settings are translated for compatibility when loading older graphs or presets.
 
 **Layout / docking (`layout.ts`):** Wraps **dockview-core** to arrange the workspace as dockable panels — the graph occupies a fixed center group, and side panels (Settings, Analytics, per-selection Details) dock around it. This is the single owner of all panel open/close/move/persist logic. Key concepts:
 
@@ -388,7 +383,7 @@ Layout-related event/command constants live in `constants.ts` (e.g. `PANEL_GRAPH
 **Details Panel:** Uses JSONFormatter for collapsible JSON display of node/link properties.
 
 **Settings (`settings.ts` + `settings-pane.ts`):** Tweakpane-based UI panel with:
-- D3 force parameters (tunable in real-time)
+- GPU force parameters and automatic layout choices
 - Node/edge type filters (toggle visibility per type)
 - Node/edge color pickers (per type, with sensible defaults)
 - Show/hide isolated nodes toggle
@@ -424,9 +419,9 @@ The manifest entry shape (`ExampleInfo`) and the menu-item builder (`buildExampl
 
 **Zoom Indicator (`zoom-indicator.ts`):** Floating bottom-left widget showing the live zoom level with `-`/`+` buttons that animate the camera (2D only; hidden in 3D).
 
-**Physics Toggle (`physics-indicator.ts`):** Toolbar button (in the settings group) that pauses/resumes the force simulation and tracks its live activity via the renderers' `onEngineTick`/`onEngineStop` callbacks (works in 2D and 3D). Clicking applies a **transient, runtime-only override** (`state.physicsOverride`, a `boolean | null`) of physics enablement — it never mutates the persisted `settings.d3EnablePhysics`, so a pause never leaks into the exported/shared `display` block. `applyD3Params()` gates on the effective value (`state.physicsOverride ?? settings.d3EnablePhysics`). The override is cleared on graph load (`maybeApplyGraphDisplay`) and when the settings-pane "enable physics" toggle is changed (that deliberate persisted change wins). A subtle accent dot on the button pulses only while the engine is actively ticking.
+**Physics Toggle (`physics-indicator.ts`):** Toolbar controls pause/resume the GPU force layout and enable fast-forward. A transient `state.physicsOverride` takes precedence over persisted `settings.gpuEnablePhysics`, so pausing does not change exported settings. `GraphViewInstance` reports layout activity through `onEngineTick`/`onEngineStop`; a subtle accent dot pulses while it is ticking.
 
-**Render Hooks (`render-hooks.ts`):** Registerable pre/post per-frame hooks. In 2D they fire from the force-graph canvas frame; for both renderers they are driven by the orchestrator's always-on rAF loop, which also powers the FPS graph and the 3D per-frame effects.
+**Render Hooks (`render-hooks.ts`):** Registerable pre/post frame hooks run from `graph-ui.ts`'s UI animation loop. The WebGPU view has its own render loop.
 
 **Standalone mode:** Build-time flag `__STANDALONE__` (declared in `globals.d.ts`, set via `VITE_STANDALONE=true`). When enabled the UI never contacts the backend (no initial `/api/graph` fetch, no reload); graphs are loaded via import or examples.
 
@@ -481,8 +476,8 @@ Section dividers use ONE unified style: a single-line, fixed-width Unicode box-d
 - DOM elements cast to specific types (`HTMLElement`, `HTMLButtonElement`, etc.)
 - Arrow functions preferred for short callbacks
 - `const` by default, `let` when mutation needed
-- No magic numbers — extract tunables/thresholds into named `export const`s in `constants.ts` (e.g. the `D3_*`, `SEARCH_PULSE_*` families) and import them, rather than inlining literals. Reuse an existing constant if one already fits instead of duplicating the value
-- npm packages imported by bare specifier (e.g., `import ForceGraph from 'force-graph'`)
+- No magic numbers — extract tunables/thresholds into named constants and import them, rather than inlining literals. Reuse an existing constant if one already fits instead of duplicating the value
+- npm packages imported by bare specifier (e.g., `import * as d3 from 'd3'`)
 - Lint: `npm run lint` / `./scripts/lint-ui.sh`; type-check: `npm run typecheck` / `./scripts/typecheck-ui.sh`
 
 ### Design language (styling changes)
@@ -534,12 +529,13 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 3. Vite will bundle it automatically
 
 ### Modifying the graph visualization
-> **Both renderers, always.** There are two graph representations (2D canvas and 3D WebGL). Any graph-related change — appearance, behavior, physics, interactions, features — MUST be applied to BOTH the 2D (`graph-ui-2d.ts`) and 3D (`graph-ui-3d.ts`) renderers (and any shared logic in `graph-ui-appearance.ts` / orchestration in `graph-ui.ts`), unless it is genuinely inapplicable to one mode (e.g. 2D-only rectangle-select/edit tools, or 3D-only camera effects) or the user explicitly says otherwise. Do not forget there are 2 modes here — never update just one side. When something only makes sense in one renderer, call it out explicitly rather than silently skipping the other.
+> **One renderer, two camera modes.** Graph rendering and GPU force layout live in the shared WebGPU engine. Check behavior in both 2D and perspective 3D unless the feature is specific to one mode (for example, 2D rectangle selection or 3D orbit controls).
 
-- Shared appearance (colors, sizes, labels, `resolve*` accessors used by both renderers): `graph-ui-appearance.ts`
-- 2D node/link rendering: `graph-ui-2d.ts` → `drawNode` / link accessors
-- 3D node/link rendering: `graph-ui-3d.ts` → label sprites, pulse, pin spikes, badges
-- Physics: Adjust defaults in `settings.ts` or tune via settings pane at runtime (forces are applied to both renderers via `applyD3Params()` in `graph-ui.ts`)
+- Shared appearance (colors, sizes, `resolve*` accessors): `graph-ui-appearance.ts`
+- Node/edge rendering and search rings: `engine/renderer.ts`
+- Camera, hover, pinning, and graph-data bridge: `webgpu-graph-view.ts`
+- Label atlas and decluttering: `engine/labels.ts`
+- Physics: adjust defaults in `settings.ts` and GPU implementation in `engine/force-layout.ts`
 - Colors: `settings.ts` → `overrideNodeColors` / `overrideEdgeColors` / `palette`
 
 ### Modifying the settings panel
@@ -560,5 +556,5 @@ The frontend uses **Material Web** (`@material/web@2.x`) — Google's web-compon
 - **No host Node.js needed:** All `*-ui.sh` scripts run Node.js inside Docker. If Node.js 22 is available locally, `npm run build/typecheck/lint` also work.
 - **Path-prefix agnostic:** The UI can be served at `/` or behind a reverse proxy under any prefix (e.g. `/sysgraph/`) from the same build. Vite `base` defaults to `./`, and every URL the browser requests (`fetch`, assets, links) must be relative (`api/graph`, `${import.meta.env.BASE_URL}examples/...`), never root-absolute (`/api/...`). `VITE_BASE` still overrides the base when needed
 - **Version single source of truth:** The app version is defined in `src/sysgraph/__init__.py` (`__version__`). Vite reads it at build time and injects it into `index.html`.
-- **Graph size:** On busy systems the graph can have thousands of nodes. The force simulation may be slow; tune d3 parameters via the settings pane.
+- **Graph size:** The WebGPU engine supports large graphs, but layout and label costs still depend on node and edge count. Tune GPU force parameters and layout tick rate in the settings pane.
 - **Graph ID conventions:** Backend generates node IDs as `"process::{pid}"`, `"pipe::{inode}"`, `"socket::{addr}::{type}"`, `"uds::{key}"`, `"external_ip::{ip}"` (see the `*_node_id()` helpers in `constants.py`). Edge IDs are UUIDs.

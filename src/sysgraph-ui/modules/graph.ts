@@ -2,6 +2,13 @@ export interface GraphNode {
     id: string;
     type: string;
     properties?: Record<string, unknown>;
+    /** Optional authored position, used by examples with geographic or grouped layouts. */
+    x?: number;
+    y?: number;
+    z?: number;
+    fx?: number;
+    fy?: number;
+    fz?: number;
 }
 
 export interface GraphEdge {

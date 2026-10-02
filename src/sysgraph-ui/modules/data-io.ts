@@ -63,7 +63,7 @@ const DEFAULT_EDGE_TYPE = 'edge';
 
 // keys consumed by the native schema (or known aliases) that must not leak into
 // the merged `properties` dict
-const NODE_KEYS = new Set(['id', 'key', 'type', 'properties', 'attributes']);
+const NODE_KEYS = new Set(['id', 'key', 'type', 'properties', 'attributes', 'x', 'y', 'z', 'fx', 'fy', 'fz']);
 const EDGE_KEYS = new Set([
     'id',
     'type',
@@ -156,7 +156,45 @@ function normalizeNodes(raw: unknown): GraphNode[] {
         id: pickId(n, ['id', 'key', 'name']) ?? `auto:${generateId()}`,
         type: coerceId(n.type) ?? DEFAULT_NODE_TYPE,
         properties: collectProperties(n, NODE_KEYS),
+        ...Object.fromEntries(['x', 'y', 'z', 'fx', 'fy', 'fz']
+            .filter(key => typeof n[key] === 'number' && Number.isFinite(n[key]))
+            .map(key => [key, n[key]])),
     }));
+}
+
+/**
+ * Compact example format: edge endpoints are node-array indices, type is an
+ * index into edgeTypes, and remaining tuple values follow edgeProperties.
+ * This avoids repeating long node IDs in hundreds of thousands of edges.
+ */
+function normalizeIndexedEdges(
+    raw: unknown,
+    nodes: GraphNode[],
+    edgeTypes: unknown,
+    edgeProperties: unknown,
+): GraphEdge[] {
+    if (!Array.isArray(raw) || !Array.isArray(edgeTypes) ||
+        !edgeTypes.every(type => typeof type === 'string') ||
+        !Array.isArray(edgeProperties) || !edgeProperties.every(key => typeof key === 'string')) {
+        throw new Error('Invalid indexed edge format.');
+    }
+    return raw.map((entry, index) => {
+        if (!Array.isArray(entry) || entry.length !== 3 + edgeProperties.length ||
+            !Number.isInteger(entry[0]) || !Number.isInteger(entry[1]) ||
+            !Number.isInteger(entry[2]) || typeof edgeTypes[entry[2]] !== 'string') {
+            throw new Error(`Invalid indexed edge at position ${index}.`);
+        }
+        const properties = edgeProperties.length
+            ? Object.fromEntries(edgeProperties.map((key, offset) => [key, entry[offset + 3]]))
+            : undefined;
+        return {
+            id: `edge:${index}`,
+            source_id: nodes[entry[0]]?.id ?? '',
+            target_id: nodes[entry[1]]?.id ?? '',
+            type: edgeTypes[entry[2]],
+            ...(properties ? { properties } : {}),
+        };
+    });
 }
 
 /**
@@ -176,8 +214,8 @@ function normalizeEdges(raw: unknown): GraphEdge[] {
 }
 
 /**
- * Drops edges whose endpoints do not resolve to a known node id. This guards
- * the force-graph layout, whose d3-force link binding throws on a missing node.
+ * Drops edges whose endpoints do not resolve to a known node id. This keeps
+ * the GPU adjacency and render buffers valid.
  */
 function dropDanglingEdges(
     nodes: GraphNode[],
@@ -216,9 +254,10 @@ function unwrapRoot(data: Record<string, unknown>): Record<string, unknown> {
 function normalizeGraphData(data: Record<string, unknown>): LoadedGraphData {
     const inner = unwrapRoot(data);
     const nodes = normalizeNodes(inner.nodes);
-    const allEdges = normalizeEdges(
-        inner.edges ?? inner.relationships ?? inner.links,
-    );
+    const rawEdges = inner.edges ?? inner.relationships ?? inner.links;
+    const allEdges = inner.edgeEncoding === 'indexed-v1'
+        ? normalizeIndexedEdges(rawEdges, nodes, inner.edgeTypes, inner.edgeProperties)
+        : normalizeEdges(rawEdges);
     const { edges, skipped } = dropDanglingEdges(nodes, allEdges);
     return {
         nodes,

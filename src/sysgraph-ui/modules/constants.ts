@@ -8,10 +8,11 @@ export const EVT_VISIBLE_GRAPH_CHANGED = 'visible-graph-changed';
 export const EVT_SEARCH_CHANGED = 'search-expression-changed';
 export const EVT_SELECTION_CHANGED = 'selection-changed';
 export const EVT_SETTINGS_UPDATED = 'graph-ui-settings-updated';
+export const EVT_NODE_SIZING_UPDATED = 'node-sizing-updated';
+export const EVT_RENDER_OPTIONS_CHANGED = 'webgpu-render-options-changed';
 export const EVT_COLORS_UPDATED = 'graph-ui-colors-updated';
 export const EVT_WIDTHS_UPDATED = 'graph-ui-widths-updated';
-export const EVT_CURVATURE_UPDATED = 'graph-ui-links-curvature-updated';
-export const EVT_D3_PARAMS_CHANGED = 'd3-simulation-parameters-changed';
+export const EVT_GPU_PARAMS_CHANGED = 'gpu-layout-parameters-changed';
 export const EVT_SEARCH_CYCLE = 'search-cycle';
 export const EVT_NODE_CLICKED = 'node-clicked';
 export const EVT_LINK_CLICKED = 'link-clicked';
@@ -75,10 +76,10 @@ export const TOOLBAR_SCROLL_EDGE_EPSILON_PX = 1;
 export const EXPR_PREVIEW_SAMPLE_LIMIT = 6;
 
 // ── node rendering ──────────────────────────────────────────
-export const MIN_NODE_RADIUS = 4;
+export const MIN_NODE_RADIUS = 0.3;
 export const MIN_POINTER_AREA_RADIUS = 8;
 export const NODE_RADIUS_MULTIPLIER = 3;
-export const MAX_NODE_VAL = 10;
+export const MAX_NODE_VAL = 64;
 // target on-screen label size in CSS px. labels are rendered at a roughly
 // constant screen size (world font = this / globalScale) so zooming in spreads
 // nodes apart without inflating the text — that is what lets the decluttering
@@ -110,7 +111,7 @@ export const LABEL_CELL_H_PX = 30;
 // time (ms) to ease the hover-highlight dim in/out so the spotlight effect
 // glides instead of snapping when a hover starts/ends
 export const HIGHLIGHT_INERTIA_MS = 160;
-export const UI_FONT_FAMILY = "'Ubuntu', 'Roboto', 'Segoe UI', 'Arial', sans-serif";
+export const UI_FONT_FAMILY = 'var(--font-family)';
 
 /**
  * Computes the display radius for a node.
@@ -126,23 +127,6 @@ export function nodePointerRadius(node: { val?: number }): number {
     return Math.max(MIN_POINTER_AREA_RADIUS, (node.val ?? 1) * NODE_RADIUS_MULTIPLIER);
 }
 
-// ── grid ────────────────────────────────────────────────────
-export const GRID_SPACING = 100;
-export const GRID_CROSS_HALF = 5;
-export const GRID_CENTER_CROSS_HALF = 10;
-export const MAX_CROSSES_PER_AXIS = 100;
-
-export const GRID_LINE_COLOR = 'rgba(0, 0, 0, 0.15)';
-export const GRID_LINE_COLOR_UNSTRESSED = 'rgba(0, 0, 0, 0.07)';
-export const GRID_CENTER_COLOR = 'rgba(255, 0, 0, 0.3)';
-export const GRID_CENTER_COLOR_UNSTRESSED = 'rgba(255, 0, 0, 0.1)';
-
-// dark-theme grid variants (lighter lines on a dark canvas)
-export const GRID_LINE_COLOR_DARK = 'rgba(255, 255, 255, 0.28)';
-export const GRID_LINE_COLOR_UNSTRESSED_DARK = 'rgba(255, 255, 255, 0.12)';
-export const GRID_CENTER_COLOR_DARK = 'rgba(255, 80, 80, 0.45)';
-export const GRID_CENTER_COLOR_UNSTRESSED_DARK = 'rgba(255, 80, 80, 0.18)';
-
 // In dark mode, edge colours darker than this HSL lightness (0..1) are raised
 // to this floor so they stay legible against the dark canvas. Hue, saturation
 // and opacity are preserved; already-bright edges are left untouched.
@@ -155,63 +139,14 @@ export const EDGE_DARK_MIN_LIGHTNESS = 0.55;
 export const NODE_DARK_MIN_LIGHTNESS = 0.4;
 
 // ── search & highlight ──────────────────────────────────────
-export const SEARCH_NOT_MATCHING_OPACITY = 0.5;
+export const SEARCH_NOT_MATCHING_OPACITY = 0.28;
 export const SCORE_EPSILON = 1e-12;
 
-export const SEARCH_COLOR_BEST = 'rgb(255, 0, 0)';
-export const SEARCH_COLOR_MID = 'rgb(255, 140, 0)';
-export const SEARCH_COLOR_WORST = 'rgb(195, 179, 41)';
+export const SEARCH_COLOR_BEST = 'rgb(100, 74, 242)';
+export const SEARCH_COLOR_MID = 'rgb(34, 115, 231)';
+export const SEARCH_COLOR_WORST = 'rgb(0, 164, 194)';
 
 // ── analytics heatmap scale (cold → hot) ────────────────────
 export const HEATMAP_COLOR_LOW = 'rgb(44, 123, 182)';
 export const HEATMAP_COLOR_MID = 'rgb(255, 225, 100)';
 export const HEATMAP_COLOR_HIGH = 'rgb(215, 25, 28)';
-
-// ── animation & zoom ────────────────────────────────────────
-export const MAX_ZOOM_BOOST = 3;
-export const REHEAT_ALPHA = 0.25;
-export const REHEAT_TIMEOUT_MS = 600;
-export const SEARCH_PULSE_BASE = 5;
-export const SEARCH_PULSE_FREQ = 2;
-
-// ── selection indicator (3D) ────────────────────────────────
-// the 2D renderer draws an animated red dashed ring around selected nodes
-// (canvas-drawn in graph-ui-2d.ts); the 3D renderer mounts an equivalent
-// billboarded, spinning dashed ring. these tune the 3D ring only
-export const SELECTION_RING_COLOR = 'rgb(255, 0, 0)';
-// number of dash segments around the ring
-export const SELECTION_RING_DASHES = 8;
-// fraction of each dash slot that is "on" (the rest is the gap)
-export const SELECTION_RING_DASH_FILL = 0.55;
-// world-unit gap between the node's surface and the ring
-export const SELECTION_RING_GAP = 4;
-// ring tube thickness (world units)
-export const SELECTION_RING_TUBE = 1.4;
-// ring spin rate (revolutions per second), mirroring the 2D rotation
-export const SELECTION_RING_SPIN_FREQ = 0.15;
-
-// ── D3 force defaults ───────────────────────────────────────
-export const D3_CHARGE_STRENGTH = -450;
-export const D3_LINK_DISTANCE = 140;
-export const D3_LINK_STRENGTH = 0.8;
-export const D3_COLLISION_BASE_RADIUS = 18;
-export const D3_COLLISION_RADIUS_PER_VAL = 6;
-export const D3_COLLISION_STRENGTH = 1;
-export const D3_COLLISION_ITERATIONS = 4;
-
-// how long the force engine keeps ticking before it stops (ms); lifted to
-// Infinity while a positive alpha target keeps the layout in motion
-export const D3_COOLDOWN_TIME_MS = 10000;
-
-// ── render-mode transition (2D ↔ 3D) ────────────────────────
-// switching renderers animates the 3D camera into an axis-aligned top-down
-// pose that projects the xy-plane exactly like the 2D canvas, so the swap is
-// seamless: 3D→2D glides overhead then swaps; 2D→3D starts aligned then orbits
-// out to reveal depth. this is the glide duration (ms)
-export const RENDER_TRANSITION_MS = 1000;
-
-// resting 3D pose the camera reveals to after a 2D→3D switch, as a tilt away
-// from straight-down (degrees): elevation lifts the camera off the plane and
-// azimuth swings it sideways so depth becomes legible
-export const RENDER_REVEAL_ELEVATION_DEG = 35;
-export const RENDER_REVEAL_AZIMUTH_DEG = 25;

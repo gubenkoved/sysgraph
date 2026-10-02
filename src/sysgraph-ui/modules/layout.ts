@@ -12,7 +12,7 @@ import {
     themeDark,
     themeLight,
 } from 'dockview-core';
-import { EVT_LAYOUT_CHANGED, EVT_THEME_CHANGED, PANEL_GRAPH } from './constants.js';
+import { EVT_LAYOUT_CHANGED, EVT_THEME_CHANGED, PANEL_GRAPH, PANEL_SETTINGS } from './constants.js';
 import { emit, on } from './event-bus.js';
 import { getTheme } from './theme.js';
 
@@ -50,7 +50,7 @@ export interface PanelSpec {
     onClose?: () => void;
     /**
      * optional compact icon shown inside this panel's tab, left of the title
-     * (e.g. the details pin hint); the title string is a native tooltip
+     * (e.g. the details pin hint); the title string becomes an app tooltip
      */
     tabIcon?: { name: string; title: string };
 }
@@ -62,6 +62,9 @@ const STORAGE_KEY = 'sysgraph:layout';
 const PLACEMENTS_KEY = 'sysgraph:panel-placements';
 // default size (px) of a side panel region when first opened next to the graph
 const DEFAULT_SIDE_PANEL_PX = 300;
+const MIN_SIDE_PANEL_WIDTH_PX = 260;
+const MIN_GRAPH_WIDTH_PX = 100;
+const DOCK_SASH_PX = 4;
 
 // last-known placement of a registered panel, captured while it was open
 interface PanelPlacement {
@@ -114,6 +117,7 @@ let prevGroupCount = 0;
 // re-equalized while restoring (enforcement suppressed), so we re-impose stable
 // sizes on the first stable layout event after restore
 let pendingEnforce = false;
+const groupMinimumWidths = new WeakMap<object, number>();
 
 function dockTheme() {
     return getTheme() === 'dark' ? themeDark : themeLight;
@@ -180,7 +184,7 @@ function createIconTab(panelId: string): ITabRenderer {
         const icon = document.createElement('md-icon');
         icon.className = 'tab-icon';
         icon.textContent = spec.tabIcon.name;
-        // native tooltip keeps the hint compact and free of header clipping
+        // the shared tooltip keeps the hint clear of header clipping
         icon.title = spec.tabIcon.title;
         root.appendChild(icon);
     }
@@ -245,6 +249,32 @@ export function unregisterPanel(id: string): void {
 
 function isMobile(): boolean {
     return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+function sidePanelMinWidth(): number {
+    const dockWidth = document.getElementById('dock')?.clientWidth ?? window.innerWidth;
+    // Keep enough room for the graph when a panel is docked beside it on a
+    // narrow screen. Mobile panels normally open below the graph instead.
+    return Math.min(MIN_SIDE_PANEL_WIDTH_PX, Math.max(0, dockWidth - MIN_GRAPH_WIDTH_PX - DOCK_SASH_PX));
+}
+
+// Saved layouts created before the minimum existed may restore a 100px group.
+// Apply the constraint to groups as well as newly added panels so tab changes
+// and dragging an old panel into a new group cannot bring that width back.
+function ensurePanelMinimumWidths(): boolean {
+    if (!api) return false;
+    const graphGroup = api.getPanel(PANEL_GRAPH)?.api.group;
+    if (!graphGroup) return false;
+    const minimumWidth = sidePanelMinWidth();
+    let changed = false;
+    for (const group of api.groups) {
+        if (group === graphGroup || group.panels.length === 0) continue;
+        if (groupMinimumWidths.get(group) === minimumWidth) continue;
+        group.api.setConstraints({ minimumWidth });
+        groupMinimumWidths.set(group, minimumWidth);
+        changed = true;
+    }
+    return changed;
 }
 
 // id of the first docked panel that is not the graph; new side panels join its
@@ -312,16 +342,25 @@ export function openPanel(id: string): void {
     // graph); panels joining an existing group as tabs inherit that group's size
     const opensNewRegion = position.referencePanel === PANEL_GRAPH;
     const horizontal = position.direction === 'left' || position.direction === 'right';
-    const sizePx = position.size ?? DEFAULT_SIDE_PANEL_PX;
+    const dockHeight = document.getElementById('dock')?.clientHeight ?? window.innerHeight;
+    const dockWidth = document.getElementById('dock')?.clientWidth ?? window.innerWidth;
+    const mobileSettingsHeight = Math.round(dockHeight * 0.6);
+    const minimumWidth = sidePanelMinWidth();
+    const sizePx = position.size ?? (
+        isMobile() && id === PANEL_SETTINGS && !horizontal
+            ? mobileSettingsHeight
+            : DEFAULT_SIDE_PANEL_PX
+    );
     api.addPanel({
         id,
         component: spec.component,
         title: spec.title,
+        minimumWidth,
         ...(spec.tabIcon ? { tabComponent: TAB_WITH_ICON } : {}),
         position: { referencePanel: position.referencePanel, direction: position.direction },
         ...(opensNewRegion
             ? horizontal
-                ? { initialWidth: sizePx }
+                ? { initialWidth: Math.max(minimumWidth, Math.min(sizePx, dockWidth - MIN_GRAPH_WIDTH_PX - DOCK_SASH_PX)) }
                 : { initialHeight: sizePx }
             : {}),
     });
@@ -486,9 +525,14 @@ function enforceStableSizes(): boolean {
                 break;
             }
         }
-        const size = target ?? DEFAULT_SIDE_PANEL_PX;
         const direction = deriveDirection(graphRect, rect);
         const horizontal = direction === 'left' || direction === 'right';
+        const size = horizontal
+            ? Math.max(
+                group.minimumWidth,
+                Math.min(target ?? DEFAULT_SIDE_PANEL_PX, mount.clientWidth - MIN_GRAPH_WIDTH_PX - DOCK_SASH_PX),
+            )
+            : target ?? DEFAULT_SIDE_PANEL_PX;
         const entry: SideGroup = {
             first,
             target: size,
@@ -609,6 +653,8 @@ function restoreLayout(): boolean {
         }
         reassertGraphGroup();
         reconcileRestoredPanels();
+        const minimumChanged = ensurePanelMinimumWidths();
+        pendingEnforce = pendingEnforce || minimumChanged;
         return true;
     } catch (err) {
         console.warn('failed to restore layout, using default', err);
@@ -644,11 +690,12 @@ export function initLayout(): void {
     } as DockviewComponentOptions);
 
     api.onDidLayoutChange(() => {
+        const minimumChanged = ensurePanelMinimumWidths();
         if (!restoring && !enforcing && !enforceScheduled && layoutStable()) {
             const count = api?.groups.length ?? 0;
             const structural = prevGroupCount !== 0 && count !== prevGroupCount;
             prevGroupCount = count;
-            if (structural) {
+            if (structural || minimumChanged) {
                 // a panel split into / out of its own group; dockview equalized
                 // the columns — re-impose stable sizes over frames so the graph
                 // absorbs the change while side panels keep their size. the

@@ -1,8 +1,5 @@
 // ── render mode (2D vs 3D) ──────────────────────────────────
-// Tracks whether the graph is rendered with the 2D canvas force-graph or the
-// 3D (Three.js/WebGL) variant. The choice is persisted so it survives reloads.
-// This module only owns the persisted value; graph-ui.ts owns the actual
-// renderer (re)build, driven by setRenderMode().
+// Tracks the WebGPU camera projection. The choice survives reloads.
 
 export type RenderMode = '2d' | '3d';
 
@@ -26,14 +23,13 @@ export function getRenderMode(): RenderMode {
     return currentMode;
 }
 
-/** Convenience predicate: true when the 3D renderer is active. */
+/** Convenience predicate: true when the 3D camera projection is active. */
 export function is3D(): boolean {
     return currentMode === '3d';
 }
 
 /**
- * Updates the in-memory mode and persists it. Does NOT rebuild the renderer —
- * that is graph-ui.ts's responsibility (it calls this from setRenderMode()).
+ * Updates the in-memory projection mode and persists it.
  */
 export function persistRenderMode(mode: RenderMode): void {
     currentMode = mode;

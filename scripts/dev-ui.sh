@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Start the Vite dev server inside Docker — no host Node.js required.
 # Proxies /api requests to the FastAPI backend (default: http://localhost:8000).
-# Run the FastAPI backend separately: python src/sysgraph/app.py
+# Run the FastAPI backend separately: ./scripts/dev-backend.sh
 # Usage: dev-ui.sh [--server <backend-url>] [--standalone]
 #   --server      Override the backend URL for /api proxy (default: http://localhost:8000)
 #   --standalone  Run the UI in standalone mode (no backend; import data manually)

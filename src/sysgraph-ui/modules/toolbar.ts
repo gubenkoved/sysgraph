@@ -2,7 +2,7 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE, TOOLBAR_SCROLL_EDGE_EPSILON_PX } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_RENDER_OPTIONS_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE, TOOLBAR_SCROLL_EDGE_EPSILON_PX } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { buildExampleMenuItems, type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -11,6 +11,7 @@ import { getVisibleGraph, requestRecenterView, setRenderMode } from './graph-ui.
 import { isPanelOpen, resetLayout, togglePanel } from './layout.js';
 import { is3D } from './render-mode.js';
 import { deleteSelectedNodes } from './selection.js';
+import { settings } from './settings.js';
 import type { ShareDisplayMode, ShareEncodeResult } from './share.js';
 import type { EditSubTool } from './state.js';
 import { setAnalyticsActive, setCurrentTool, setEditActive, setEditSubTool, setGraphDirty, state } from './state.js';
@@ -36,6 +37,7 @@ const rectAddModeBtn = document.getElementById('rectAddMode') as HTMLButtonEleme
 const toggleSettingsBtn = document.getElementById('toggleSettings') as HTMLElement;
 const themeToggleBtn = document.getElementById('themeToggle') as HTMLElement;
 const recenterViewBtn = document.getElementById('recenterView') as HTMLElement;
+const projectionToggleBtn = document.getElementById('projectionToggle') as HTMLElement;
 const logoButton = document.getElementById('toolbar-logo-button') as HTMLButtonElement;
 const toolbarLogo = document.getElementById('toolbar-logo') as HTMLImageElement;
 const toolbarEl = document.getElementById('toolbar') as HTMLElement;
@@ -158,7 +160,7 @@ export function setTool(tool: Tool, selectionCanvas: HTMLCanvasElement, canvas: 
         selectionCanvas.style.cursor = 'crosshair';
     } else {
         selectionCanvas.style.pointerEvents = 'none';
-        canvas.style.cursor = tool === 'edit' ? 'crosshair' : 'default';
+        canvas.style.cursor = tool === 'edit' ? 'crosshair' : 'var(--graph-cursor-grab)';
     }
 
     if (tool === 'search') {
@@ -532,6 +534,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     unselectBtn.addEventListener('click', () => {
         state.selection.selectedNodeIds.clear();
         updateGraphInfo();
+        emit(EVT_SELECTION_CHANGED, null);
     });
 
     invertSelectionBtn.addEventListener('click', () => {
@@ -543,6 +546,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             }
         }
         updateGraphInfo();
+        emit(EVT_SELECTION_CHANGED, null);
     });
 
     rectAddModeBtn.addEventListener('click', () => {
@@ -556,6 +560,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
                 state.selection.selectedNodeIds.add(nodeId);
             }
             updateGraphInfo();
+            emit(EVT_SELECTION_CHANGED, null);
         }
     });
 
@@ -613,6 +618,20 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     recenterViewBtn.addEventListener('click', () => {
         requestRecenterView();
     });
+    const updateProjectionToggle = (): void => {
+        const orthographic = settings.cameraProjection === 'orthographic';
+        const title = orthographic ? 'Switch to perspective camera' : 'Switch to orthographic camera';
+        projectionToggleBtn.title = title;
+        projectionToggleBtn.setAttribute('aria-label', title);
+        projectionToggleBtn.setAttribute('aria-pressed', String(orthographic));
+        projectionToggleBtn.classList.toggle('active', orthographic);
+    };
+    projectionToggleBtn.addEventListener('click', () => {
+        settings.cameraProjection = settings.cameraProjection === 'perspective' ? 'orthographic' : 'perspective';
+        emit(EVT_RENDER_OPTIONS_CHANGED, null);
+    });
+    on(EVT_RENDER_OPTIONS_CHANGED, updateProjectionToggle);
+    updateProjectionToggle();
 
     // dark mode toggle
     themeToggleBtn.addEventListener('click', () => {
@@ -636,6 +655,14 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
 
     // keyboard shortcuts
     document.addEventListener('keydown', async (event) => {
+        if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {
+            event.preventDefault();
+            if (state.currentTool !== 'search') setTool('search', selectionCanvas, canvas);
+            searchInput.focus();
+            searchInput.select();
+            return;
+        }
+
         const el = event.target as HTMLElement;
 
         const isTyping =

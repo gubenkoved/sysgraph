@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="./icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Roboto:wght@300;400;500;700&family=Ubuntu:wght@300;400;500;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -39,7 +39,7 @@
         <md-icon-button id="toolRectSelect" title="Rectangular selection (R)">
           <md-icon>select_all</md-icon>
         </md-icon-button>
-        <md-icon-button id="toolSearch" title="Search">
+        <md-icon-button id="toolSearch" title="Search nodes (Ctrl/Cmd+F)">
           <md-icon>search</md-icon>
         </md-icon-button>
         <md-icon-button id="toolEdit" title="Edit graph (E)">
@@ -83,8 +83,14 @@
             <md-icon id="physicsToggleIcon">motion_blur</md-icon>
           </md-icon-button>
         </span>
+        <md-icon-button id="physicsFastForward" title="Fast forward physics" aria-label="Fast forward physics" aria-pressed="false">
+          <md-icon>fast_forward</md-icon>
+        </md-icon-button>
         <md-icon-button id="recenterView" title="Recenter view (F)">
           <md-icon>recenter</md-icon>
+        </md-icon-button>
+        <md-icon-button id="projectionToggle" title="Switch to orthographic camera" aria-label="Switch to orthographic camera" aria-pressed="false">
+          <md-icon>view_in_ar</md-icon>
         </md-icon-button>
         <md-icon-button id="themeToggle" title="Toggle dark mode">
           <md-icon>dark_mode</md-icon>
@@ -205,11 +211,11 @@
         </div>
 
         <div id="zoom-indicator">
-          <md-icon-button id="zoomOut" title="Zoom Out">
+          <md-icon-button id="zoomOut" title="Zoom out">
             <md-icon>remove</md-icon>
           </md-icon-button>
           <span id="zoomLevel">100%</span>
-          <md-icon-button id="zoomIn" title="Zoom In">
+          <md-icon-button id="zoomIn" title="Zoom in">
             <md-icon>add</md-icon>
           </md-icon-button>
         </div>

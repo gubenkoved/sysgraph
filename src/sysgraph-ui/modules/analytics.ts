@@ -279,7 +279,23 @@ export function selectAlgorithm(id: AnalyticsAlgorithmId): void {
 
 /** Begins awaiting a node pick for the given role. */
 export function startPick(role: string): void {
-    setAnalyticsAwaitingPick(role);
+    setAnalyticsAwaitingPick(state.analytics.awaitingPickRole === role ? null : role);
+    emit(EVT_ANALYTICS_UPDATED, null);
+}
+
+/** Commits a node chosen in the graph or the analytics search list. */
+export function chooseAnalyticsNode(role: string, nodeId: string): void {
+    setAnalyticsPick(role, nodeId);
+    setAnalyticsAwaitingPick(null);
+    emit(EVT_ANALYTICS_UPDATED, null);
+}
+
+/** Marks a result-row node as the current stop on a shortest path. */
+export function focusAnalyticsPathNode(nodeId: string): void {
+    const decoration = state.analytics.decoration;
+    if (decoration?.kind !== 'subset' || decoration.emphasis !== 'path' || !decoration.nodeIds.has(nodeId)) return;
+    decoration.focusedNodeId = nodeId;
+    refreshGraphColors();
     emit(EVT_ANALYTICS_UPDATED, null);
 }
 
@@ -287,9 +303,7 @@ export function startPick(role: string): void {
 export function handleAnalyticsNodeClick(node: FGNode): void {
     const role = state.analytics.awaitingPickRole;
     if (!role) return;
-    setAnalyticsPick(role, node.id);
-    setAnalyticsAwaitingPick(null);
-    emit(EVT_ANALYTICS_UPDATED, null);
+    chooseAnalyticsNode(role, node.id);
 }
 
 // ── running algorithms ──────────────────────────────────────
@@ -303,15 +317,16 @@ function decorateSubset(
     nodeIds: Iterable<string>,
     edgeIds: Iterable<string>,
     edgeWidthMultiplier?: number,
+    emphasis?: 'path',
 ): void {
     setAnalyticsDecoration({
         kind: 'subset',
         nodeIds: new Set(nodeIds),
         edgeIds: new Set(edgeIds),
         edgeWidthMultiplier,
+        emphasis,
     });
-    // 2D redraws every frame, but the 3D renderer only recolors on an explicit
-    // refresh, so push the new decoration to the active renderer
+    // Push the new decoration into the WebGPU buffers before the next frame.
     refreshGraphColors();
 }
 
@@ -381,6 +396,8 @@ export function runAlgorithm(): string | null {
         const targetId = state.analytics.pickedNodeIds.target;
         if (!sourceId) return 'Pick a source node';
         if (!targetId) return 'Pick a target node';
+        if (!graph.getNode(sourceId)) return 'Source node is hidden by the current filters';
+        if (!graph.getNode(targetId)) return 'Target node is hidden by the current filters';
         const respectDirection = state.analytics.params.respectDirection === 'true';
         const result = shortestPath(graph, sourceId, targetId, weightFn, respectDirection);
         if (result.found) {
@@ -388,9 +405,11 @@ export function runAlgorithm(): string | null {
                 result.nodeIds,
                 result.edgeIds,
                 readNumberParam('pathEdgeWidth', DEFAULT_PATH_EDGE_WIDTH_MULTIPLIER),
+                'path',
             );
         } else {
             setAnalyticsDecoration(null);
+            refreshGraphColors();
         }
         setAnalyticsResult({
             kind: 'shortest-path',
@@ -405,6 +424,7 @@ export function runAlgorithm(): string | null {
     if (id === 'distance') {
         const sourceId = state.analytics.pickedNodeIds.source;
         if (!sourceId) return 'Pick a source node';
+        if (!graph.getNode(sourceId)) return 'Source node is hidden by the current filters';
         // dedicated weight expression (length, then weight, then 1)
         const distanceWeightFn = makeEdgeWeightFn(
             state.analytics.params.distanceEdgeWeight ?? DEFAULT_EDGE_WEIGHT_EXPRESSION,

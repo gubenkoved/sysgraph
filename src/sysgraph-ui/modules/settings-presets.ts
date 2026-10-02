@@ -1,5 +1,5 @@
 import type { SettingsShape } from './settings.js';
-import { createDefaultSettings, settings } from './settings.js';
+import { createDefaultSettings, settings, validGridStep, validLabelRendering, validLabelStyle, validLayoutDirection, validLayoutMode, validSceneBrightness } from './settings.js';
 
 const STORAGE_KEY = 'sysgraph:settings-presets';
 const STORAGE_VERSION = 1;
@@ -42,6 +42,37 @@ function createEmptyStore(): SettingsPresetStore {
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Keeps saved display blocks compatible while dropping obsolete D3 controls. */
+function compatibleSettings(source: Record<string, unknown>): Record<string, unknown> {
+    const defaults = createDefaultSettings() as unknown as Record<string, unknown>;
+    const translated = { ...source };
+    const legacy: Record<string, string> = {
+        d3EnablePhysics: 'gpuEnablePhysics',
+        d3LinkDistance: 'gpuLinkDistance',
+        d3LinkDistanceMode: 'gpuLinkDistanceMode',
+        d3LinkDistanceExpression: 'gpuLinkDistanceExpression',
+        d3Charge: 'gpuCharge',
+        d3LinkStrength: 'gpuLinkStrength',
+        d3CollisionMultiplier: 'gpuCollisionMultiplier',
+        d3VelocityDecay: 'gpuVelocityDecay',
+        d3ForceXYStrength: 'gpuForceXYStrength',
+    };
+    for (const [oldKey, newKey] of Object.entries(legacy)) {
+        if (!(newKey in translated) && oldKey in translated) translated[newKey] = translated[oldKey];
+    }
+    if (translated.labelDensity === 'all') translated.labelDensity = 'auto';
+    if ('layoutMode' in translated && !validLayoutMode(translated.layoutMode)) delete translated.layoutMode;
+    if ('layoutDirection' in translated && !validLayoutDirection(translated.layoutDirection)) delete translated.layoutDirection;
+    if ('cameraProjection' in translated && translated.cameraProjection !== 'perspective' && translated.cameraProjection !== 'orthographic') delete translated.cameraProjection;
+    if ('nodeRenderStyle' in translated && translated.nodeRenderStyle !== 'simple' && translated.nodeRenderStyle !== 'solid') delete translated.nodeRenderStyle;
+    if ('sceneBrightness' in translated && !validSceneBrightness(translated.sceneBrightness)) delete translated.sceneBrightness;
+    if ('showGrid' in translated && typeof translated.showGrid !== 'boolean') delete translated.showGrid;
+    if ('gridStep' in translated && !validGridStep(translated.gridStep)) delete translated.gridStep;
+    if ('labelStyle' in translated && !validLabelStyle(translated.labelStyle)) delete translated.labelStyle;
+    if ('labelRendering' in translated && !validLabelRendering(translated.labelRendering)) delete translated.labelRendering;
+    return Object.fromEntries(Object.entries(translated).filter(([key]) => key in defaults));
 }
 
 function readPresetStore(): SettingsPresetStore {
@@ -182,7 +213,7 @@ export function applySettingsPreset(name: string, source: PresetSource): void {
         throw new Error(`Preset not found: ${name} (${source})`);
     }
 
-    applyObjectInPlace(settings as unknown as Record<string, unknown>, preset as unknown as Record<string, unknown>, false);
+    applyObjectInPlace(settings as unknown as Record<string, unknown>, compatibleSettings(preset as unknown as Record<string, unknown>), false);
 }
 
 export function resetSettingsToDefaults(): void {
@@ -206,7 +237,7 @@ export function applyEmbeddedDisplaySettings(
 ): void {
     // start from defaults so the result is independent of current settings
     const base = createDefaultSettings() as unknown as Record<string, unknown>;
-    applyObjectInPlace(base, display, false);
+    applyObjectInPlace(base, compatibleSettings(display), false);
     applyObjectInPlace(
         settings as unknown as Record<string, unknown>,
         base,
@@ -235,7 +266,7 @@ export function importSettingsFromJson(text: string): void {
     }
     applyObjectInPlace(
         settings as unknown as Record<string, unknown>,
-        parsed,
+        compatibleSettings(parsed),
         false,
     );
 }

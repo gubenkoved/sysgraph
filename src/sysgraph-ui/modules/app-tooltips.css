@@ -1,0 +1,40 @@
+.app-tooltip {
+  position: fixed;
+  z-index: 450;
+  box-sizing: border-box;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 8px 11px;
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  background: var(--bg-popover);
+  box-shadow: 0 5px 18px var(--shadow-sm);
+  color: var(--text-primary);
+  font: 500 12px/1.4 var(--font-family);
+  letter-spacing: 0.01em;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 0s linear 120ms;
+}
+
+.app-tooltip.is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+.app-tooltip[data-placement='top'] {
+  transform: translateY(3px);
+}
+
+.app-tooltip[data-placement='top'].is-visible {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-tooltip { transition: none; }
+}
