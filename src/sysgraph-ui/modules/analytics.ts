@@ -283,6 +283,15 @@ export function startPick(role: string): void {
     emit(EVT_ANALYTICS_UPDATED, null);
 }
 
+/** Marks a result-row node as the current stop on a shortest path. */
+export function focusAnalyticsPathNode(nodeId: string): void {
+    const decoration = state.analytics.decoration;
+    if (decoration?.kind !== 'subset' || decoration.emphasis !== 'path' || !decoration.nodeIds.has(nodeId)) return;
+    decoration.focusedNodeId = nodeId;
+    refreshGraphColors();
+    emit(EVT_ANALYTICS_UPDATED, null);
+}
+
 /** Handles a node click while analytics is awaiting a pick. */
 export function handleAnalyticsNodeClick(node: FGNode): void {
     const role = state.analytics.awaitingPickRole;
@@ -303,15 +312,16 @@ function decorateSubset(
     nodeIds: Iterable<string>,
     edgeIds: Iterable<string>,
     edgeWidthMultiplier?: number,
+    emphasis?: 'path',
 ): void {
     setAnalyticsDecoration({
         kind: 'subset',
         nodeIds: new Set(nodeIds),
         edgeIds: new Set(edgeIds),
         edgeWidthMultiplier,
+        emphasis,
     });
-    // 2D redraws every frame, but the 3D renderer only recolors on an explicit
-    // refresh, so push the new decoration to the active renderer
+    // Push the new decoration into the WebGPU buffers before the next frame.
     refreshGraphColors();
 }
 
@@ -388,9 +398,11 @@ export function runAlgorithm(): string | null {
                 result.nodeIds,
                 result.edgeIds,
                 readNumberParam('pathEdgeWidth', DEFAULT_PATH_EDGE_WIDTH_MULTIPLIER),
+                'path',
             );
         } else {
             setAnalyticsDecoration(null);
+            refreshGraphColors();
         }
         setAnalyticsResult({
             kind: 'shortest-path',

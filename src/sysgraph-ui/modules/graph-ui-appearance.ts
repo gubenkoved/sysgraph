@@ -5,7 +5,9 @@ import {
     HEATMAP_COLOR_HIGH, HEATMAP_COLOR_LOW, HEATMAP_COLOR_MID,
     HIGHLIGHT_INERTIA_MS,
     MAX_NODE_VAL,
+    MIN_NODE_RADIUS,
     NODE_DARK_MIN_LIGHTNESS,
+    NODE_RADIUS_MULTIPLIER,
     SCORE_EPSILON,
     SEARCH_COLOR_BEST, SEARCH_COLOR_MID, SEARCH_COLOR_WORST,
     SEARCH_NOT_MATCHING_OPACITY,
@@ -25,9 +27,7 @@ import type { HighlightState } from './state.js';
 import { state } from './state.js';
 import { getTheme } from './theme.js';
 
-// This module holds the renderer-agnostic appearance logic — colors, sizes,
-// labels and the resolve* accessors — shared by the 2D canvas renderer and the
-// 3D WebGL renderer so both decorate nodes and links identically.
+// Renderer-independent appearance rules for WebGPU nodes, edges and labels.
 
 // ── label & sizing helpers ──────────────────────────────────
 
@@ -60,31 +60,47 @@ export function getNodeLabel(node: FGNode): string {
     }
 }
 
+function normalizeNodeVal(value: number): number {
+    return Number.isFinite(value)
+        ? Math.max(MIN_NODE_RADIUS / NODE_RADIUS_MULTIPLIER, Math.min(MAX_NODE_VAL, value)) : 1;
+}
+
+let compiledSizingSource: string | null = null;
+let compiledSizingExpression: ((...args: unknown[]) => unknown) | null = null;
+
 export function getNodeVal(node: FGNode, degree: number): number {
+    let value: number;
     switch (settings.nodeSizingMode) {
         case 'constant':
-            return settings.nodeSizingConstant;
+            value = settings.nodeSizingConstant;
+            break;
         case 'expression':
             try {
                 // expose node keys plus each property as a bare identifier;
                 // properties < node so well-known node keys win
-                const fn = buildScopedExpression(
-                    settings.nodeSizingExpression,
-                    NODE_SIZING_SCOPE.params,
-                    NODE_SIZING_SCOPE.spread,
-                );
-                const val = (fn(node, node.properties ?? {}, degree) as number) || 1;
-                return Math.min(val, MAX_NODE_VAL);
+                if (compiledSizingSource !== settings.nodeSizingExpression) {
+                    compiledSizingSource = settings.nodeSizingExpression;
+                    compiledSizingExpression = null;
+                    compiledSizingExpression = buildScopedExpression(
+                        settings.nodeSizingExpression,
+                        NODE_SIZING_SCOPE.params,
+                        NODE_SIZING_SCOPE.spread,
+                    );
+                }
+                value = Number(compiledSizingExpression?.(node, node.properties ?? {}, degree));
             } catch {
-                return 1;
+                value = 1;
             }
+            break;
         default:
-            return Math.sqrt(Math.max(1, degree));
+            value = Math.sqrt(Math.max(1, degree));
     }
+    const scale = Number.isFinite(settings.nodeSizeScale) ? settings.nodeSizeScale : 1;
+    return normalizeNodeVal(value * scale);
 }
 
 /**
- * Compiles a link-distance expression into a d3 link-force distance accessor.
+ * Compiles a link-distance expression into a GPU spring distance accessor.
  * The expression is evaluated with the edge's `properties` in scope plus the
  * resolved `source`/`target` node objects (mirroring the edge-weight mechanism),
  * so real-world metrics like `properties.length` can drive layout distance. On
@@ -522,6 +538,11 @@ export function resolveLinkWidth(l: FGLink): number {
     // its configurable multiplier while the analytics tool is on
     const decoration = state.analytics.active ? state.analytics.decoration : null;
     if (decoration?.kind === 'subset' && decoration.edgeIds.has(l.id)) {
+        if (decoration.emphasis === 'path') {
+            // An opaque path must remain legible even when the graph's edge type
+            // has a near-transparent color or a very small configured width.
+            return Math.max(1, base) * 1.7 * (decoration.edgeWidthMultiplier ?? 1);
+        }
         return base * (decoration.edgeWidthMultiplier ?? 1);
     }
     return base;
@@ -536,6 +557,9 @@ export function resolveLinkColor(l: FGLink): string {
     // the user switches to another tool such as search
     const decoration = state.analytics.active ? state.analytics.decoration : null;
     if (decoration) {
+        if (decoration.kind === 'subset' && decoration.emphasis === 'path' && decoration.edgeIds.has(l.id)) {
+            return 'rgba(255, 141, 34, 0.98)';
+        }
         // heatmap recolors nodes only; leave edges at their normal color
         if (decoration.kind === 'heatmap') {
             return fillStyle;
@@ -579,7 +603,7 @@ export function resolveLinkColor(l: FGLink): string {
         fillStyle = colorAdjustAlpha(fillStyle, blendHighlightDim(dimTarget));
     }
 
-    return fillStyle;
+    return colorAdjustAlpha(fillStyle, alphaMultiplier);
 }
 
 export function resolveLinkArrowLength(link: FGLink): number {

@@ -176,8 +176,8 @@ function normalizeEdges(raw: unknown): GraphEdge[] {
 }
 
 /**
- * Drops edges whose endpoints do not resolve to a known node id. This guards
- * the force-graph layout, whose d3-force link binding throws on a missing node.
+ * Drops edges whose endpoints do not resolve to a known node id. This keeps
+ * the GPU adjacency and render buffers valid.
  */
 function dropDanglingEdges(
     nodes: GraphNode[],

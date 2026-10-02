@@ -194,6 +194,12 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'src/sysgraph/dist'),
     emptyOutDir: true,
+    rolldownOptions: {
+      input: {
+        main: resolve(__dirname, 'src/sysgraph-ui/index.html'),
+        enginePoc: resolve(__dirname, 'src/sysgraph-ui/engine-poc.html'),
+      },
+    },
   },
   plugins: [
     {

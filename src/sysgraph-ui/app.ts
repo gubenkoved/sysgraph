@@ -1,14 +1,16 @@
 import { initAnalyticsPanel } from './modules/analytics-panel.js';
+import { initAppTooltips } from './modules/app-tooltips.js';
 import { type LoadedGraphData, loadDataFromApi, loadExampleGraph, parseGraphData, serializeGraph } from './modules/data-io.js';
 import { emit, on, registerHandler } from './modules/event-bus.js';
 import { Graph } from './modules/graph.js';
-import { applyD3Params, autoAdjustCurvature, centerOnNode, computeMatchColors, getVisibleGraph, rebuildGraphObjects, refreshGraphColors, refreshGraphLinkWidths, refreshGraphUI, requestRecenterView } from './modules/graph-ui.js';
+import { applyGpuParams, centerOnNode, computeMatchColors, GraphViewInstance, getVisibleGraph, rebuildGraphObjects, refreshGraphColors, refreshGraphLinkWidths, refreshGraphSelection, refreshGraphUI, refreshNodeSizing, refreshRenderOptions, requestRecenterView } from './modules/graph-ui.js';
 import { initLayout } from './modules/layout.js';
 import { initLongPress } from './modules/long-press.js';
 import { initPhysicsIndicator } from './modules/physics-indicator.js';
 import { initQuickStart, markQuickStartReady } from './modules/quick-start.js';
 import { SearchSyntaxError, search } from './modules/search.js';
 import { initSelection } from './modules/selection.js';
+import { persistSettings } from './modules/settings.js';
 import { maybeApplyGraphDisplay, updateDynamicGraphPanes } from './modules/settings-pane.js';
 import { snapshotCurrentSettings } from './modules/settings-presets.js';
 import { decodeShareFromHash, encodeGraphToShareUrl, type ShareDisplayMode, stripShareHash } from './modules/share.js';
@@ -22,9 +24,11 @@ import './modules/templates-panel.js';
 import {CMD_EXPORT, CMD_IMPORT,
     CMD_LOAD_EXAMPLE,
     CMD_RELOAD, CMD_SHARE, EVT_CLEAR_CLICKED,
-    EVT_COLORS_UPDATED,
-    EVT_CURVATURE_UPDATED, EVT_D3_PARAMS_CHANGED,EVT_FILTERS_UPDATED,
+    EVT_COLORS_UPDATED,EVT_FILTERS_UPDATED,
+    EVT_GPU_PARAMS_CHANGED,
     EVT_GRAPH_UPDATED,
+    EVT_NODE_SIZING_UPDATED,
+    EVT_RENDER_OPTIONS_CHANGED,
     EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_SETTINGS_UPDATED,
     EVT_THEME_CHANGED,
     EVT_VISIBLE_GRAPH_CHANGED,
@@ -63,6 +67,7 @@ if (STANDALONE) {
 
 // ── theme (apply persisted choice before the UI renders) ────
 initTheme();
+initAppTooltips();
 
 // ── search ──────────────────────────────────────────────────
 
@@ -116,11 +121,11 @@ function applySearch(expression: string): void {
 // ── event wiring ────────────────────────────────────────────
 on(EVT_GRAPH_UPDATED, async () => {
     updateDynamicGraphPanes();
-    await refreshGraphUI();
+    await refreshGraphUI(true);
     // reconcile the engine after the visible graph changed: it warms up for a
     // non-empty graph and stays frozen for an empty one (e.g. after a clear),
     // even when the display mode skipped re-emitting the d3-params event
-    applyD3Params();
+    applyGpuParams();
     updateGraphInfo();
 });
 
@@ -146,7 +151,7 @@ on(EVT_VISIBLE_GRAPH_CHANGED, () => {
     }
 });
 
-on(EVT_SELECTION_CHANGED, () => updateGraphInfo());
+on(EVT_SELECTION_CHANGED, () => { updateGraphInfo(); refreshGraphSelection(); });
 
 on(EVT_SEARCH_CYCLE, ({ direction }: { direction: 1 | -1 }) => {
     const search = state.search;
@@ -157,8 +162,8 @@ on(EVT_SEARCH_CYCLE, ({ direction }: { direction: 1 | -1 }) => {
         : ((search.currentMatchIndex + direction) % total + total) % total;
     search.currentMatchIndex = next;
     const nodeId = search.matches[next].nodeId;
-    // centerOnNode dispatches to the 2D pan/zoom or the 3D camera orbit
-    centerOnNode(nodeId, 500);
+    GraphViewInstance.refreshCurrentSearchMatch();
+    centerOnNode(nodeId, 650);
     searchMatchCountEl.textContent = `${next + 1} / ${total} match${total !== 1 ? 'es' : ''}`;
     searchMatchCountEl.style.visibility = 'visible';
 });
@@ -176,13 +181,18 @@ on(EVT_WIDTHS_UPDATED, () => {
 });
 
 on(EVT_THEME_CHANGED, () => {
-    // theme switch rebakes the 3D label sprite colors, so rebuild objects (in
-    // 2D this is just a repaint)
+    // Rebake glyph colors and update the WebGPU clear color.
     rebuildGraphObjects();
 });
 
-on(EVT_CURVATURE_UPDATED, autoAdjustCurvature);
-on(EVT_D3_PARAMS_CHANGED, applyD3Params);
+on(EVT_GPU_PARAMS_CHANGED, applyGpuParams);
+on(EVT_NODE_SIZING_UPDATED, refreshNodeSizing);
+on(EVT_RENDER_OPTIONS_CHANGED, refreshRenderOptions);
+
+for (const event of [EVT_GRAPH_UPDATED, EVT_FILTERS_UPDATED, EVT_SETTINGS_UPDATED, EVT_NODE_SIZING_UPDATED,
+    EVT_COLORS_UPDATED, EVT_WIDTHS_UPDATED, EVT_GPU_PARAMS_CHANGED, EVT_RENDER_OPTIONS_CHANGED]) {
+    on(event, persistSettings);
+}
 
 // ── command handlers ────────────────────────────────────────
 registerHandler(CMD_EXPORT, () => {
@@ -323,7 +333,7 @@ async function tryLoadSharedGraph(): Promise<boolean> {
 
 // ── initial load ────────────────────────────────────────────
 window.addEventListener('load', async () => {
-    emit(EVT_D3_PARAMS_CHANGED, null);
+    emit(EVT_GPU_PARAMS_CHANGED, null);
 
     // a shared-link hash takes precedence over both the backend and the
     // standalone empty-graph path

@@ -15,8 +15,8 @@ export function bfs(graph: Graph, startNodeId: string, maxDistance: number): Bfs
     const queue: { nodeId: string; distance: number }[] = [{ nodeId: startNodeId, distance: 0 }];
     nodeDistancesMap.set(startNodeId, 0);
 
-    while (queue.length > 0) {
-        const { nodeId, distance } = queue.shift()!;
+    for (let head = 0; head < queue.length; head++) {
+        const { nodeId, distance } = queue[head]!;
 
         if (distance >= maxDistance)
             continue;

@@ -3,8 +3,8 @@ import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import type { FolderApi } from 'tweakpane';
 import { Pane } from 'tweakpane';
 import {
-    EVT_COLORS_UPDATED, EVT_CURVATURE_UPDATED,
-    EVT_D3_PARAMS_CHANGED, EVT_FILTERS_UPDATED,EVT_SETTINGS_UPDATED,
+    EVT_COLORS_UPDATED,EVT_FILTERS_UPDATED,
+    EVT_GPU_PARAMS_CHANGED, EVT_NODE_SIZING_UPDATED, EVT_RENDER_OPTIONS_CHANGED, EVT_SETTINGS_UPDATED,
     EVT_WIDTHS_UPDATED,
     PANEL_SETTINGS,
 } from './constants.js';
@@ -26,7 +26,7 @@ import {
     getGraphDisplayMode,
     setGraphDisplayMode,
 } from './graph-display.js';
-import { refreshGraphColors } from './graph-ui.js';
+import { GraphViewInstance, refreshGraphColors } from './graph-ui.js';
 import {
     validateEdgeFilterExpression,
     validateLinkDistanceExpression,
@@ -34,7 +34,6 @@ import {
 } from './graph-ui-appearance.js';
 import { registerPanel } from './layout.js';
 import { setFrameHooks } from './render-hooks.js';
-import type { SettingsShape } from './settings.js';
 import {
     getEdgeColor,
     getEdgeWidth,
@@ -55,7 +54,7 @@ import {
     saveSettingsPreset,
     snapshotCurrentSettings,
 } from './settings-presets.js';
-import { clearPhysicsOverride, getGraph, setGraphDirty, setHighlight } from './state.js';
+import { clearPhysicsOverride, getGraph, setGraphDirty, setHighlight, state } from './state.js';
 import { showActionToast, showError, showInfoToast } from './util.js';
 
 function getRequiredElement(id: string): HTMLElement {
@@ -99,6 +98,7 @@ registerPanel({
 // setting is changed outside the pane (e.g. the floating physics toggle) so the
 // corresponding control stays in sync
 export function syncSettingsPane(): void {
+    updateLayoutVisibility();
     pane.refresh();
 }
 
@@ -132,99 +132,130 @@ function getErrorMessage(err: unknown): string {
     return err instanceof Error ? err.message : String(err);
 }
 
-// ── d3 simulation parameters (data-driven) ──────────────────
-const d3RenderingSettingsFolder = tagFolder(pane.addFolder({ title: 'd3 forces settings', expanded: false }), 'forces');
-
-const d3Params: { key: keyof SettingsShape; label: string; min: number; max: number; step: number }[] = [
-    { key: 'd3Charge', label: 'charge force', min: -800, max: 100, step: 10 },
-    { key: 'd3LinkStrength', label: 'link strength', min: 0.0, max: 1.0, step: 0.01 },
-    { key: 'd3CollisionMultiplier', label: 'collision', min: 0.5, max: 2.0, step: 0.05 },
-    { key: 'd3AlphaTarget', label: 'alpha target', min: 0.0, max: 0.5, step: 0.01 },
-    { key: 'd3VelocityDecay', label: 'velocity decay', min: 0.01, max: 0.99, step: 0.01 },
-    { key: 'd3ForceXYStrength', label: 'XY centering', min: 0.00, max: 0.99, step: 0.01 },
-];
-
-d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3EnablePhysics', { label: 'enable physics' }).on('change', () => {
-    // a deliberate change to the persisted setting wins over any transient
-    // toolbar override, so drop it
-    clearPhysicsOverride();
-    emit(EVT_D3_PARAMS_CHANGED, null);
-});
-
-for (const p of d3Params) {
-    d3RenderingSettingsFolder.addBinding(
-        settings as unknown as Record<string, unknown>,
-        p.key,
-        { label: p.label, min: p.min, max: p.max, step: p.step },
-    ).on('change', () => {
-        emit(EVT_D3_PARAMS_CHANGED, null);
-    });
-}
-
-// ── link distance (constant slider or per-link expression) ──
-const linkDistanceModeBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceMode', {
-    label: 'link distance mode',
-    view: 'list',
-    options: [
-        { text: 'constant', value: 'constant' },
-        { text: 'expression', value: 'expression' },
+// ── automatic placement ─────────────────────────────────────
+const layoutFolder = tagFolder(pane.addFolder({ title: 'automatic layout', expanded: true }), 'forces');
+const layoutSettings = settings as unknown as Record<string, unknown>;
+let layoutChangeTimer = 0;
+const layoutChange = (): void => {
+    clearTimeout(layoutChangeTimer);
+    layoutChangeTimer = window.setTimeout(() => emit(EVT_GPU_PARAMS_CHANGED, null), 120);
+};
+const layoutChangeNow = (): void => {
+    clearTimeout(layoutChangeTimer);
+    emit(EVT_GPU_PARAMS_CHANGED, null);
+};
+const layoutModeBinding = layoutFolder.addBinding(layoutSettings, 'layoutMode', {
+    label: 'algorithm', view: 'list', options: [
+        { text: 'GPU force', value: 'force' },
+        { text: 'layered flow', value: 'layered' },
+        { text: 'radial distance', value: 'radial' },
+        { text: 'circular', value: 'circular' },
+        { text: 'degree rings', value: 'concentric' },
+        { text: 'grid', value: 'grid' },
     ],
 });
-
-const linkDistanceConstantBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistance', {
-    label: 'link distance',
-    min: 40,
-    max: 500,
-    step: 5,
+const layoutSpacingBinding = layoutFolder.addBinding(layoutSettings, 'layoutSpacing', {
+    label: 'node spacing', min: 30, max: 300, step: 10,
+}).on('change', layoutChange);
+const layoutRankSpacingBinding = layoutFolder.addBinding(layoutSettings, 'layoutRankSpacing', {
+    label: 'level spacing', min: 40, max: 400, step: 10,
+}).on('change', layoutChange);
+const layoutDirectionBinding = layoutFolder.addBinding(layoutSettings, 'layoutDirection', {
+    label: 'direction', view: 'list', options: [
+        { text: 'top to bottom', value: 'TB' }, { text: 'bottom to top', value: 'BT' },
+        { text: 'left to right', value: 'LR' }, { text: 'right to left', value: 'RL' },
+    ],
+}).on('change', layoutChangeNow);
+const layoutRootBinding = layoutFolder.addBinding(layoutSettings, 'layoutRootId', {
+    label: 'root node ID',
+}).on('change', layoutChange);
+const selectedRootButton = layoutFolder.addButton({ title: 'use selected node as root' }).on('click', () => {
+    const selected = state.selection.selectedNodeIds.values().next().value;
+    if (!selected) {
+        showInfoToast('Select a node first to make it the layout root.');
+        return;
+    }
+    settings.layoutRootId = selected;
+    pane.refresh();
+    layoutChangeNow();
 });
+layoutFolder.addButton({ title: 'reapply layout' }).on('click', () => GraphViewInstance.reapplyLayout());
+function updateLayoutVisibility(): void {
+    const mode = settings.layoutMode;
+    layoutSpacingBinding.hidden = mode === 'force';
+    layoutRankSpacingBinding.hidden = mode !== 'layered' && mode !== 'radial' && mode !== 'concentric';
+    layoutDirectionBinding.hidden = mode !== 'layered';
+    layoutRootBinding.hidden = mode !== 'radial' && mode !== 'circular';
+    selectedRootButton.hidden = layoutRootBinding.hidden;
+}
+layoutModeBinding.on('change', () => { updateLayoutVisibility(); layoutChangeNow(); });
+updateLayoutVisibility();
 
-const linkDistanceExpressionBinding = d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3LinkDistanceExpression', {
+// ── WebGPU rendering and layout ─────────────────────────────
+const engineFolder = tagFolder(pane.addFolder({ title: 'WebGPU engine', expanded: false }), 'forces');
+const engineChange = () => emit(EVT_GPU_PARAMS_CHANGED, null);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuEnablePhysics', { label: 'force physics' }).on('change', () => {
+    clearPhysicsOverride(); engineChange();
+});
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuLayoutRate', {
+    label: 'layout ticks / sec', min: 1, max: 60, step: 1,
+}).on('change', engineChange);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuWarmupMs', {
+    label: 'warmup (ms)', min: 0, max: 2500, step: 100,
+}).on('change', engineChange);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuCharge', {
+    label: 'repulsion', min: -1000, max: 0, step: 10,
+}).on('change', engineChange);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuLinkStrength', {
+    label: 'link strength', min: 0, max: 2, step: 0.05,
+}).on('change', engineChange);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuCollisionMultiplier', {
+    label: 'collision', min: 0, max: 3, step: 0.1,
+}).on('change', engineChange);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuVelocityDecay', {
+    label: 'velocity decay', min: 0, max: 0.95, step: 0.05,
+}).on('change', engineChange);
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuForceXYStrength', {
+    label: 'centering', min: 0, max: 1, step: 0.01,
+}).on('change', engineChange);
+const linkDistanceModeBinding = engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuLinkDistanceMode', {
+    label: 'link distance mode', view: 'list',
+    options: [{ text: 'constant', value: 'constant' }, { text: 'expression', value: 'expression' }],
+});
+const linkDistanceConstantBinding = engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuLinkDistance', {
+    label: 'link distance', min: 40, max: 500, step: 5,
+});
+const linkDistanceExpressionBinding = engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuLinkDistanceExpression', {
     label: 'link distance',
 });
 attachExpressionEditor(linkDistanceExpressionBinding, linkDistanceField);
-
 function updateLinkDistanceVisibility(): void {
-    const isExpr = settings.d3LinkDistanceMode === 'expression';
-    linkDistanceConstantBinding.hidden = isExpr;
-    linkDistanceExpressionBinding.hidden = !isExpr;
+    const expression = settings.gpuLinkDistanceMode === 'expression';
+    linkDistanceConstantBinding.hidden = expression;
+    linkDistanceExpressionBinding.hidden = !expression;
 }
-updateLinkDistanceVisibility();
-
 function updateLinkDistanceValidity(): void {
-    const error = settings.d3LinkDistanceMode === 'expression'
-        ? validateLinkDistanceExpression(settings.d3LinkDistanceExpression)
-        : null;
+    const error = settings.gpuLinkDistanceMode === 'expression'
+        ? validateLinkDistanceExpression(settings.gpuLinkDistanceExpression) : null;
     linkDistanceExpressionBinding.element.classList.toggle('sg-binding-invalid', error !== null);
 }
-updateLinkDistanceValidity();
-
-linkDistanceModeBinding.on('change', () => {
-    updateLinkDistanceVisibility();
-    updateLinkDistanceValidity();
-    emit(EVT_D3_PARAMS_CHANGED, null);
-});
-
-linkDistanceConstantBinding.on('change', () => {
-    emit(EVT_D3_PARAMS_CHANGED, null);
-});
-
-linkDistanceExpressionBinding.on('change', () => {
-    updateLinkDistanceValidity();
-    emit(EVT_D3_PARAMS_CHANGED, null);
-});
-
-d3RenderingSettingsFolder.addBinding(settings as unknown as Record<string, unknown>, 'd3CenterForce', { label: 'center force' }).on('change', () => {
-    emit(EVT_D3_PARAMS_CHANGED, null);
-});
-
-const fpsGraph = d3RenderingSettingsFolder.addBlade({
-    view: 'fpsgraph',
-    label: 'fps',
-    rows: 2,
-    min: 0,
-    max: 144,
-}) as unknown as FpsGraphBladeApi;
-
+updateLinkDistanceVisibility(); updateLinkDistanceValidity();
+linkDistanceModeBinding.on('change', () => { updateLinkDistanceVisibility(); updateLinkDistanceValidity(); engineChange(); });
+linkDistanceConstantBinding.on('change', engineChange);
+linkDistanceExpressionBinding.on('change', () => { updateLinkDistanceValidity(); engineChange(); });
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuEdgeStyle', {
+    label: 'edge rendering', view: 'list',
+    options: [{ text: 'smooth', value: 'smooth' }, { text: 'thin', value: 'thin' }],
+}).on('change', () => emit(EVT_RENDER_OPTIONS_CHANGED, null));
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuEdgeWidth', {
+    label: 'edge stroke', min: 0.8, max: 4, step: 0.1,
+}).on('change', () => emit(EVT_RENDER_OPTIONS_CHANGED, null));
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuShowNodes', { label: 'show nodes' })
+    .on('change', () => emit(EVT_RENDER_OPTIONS_CHANGED, null));
+engineFolder.addBinding(settings as unknown as Record<string, unknown>, 'gpuNodeOutline', {
+    label: 'node outline', min: 0, max: 3.5, step: 0.1,
+}).on('change', () => emit(EVT_RENDER_OPTIONS_CHANGED, null));
+const fpsGraph = engineFolder.addBlade({ view: 'fpsgraph', label: 'fps', rows: 2, min: 0, max: 144 }) as unknown as FpsGraphBladeApi;
 setFrameHooks(() => fpsGraph.begin(), () => fpsGraph.end());
 
 // ── graph display settings ──────────────────────────────────
@@ -234,21 +265,12 @@ displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'showGrid', { label: 'show grid' }).on('change', () => {
-    emit(EVT_SETTINGS_UPDATED, null);
-});
-
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'highlightOnHover', { label: 'highlight on hover' }).on('change', () => {
-    // disabling mid-hover should clear any active dim immediately (2D updates on
-    // its next frame; 3D needs an explicit recolor)
     if (!settings.highlightOnHover) {
         setHighlight(null);
         refreshGraphColors();
     }
-});
-
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'curvatureStep', { label: 'link curvature', min: 0.0, max: 0.200, step: 0.001 }).on('change', () => {
-    emit(EVT_CURVATURE_UPDATED, null);
+    emit(EVT_RENDER_OPTIONS_CHANGED, null);
 });
 
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'globalEdgeAlphaOffset', { label: 'edge alpha offset', min: -1, max: 1, step: 0.01 }).on('change', () => {
@@ -294,27 +316,13 @@ nodeLabelExpressionBinding.on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
 
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeLabelOutline', { label: 'label outline' }).on('change', () => {
-    emit(EVT_SETTINGS_UPDATED, null);
-});
-
 displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'labelDensity', {
     label: 'label density',
     view: 'list',
     options: [
-        { text: 'all', value: 'all' },
         { text: 'auto (declutter)', value: 'auto' },
         { text: 'focus', value: 'focus' },
     ],
-}).on('change', () => {
-    emit(EVT_SETTINGS_UPDATED, null);
-});
-
-displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'labelScale', {
-    label: 'text scale',
-    min: 0.5,
-    max: 3,
-    step: 0.1,
 }).on('change', () => {
     emit(EVT_SETTINGS_UPDATED, null);
 });
@@ -332,12 +340,21 @@ const nodeSizingModeBinding = displayOptionsFolder.addBinding(settings as unknow
     ],
 });
 
+const nodeSizeScaleBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizeScale', {
+    label: 'size multiplier',
+    min: 0.1,
+    max: 8,
+    step: 0.1,
+}).on('change', () => emit(EVT_NODE_SIZING_UPDATED, null));
+nodeSizeScaleBinding.element.title = 'Scale node sizes in constant, degree, or expression mode without changing their relative sizes.';
+
 const nodeSizingConstantBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingConstant', {
     label: 'node size',
-    min: 1,
-    max: 10,
-    step: 0.5,
+    min: 0.1,
+    max: 24,
+    step: 0.1,
 });
+nodeSizingConstantBinding.element.title = '0.1 makes nodes almost point-sized; 24 makes them large. Zoom also scales their size.';
 
 const nodeSizingExpressionBinding = displayOptionsFolder.addBinding(settings as unknown as Record<string, unknown>, 'nodeSizingExpression', {
     label: 'node size',
@@ -352,18 +369,19 @@ updateSizingVisibility();
 
 nodeSizingModeBinding.on('change', () => {
     updateSizingVisibility();
-    emit(EVT_SETTINGS_UPDATED, null);
+    emit(EVT_NODE_SIZING_UPDATED, null);
 });
 
 nodeSizingConstantBinding.on('change', () => {
-    emit(EVT_SETTINGS_UPDATED, null);
+    emit(EVT_NODE_SIZING_UPDATED, null);
 });
 
 nodeSizingExpressionBinding.on('change', () => {
-    emit(EVT_SETTINGS_UPDATED, null);
+    emit(EVT_NODE_SIZING_UPDATED, null);
 });
 
 function syncStaticSettingsPane(): void {
+    updateLayoutVisibility();
     updateExpressionVisibility();
     updateSizingVisibility();
     updateLinkDistanceVisibility();
@@ -379,7 +397,7 @@ function syncStaticSettingsPane(): void {
 function refreshAfterSettingsChange(): void {
     updateDynamicGraphPanes();
     syncStaticSettingsPane();
-    emit(EVT_D3_PARAMS_CHANGED, null);
+    emit(EVT_GPU_PARAMS_CHANGED, null);
     emit(EVT_SETTINGS_UPDATED, null);
     emit(EVT_COLORS_UPDATED, null);
     emit(EVT_WIDTHS_UPDATED, null);
@@ -599,7 +617,7 @@ function rebuildPresetsFolder(): void {
             applySettingsPreset(name, source);
             updateDynamicGraphPanes();
             syncStaticSettingsPane();
-            emit(EVT_D3_PARAMS_CHANGED, null);
+            emit(EVT_GPU_PARAMS_CHANGED, null);
             emit(EVT_SETTINGS_UPDATED, null);
         } catch (err) {
             console.error('load preset failed:', err);
@@ -629,7 +647,7 @@ function rebuildPresetsFolder(): void {
             resetSettingsToDefaults();
             updateDynamicGraphPanes();
             syncStaticSettingsPane();
-            emit(EVT_D3_PARAMS_CHANGED, null);
+            emit(EVT_GPU_PARAMS_CHANGED, null);
             emit(EVT_SETTINGS_UPDATED, null);
         } catch (err) {
             console.error('reset settings failed:', err);

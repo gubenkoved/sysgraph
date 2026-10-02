@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from sysgraph import __version__
 from sysgraph.discovery import build_graph
 
 LOGGER = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ async def lifespan(app):
     logging.info(f"shutdown for process with PID {os.getpid()}")
 
 
-app = FastAPI(title="sysgraph API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="sysgraph API", version=__version__, lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # Vite build output — run scripts/build-ui.sh to produce it.

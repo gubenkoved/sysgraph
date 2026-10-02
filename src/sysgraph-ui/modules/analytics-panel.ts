@@ -2,6 +2,7 @@ import {
     ALGORITHMS,
     type AnalyticsResultModel,
     clearAnalytics,
+    focusAnalyticsPathNode,
     getAlgorithm,
     type ParamSpec,
     runAlgorithm,
@@ -253,17 +254,25 @@ function statRow(label: string, value: string): HTMLElement {
 
 /** Builds a clickable node row that centers the camera on the node. */
 function buildPathNodeRow(nodeId: string, index: number, distance: number): HTMLElement {
-    const row = el('div', 'analytics-path-row');
+    const row = el('button', 'analytics-path-row');
+    row.type = 'button';
+    row.title = `Center on ${nodeLabel(nodeId)}`;
     row.appendChild(el('span', 'analytics-path-index', String(index)));
 
-    const btn = el('button', 'analytics-path-node');
-    btn.title = `Center on ${nodeId}`;
+    const content = el('span', 'analytics-path-node');
+    const decoration = state.analytics.decoration;
+    const active = decoration?.kind === 'subset' && decoration.focusedNodeId === nodeId;
+    row.classList.toggle('active', active);
+    if (active) row.setAttribute('aria-current', 'step');
     const icon = document.createElement('md-icon');
     icon.textContent = 'my_location';
-    btn.appendChild(icon);
-    btn.appendChild(el('span', 'analytics-path-node-label', nodeLabel(nodeId)));
-    btn.addEventListener('click', () => centerOnNode(nodeId));
-    row.appendChild(btn);
+    content.appendChild(icon);
+    content.appendChild(el('span', 'analytics-path-node-label', nodeLabel(nodeId)));
+    row.addEventListener('click', () => {
+        centerOnNode(nodeId);
+        focusAnalyticsPathNode(nodeId);
+    });
+    row.appendChild(content);
 
     row.appendChild(el('span', 'analytics-path-dist', distance.toFixed(2)));
     return row;
@@ -488,7 +497,7 @@ function buildCommunityLegend(communities: Community[]): HTMLElement {
         if (isFocused) {
             focusBtn.classList.add('is-active');
         }
-        focusBtn.title = isFocused ? 'stop highlighting this community' : 'highlight this community';
+        focusBtn.title = isFocused ? 'Stop highlighting this community' : 'Highlight this community';
         const focusIcon = document.createElement('md-icon');
         focusIcon.textContent = isFocused ? 'visibility' : 'visibility_off';
         focusBtn.appendChild(focusIcon);
@@ -498,7 +507,7 @@ function buildCommunityLegend(communities: Community[]): HTMLElement {
         // subtle add-to-selection control
         const addBtn = el('button', 'analytics-community-add');
         addBtn.type = 'button';
-        addBtn.title = 'add community to selection';
+        addBtn.title = 'Add community to selection';
         const addIcon = document.createElement('md-icon');
         addIcon.textContent = 'add_circle';
         addBtn.appendChild(addIcon);

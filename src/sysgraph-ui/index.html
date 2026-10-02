@@ -39,7 +39,7 @@
         <md-icon-button id="toolRectSelect" title="Rectangular selection (R)">
           <md-icon>select_all</md-icon>
         </md-icon-button>
-        <md-icon-button id="toolSearch" title="Search">
+        <md-icon-button id="toolSearch" title="Search nodes (Ctrl/Cmd+F)">
           <md-icon>search</md-icon>
         </md-icon-button>
         <md-icon-button id="toolEdit" title="Edit graph (E)">
@@ -83,6 +83,9 @@
             <md-icon id="physicsToggleIcon">motion_blur</md-icon>
           </md-icon-button>
         </span>
+        <md-icon-button id="physicsFastForward" title="Fast forward physics" aria-label="Fast forward physics" aria-pressed="false">
+          <md-icon>fast_forward</md-icon>
+        </md-icon-button>
         <md-icon-button id="recenterView" title="Recenter view (F)">
           <md-icon>recenter</md-icon>
         </md-icon-button>
@@ -205,11 +208,11 @@
         </div>
 
         <div id="zoom-indicator">
-          <md-icon-button id="zoomOut" title="Zoom Out">
+          <md-icon-button id="zoomOut" title="Zoom out">
             <md-icon>remove</md-icon>
           </md-icon-button>
           <span id="zoomLevel">100%</span>
-          <md-icon-button id="zoomIn" title="Zoom In">
+          <md-icon-button id="zoomIn" title="Zoom in">
             <md-icon>add</md-icon>
           </md-icon-button>
         </div>

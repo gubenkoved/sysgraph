@@ -1,0 +1,40 @@
+.app-tooltip {
+  position: fixed;
+  z-index: 450;
+  box-sizing: border-box;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 8px 11px;
+  border: 1px solid rgba(180, 203, 233, 0.22);
+  border-radius: 7px;
+  background: #202b3d;
+  box-shadow: 0 5px 18px rgba(7, 19, 38, 0.22), 0 1px 3px rgba(7, 19, 38, 0.16);
+  color: #f7f9fd;
+  font: 500 12px/1.4 'Ubuntu', 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.01em;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 0s linear 120ms;
+}
+
+.app-tooltip.is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+.app-tooltip[data-placement='top'] {
+  transform: translateY(3px);
+}
+
+.app-tooltip[data-placement='top'].is-visible {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-tooltip { transition: none; }
+}

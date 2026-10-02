@@ -2,7 +2,7 @@ import iconLight from '../icon.png';
 import iconDark from '../icon-dark.png';
 import { selectAlgorithm, suspendAnalytics } from './analytics.js';
 import { closeAnalyticsPanel, openAnalyticsPanel } from './analytics-panel.js';
-import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE, TOOLBAR_SCROLL_EDGE_EPSILON_PX } from './constants.js';
+import { CMD_EXPORT, CMD_IMPORT, CMD_RELOAD, CMD_SHARE, EVT_ANALYTICS_UPDATED, EVT_CLEAR_CLICKED, EVT_LAYOUT_CHANGED, EVT_RENDER_MODE_CHANGED, EVT_SEARCH_CHANGED, EVT_SEARCH_CYCLE, EVT_SELECTION_CHANGED, EVT_THEME_CHANGED, EVT_TOOL_CHANGED, PANEL_SETTINGS, PANEL_TEMPLATES, STANDALONE, TOOLBAR_SCROLL_EDGE_EPSILON_PX } from './constants.js';
 import { type ContextMenuItem, showContextMenu } from './context-menu.js';
 import { buildExampleMenuItems, type ExampleInfo, loadExamplesManifest } from './data-io.js';
 import { cancelPendingEdge } from './edit-mode.js';
@@ -532,6 +532,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
     unselectBtn.addEventListener('click', () => {
         state.selection.selectedNodeIds.clear();
         updateGraphInfo();
+        emit(EVT_SELECTION_CHANGED, null);
     });
 
     invertSelectionBtn.addEventListener('click', () => {
@@ -543,6 +544,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
             }
         }
         updateGraphInfo();
+        emit(EVT_SELECTION_CHANGED, null);
     });
 
     rectAddModeBtn.addEventListener('click', () => {
@@ -556,6 +558,7 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
                 state.selection.selectedNodeIds.add(nodeId);
             }
             updateGraphInfo();
+            emit(EVT_SELECTION_CHANGED, null);
         }
     });
 
@@ -636,6 +639,14 @@ export function initToolbar(selectionCanvas: HTMLCanvasElement, canvas: HTMLCanv
 
     // keyboard shortcuts
     document.addEventListener('keydown', async (event) => {
+        if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {
+            event.preventDefault();
+            if (state.currentTool !== 'search') setTool('search', selectionCanvas, canvas);
+            searchInput.focus();
+            searchInput.select();
+            return;
+        }
+
         const el = event.target as HTMLElement;
 
         const isTyping =

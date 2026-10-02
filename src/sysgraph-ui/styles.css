@@ -847,7 +847,7 @@ body {
   bottom: 0;
 }
 
-/* the graph panel wraps the force-graph canvas plus the graph-area chrome
+/* the graph panel wraps the WebGPU canvas plus the graph-area chrome
    (toolbar, search bar, quick-start, zoom, status, version); it fills its dock
    region and is the positioning context for those absolutely-placed overlays */
 #graphPanel {
@@ -861,6 +861,44 @@ body {
   position: absolute;
   inset: 0;
   background: var(--bg-canvas);
+}
+
+.webgpu-error {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 15px;
+}
+
+.webgpu-warmup {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  pointer-events: none;
+}
+
+.webgpu-warmup.visible { display: flex; }
+
+.webgpu-warmup::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: loading-spin 0.7s linear infinite;
 }
 
 /* ── quick-start (empty-graph) panel ────────────────────── */
@@ -1167,7 +1205,7 @@ body {
 }
 
 /* compact affordance icon inside a dock tab, left of the title (e.g. the
-   details pin hint); muted so it reads as a quiet cue, with a native tooltip */
+   details pin hint); muted so it reads as a quiet cue, with an app tooltip */
 .dv-default-tab .tab-icon {
   --md-icon-size: 15px;
   margin-right: var(--spacing-xs);
@@ -1803,9 +1841,18 @@ body {
 }
 
 .analytics-path-row {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  padding: 2px var(--spacing-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  text-align: left;
+  cursor: pointer;
 }
 
 .analytics-path-index {
@@ -1822,20 +1869,19 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 2px var(--spacing-xs);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-primary);
-  font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
 }
 
-.analytics-path-node:hover {
+.analytics-path-row:hover,
+.analytics-path-row:focus-visible {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
+}
+
+.analytics-path-row.active {
+  border-color: #ed5149;
+  background: rgba(237, 81, 73, 0.12);
+  color: var(--text-primary);
 }
 
 .analytics-path-node md-icon {
@@ -2310,10 +2356,13 @@ body {
 .tp-rotv {
   /* biome-ignore lint/complexity/noImportantStyles: needed to override Tweakpane's built-in font */
   font-family: var(--font-family) !important;
-  /* biome-ignore lint/complexity/noImportantStyles: override Tweakpane's default rounding to match app cards */
-  --tp-base-border-radius: var(--radius-md) !important;
-  --tp-blade-border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
+}
+
+#settingsPane .tp-rotv {
+  --tp-base-border-radius: 0;
+  --tp-blade-border-radius: 0;
+  box-shadow: none;
 }
 
 /* settings live in a dock panel now; fill the panel and scroll internally.
@@ -2327,23 +2376,22 @@ body {
   padding: var(--spacing-xs);
 }
 
-/* Folder titles ("d3 forces settings", "display options", …). */
+/* Keep the settings as a flat form with clear, square section dividers. */
 #settingsPane .tp-fldv_b {
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* Category color-coding for settings folders. A left accent stripe plus a
-   subtly tinted title bar makes each functional group easy to locate at a
-   glance. The hue is driven per-category by --sg-folder-hue. */
+/* Strong category accents with straight edges. */
 #settingsPane .sg-folder {
   border-left: 3px solid hsl(var(--sg-folder-hue, 221), 55%, 55%);
-  border-top-left-radius: var(--radius-sm);
-  border-bottom-left-radius: var(--radius-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
   margin-bottom: 2px;
 }
 
 #settingsPane .sg-folder > .tp-fldv_b {
   background-color: hsla(var(--sg-folder-hue, 221), 55%, 55%, 0.12);
+  border-radius: 0;
 }
 
 #settingsPane .sg-folder > .tp-fldv_b:hover {
@@ -2398,7 +2446,7 @@ body {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   box-shadow: 0 2px 12px var(--shadow-sm);
 }
 
@@ -2413,7 +2461,7 @@ body {
   transform: translateY(-50%);
   min-width: 18px;
   padding: 1px 6px;
-  border-radius: var(--radius-pill, 999px);
+  border-radius: 0;
   background: hsla(221, 35%, 45%, 0.14);
   color: hsla(221, 30%, 30%, 0.90);
   font-family: var(--font-family);
@@ -2704,14 +2752,14 @@ hr {
   color: var(--text-primary);
   border: 1px solid var(--border-medium);
   border-left: 4px solid var(--accent-primary);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   box-shadow: 0 8px 28px var(--shadow-md);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   word-break: break-word;
-  /* clip the auto-dismiss progress bar to the rounded corners */
+  /* keep the auto-dismiss progress bar inside the panel */
   overflow: hidden;
   animation: action-toast-in-mobile 0.22s ease-out;
 }

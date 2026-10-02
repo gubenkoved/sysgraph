@@ -262,7 +262,7 @@ function renderExamples(field: ExpressionField): void {
         const row = el('button', 'expr-editor-example');
         row.appendChild(el('code', 'expr-editor-example-code', example.code));
         row.appendChild(el('span', 'expr-editor-example-desc', example.desc));
-        row.title = 'insert this example';
+        row.title = 'Insert this example';
         row.addEventListener('click', () => {
             if (!view) return;
             view.dispatch({

@@ -66,6 +66,9 @@ export interface SubsetDecoration {
     kind: 'subset';
     nodeIds: Set<string>;
     edgeIds: Set<string>;
+    /** Shortest paths receive an opaque accent and node rings. */
+    emphasis?: 'path';
+    focusedNodeId?: string;
     // multiplier applied to the on-screen width of the emphasized edges
     edgeWidthMultiplier?: number;
 }
@@ -129,7 +132,7 @@ export interface AppState {
     edit: EditState;
     analytics: AnalyticsState;
     // transient, runtime-only override of physics enablement; null means follow
-    // the persisted `settings.d3EnablePhysics`, true/false force-override it for
+    // the persisted `settings.gpuEnablePhysics`, true/false force-override it for
     // this session without ever mutating (or exporting) the persisted setting
     physicsOverride: boolean | null;
 }

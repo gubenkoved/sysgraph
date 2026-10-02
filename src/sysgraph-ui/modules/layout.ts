@@ -50,7 +50,7 @@ export interface PanelSpec {
     onClose?: () => void;
     /**
      * optional compact icon shown inside this panel's tab, left of the title
-     * (e.g. the details pin hint); the title string is a native tooltip
+     * (e.g. the details pin hint); the title string becomes an app tooltip
      */
     tabIcon?: { name: string; title: string };
 }
@@ -180,7 +180,7 @@ function createIconTab(panelId: string): ITabRenderer {
         const icon = document.createElement('md-icon');
         icon.className = 'tab-icon';
         icon.textContent = spec.tabIcon.name;
-        // native tooltip keeps the hint compact and free of header clipping
+        // the shared tooltip keeps the hint clear of header clipping
         icon.title = spec.tabIcon.title;
         root.appendChild(icon);
     }

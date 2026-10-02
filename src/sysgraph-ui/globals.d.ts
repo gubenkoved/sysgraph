@@ -6,9 +6,28 @@
  */
 declare const __STANDALONE__: boolean;
 
-/**
- * three.js ships no type declarations and `@types/three` is not installed, so
- * declare it as an untyped module. The 3D renderer uses it only for a few small
- * scene objects (e.g. the pinned-node spike marker) via runtime casts.
- */
-declare module 'three';
+// TypeScript's current DOM WebGPU types include the interfaces but omit these
+// browser-provided flag objects. Keep their declarations local to this app.
+declare const GPUShaderStage: {
+    readonly VERTEX: GPUShaderStageFlags;
+    readonly FRAGMENT: GPUShaderStageFlags;
+    readonly COMPUTE: GPUShaderStageFlags;
+};
+
+declare const GPUBufferUsage: {
+    readonly COPY_SRC: GPUBufferUsageFlags;
+    readonly COPY_DST: GPUBufferUsageFlags;
+    readonly MAP_READ: GPUBufferUsageFlags;
+    readonly UNIFORM: GPUBufferUsageFlags;
+    readonly STORAGE: GPUBufferUsageFlags;
+};
+
+declare const GPUMapMode: {
+    readonly READ: GPUMapModeFlags;
+};
+
+declare const GPUTextureUsage: {
+    readonly COPY_DST: GPUTextureUsageFlags;
+    readonly RENDER_ATTACHMENT: GPUTextureUsageFlags;
+    readonly TEXTURE_BINDING: GPUTextureUsageFlags;
+};

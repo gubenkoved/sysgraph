@@ -8,8 +8,9 @@
 import { validateEdgeWeightExpression } from './analytics-helpers.js';
 import {
     EVT_ANALYTICS_UPDATED,
-    EVT_D3_PARAMS_CHANGED,
     EVT_FILTERS_UPDATED,
+    EVT_GPU_PARAMS_CHANGED,
+    EVT_NODE_SIZING_UPDATED,
     EVT_SETTINGS_UPDATED,
 } from './constants.js';
 import { emit } from './event-bus.js';
@@ -427,7 +428,7 @@ export function nodeSizingField(): ExpressionField {
         getValue: () => settings.nodeSizingExpression,
         setValue: (value) => {
             settings.nodeSizingExpression = value;
-            emit(EVT_SETTINGS_UPDATED, null);
+            emit(EVT_NODE_SIZING_UPDATED, null);
             paneRefresh?.();
         },
         validate(expr) {
@@ -449,10 +450,10 @@ export function linkDistanceField(): ExpressionField {
         kind: 'edge',
         scope: LINK_DISTANCE_SCOPE,
         allowEmpty: false,
-        getValue: () => settings.d3LinkDistanceExpression,
+        getValue: () => settings.gpuLinkDistanceExpression,
         setValue: (value) => {
-            settings.d3LinkDistanceExpression = value;
-            emit(EVT_D3_PARAMS_CHANGED, null);
+            settings.gpuLinkDistanceExpression = value;
+            emit(EVT_GPU_PARAMS_CHANGED, null);
             paneRefresh?.();
         },
         validate(expr) {
